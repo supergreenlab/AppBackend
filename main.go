@@ -1,3 +1,21 @@
+/*
+ * Copyright (C) 2019  SuperGreenLab <towelie@supergreenlab.com>
+ * Author: Constantin Clauzel <constantin.clauzel@gmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package main
 
 import (
@@ -112,7 +130,7 @@ func serveRange(w http.ResponseWriter, r *http.Request) {
 	}
 
 	humi := RangeResult{}
-	queryProm(fmt.Sprintf(`g_BOX_%d_SHT1X_HUMI{id="%s"}`, box, controller), time.Now().Unix()-60*60*24*3, time.Now().Unix(), &humi)
+	queryProm(fmt.Sprintf(`g_BOX_%d_SHT21_HUMI{id="%s"}`, box, controller), time.Now().Unix()-60*60*24*3, time.Now().Unix(), &humi)
 
 	if humi.Status != "success" {
 		w.WriteHeader(404)
@@ -120,7 +138,7 @@ func serveRange(w http.ResponseWriter, r *http.Request) {
 	}
 
 	temp := RangeResult{}
-	queryProm(fmt.Sprintf(`g_BOX_%d_SHT1X_TEMP_C{id="%s"}`, box, controller), time.Now().Unix()-60*60*24*3, time.Now().Unix(), &temp)
+	queryProm(fmt.Sprintf(`g_BOX_%d_SHT21_TEMP_C{id="%s"}`, box, controller), time.Now().Unix()-60*60*24*3, time.Now().Unix(), &temp)
 
 	if temp.Status != "success" {
 		w.WriteHeader(404)
