@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -49,6 +50,9 @@ type RangeResult struct {
 
 func (r RangeResult) toFloat64(min, max float64) [][]float64 {
 	res := [][]float64{}
+	if len(r.Data.Result) < 1 {
+		return res
+	}
 	var lasti float64
 	for _, v := range r.Data.Result[0].Values {
 		i, err := strconv.ParseFloat(v[1].(string), 64)
@@ -65,14 +69,14 @@ func (r RangeResult) toFloat64(min, max float64) [][]float64 {
 	return res
 }
 
-func queryProm(query string, start, end int64, res *RangeResult) error {
+func queryProm(query string, start, end int64, n int, res *RangeResult) error {
 	c := http.DefaultClient
 
 	v := url.Values{}
 	v.Set("query", query)
 	v.Set("start", fmt.Sprintf("%d", start))
 	v.Set("end", fmt.Sprintf("%d", end))
-	v.Set("step", fmt.Sprintf("%d", (end-start)/200))
+	v.Set("step", fmt.Sprintf("%d", (end-start)/int64(n)))
 	u, err := url.Parse(fmt.Sprintf("http://prometheus:9090/api/v1/query_range?%s", v.Encode()))
 	if err != nil {
 		return err
@@ -101,8 +105,7 @@ func queryProm(query string, start, end int64, res *RangeResult) error {
 }
 
 type ServedResult struct {
-	Humi [][]float64
-	Temp [][]float64
+	Metrics [][]float64 `json:"metrics"`
 }
 
 func serveRange(w http.ResponseWriter, r *http.Request) {
@@ -116,41 +119,50 @@ func serveRange(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
 		return
 	}
-	box, err := strconv.Atoi(r.URL.Query().Get("box"))
+
+	q := r.URL.Query().Get("q")
+	if q == "" {
+		w.WriteHeader(404)
+		return
+	}
+
+	t, err := strconv.Atoi(r.URL.Query().Get("t"))
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(404)
 		return
 	}
 
-	controller := r.URL.Query().Get("controller")
-	if controller == "" {
+	n, err := strconv.Atoi(r.URL.Query().Get("n"))
+	if err != nil {
+		n = 200
+	}
+
+	min, err := strconv.Atoi(r.URL.Query().Get("min"))
+	if err != nil {
+		min = math.MinInt32
+	}
+
+	max, err := strconv.Atoi(r.URL.Query().Get("max"))
+	if err != nil {
+		max = math.MaxInt32
+	}
+
+	cid := r.URL.Query().Get("cid")
+	if cid == "" {
 		w.WriteHeader(404)
 		return
 	}
 
-	humi := RangeResult{}
-	queryProm(fmt.Sprintf(`g_BOX_%d_SHT21_HUMI{id="%s"}`, box, controller), time.Now().Unix()-60*60*24*3, time.Now().Unix(), &humi)
+	rr := RangeResult{}
+	queryProm(fmt.Sprintf(`g_%s{id="%s"}`, q, cid), time.Now().Unix()-60*60*int64(t), time.Now().Unix(), n, &rr)
 
-	if humi.Status != "success" {
+	if rr.Status != "success" {
 		w.WriteHeader(404)
 		return
 	}
 
-	temp := RangeResult{}
-	queryProm(fmt.Sprintf(`g_BOX_%d_SHT21_TEMP_C{id="%s"}`, box, controller), time.Now().Unix()-60*60*24*3, time.Now().Unix(), &temp)
-
-	if temp.Status != "success" {
-		w.WriteHeader(404)
-		return
-	}
-
-	if len(humi.Data.Result) < 1 || len(temp.Data.Result) < 1 {
-		w.WriteHeader(200)
-		return
-	}
-
-	sr := ServedResult{Humi: humi.toFloat64(0, 90), Temp: temp.toFloat64(0, 60)}
+	sr := ServedResult{Metrics: rr.toFloat64(float64(min), float64(max))}
 
 	js, err := json.Marshal(sr)
 	if err != nil {
@@ -158,7 +170,6 @@ func serveRange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
 }
 
