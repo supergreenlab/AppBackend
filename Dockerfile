@@ -1,8 +1,8 @@
 FROM scratch
 
 ADD ca-certificates.crt /etc/ssl/certs/
-ADD supergreenpromproxy /
+ADD bin/appbackend /
 
 EXPOSE 8080
 
-ENTRYPOINT ["/supergreenpromproxy"]
+ENTRYPOINT ["/appbackend"]
