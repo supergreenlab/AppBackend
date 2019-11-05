@@ -1,4 +1,4 @@
 tmp
 bin/appbackend
-appbackend.toml
 air_errors.log
+config/

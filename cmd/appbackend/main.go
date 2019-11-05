@@ -28,7 +28,7 @@ import (
 
 func main() {
 	viper.SetConfigName("appbackend")
-	viper.AddConfigPath("/etc/")
+	viper.AddConfigPath("/etc/appbackend")
 	viper.AddConfigPath(".")
 
 	err := viper.ReadInConfig()

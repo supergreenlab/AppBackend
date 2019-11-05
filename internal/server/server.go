@@ -21,10 +21,13 @@ package server
 import (
 	"log"
 	"net/http"
+
+	"github.com/julienschmidt/httprouter"
 )
 
 // Start starts the server
 func Start() {
-	http.HandleFunc("/", serveRangeHandler)
+	router := httprouter.New()
+	router.POST("/metrics", serveMetricsHandler)
 	go log.Fatal(http.ListenAndServe(":8080", nil))
 }

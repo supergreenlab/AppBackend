@@ -28,20 +28,10 @@ import (
 	"time"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/prometheus"
+	"github.com/julienschmidt/httprouter"
 )
 
-func serveRangeHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET,OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Access-Control-Allow-Origin")
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(200)
-		return
-	} else if r.Method != "GET" {
-		w.WriteHeader(404)
-		return
-	}
-
+func serveMetricsHandler(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	q := r.URL.Query().Get("q")
 	if q == "" {
 		w.WriteHeader(404)
