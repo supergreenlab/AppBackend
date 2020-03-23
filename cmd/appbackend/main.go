@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/SuperGreenLab/AppBackend/internal/server"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -43,6 +44,8 @@ func main() {
 	viper.BindPFlags(pflag.CommandLine)
 
 	server.Start()
+
+	log.Info("AppBackend started")
 
 	select {}
 }

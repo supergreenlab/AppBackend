@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package server
+package metrics
 
 import "github.com/SuperGreenLab/AppBackend/internal/data/prometheus"
 
