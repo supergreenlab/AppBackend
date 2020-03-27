@@ -25,6 +25,7 @@ func InitFeeds(router *httprouter.Router) {
 	auth.Use(createDBSession)
 
 	router.POST("/user", anon.Wrap(createUserHandler()))
+
 	router.POST("/plant", auth.Wrap(createPlantHandler()))
 	router.POST("/timelapse", auth.Wrap(createTimelapseHandler()))
 	router.POST("/device", auth.Wrap(createDeviceHandler()))

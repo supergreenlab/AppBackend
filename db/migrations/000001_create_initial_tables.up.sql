@@ -20,8 +20,9 @@ for each row
 
 create table if not exists plants(
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  feedID uuid not null,
-  deviceID uuid,
+  userid uuid not null,
+  feedid uuid not null,
+  deviceid uuid,
   deviceBox int,
   name varchar(64),
 
@@ -40,8 +41,8 @@ for each row
 
 create table if not exists timelapses(
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  plantID uuid not null,
-  controllerID varchar(64),
+  plantid uuid not null,
+  controllerid varchar(64),
   rotate varchar(5),
   name varchar(64),
   strain varchar(64),
@@ -78,6 +79,7 @@ for each row
 
 create table if not exists feeds(
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  userid uuid not null,
   name varchar(24),
 
   cat timestamptz default now(),
@@ -93,7 +95,7 @@ for each row
 
 create table if not exists feedEntries(
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  feedID uuid,
+  feedid uuid,
   createdAt timestamptz,
 
   cat timestamptz default now(),

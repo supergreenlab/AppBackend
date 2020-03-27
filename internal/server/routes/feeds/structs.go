@@ -13,8 +13,9 @@ type User struct {
 // Plant -
 type Plant struct {
 	ID        string `db:"id,omitempty" json:"id"`
-	FeedID    string `db:"feedID" json:"feedID"`
-	DeviceID  string `db:"deviceID,omitempty" json:"deviceID"`
+	UserID    string `db:"userid,omitempty" json:"userID"`
+	FeedID    string `db:"feedid" json:"feedID"`
+	DeviceID  string `db:"deviceid,omitempty" json:"deviceID"`
 	DeviceBox int    `db:"deviceBox,omitempty" json:"deviceBox"`
 	Name      string `db:"name" json:"name"`
 	Settings  string `db:"settings" json:"settings"`
@@ -23,8 +24,8 @@ type Plant struct {
 // Timelapse -
 type Timelapse struct {
 	ID           string `db:"id,omitempty" json:"id"`
-	PlantID      string `db:"boxID" json:"boxID"`
-	ControllerID string `db:"controllerID" json:"controllerID"`
+	PlantID      string `db:"boxid" json:"boxID"`
+	ControllerID string `db:"controllerid" json:"controllerID"`
 	Rotate       string `db:"rotate" json:"rotate"`
 	Name         string `db:"name" json:"name"`
 	Strain       string `db:"strain" json:"strain"`
@@ -42,13 +43,14 @@ type Device struct {
 
 // Feed -
 type Feed struct {
-	ID   string `db:"id,omitempty" json:"id"`
-	Name string `db:"name" json:"name"`
+	ID     string `db:"id,omitempty" json:"id"`
+	UserID string `db:"userid,omitempty" json:"userID"`
+	Name   string `db:"name" json:"name"`
 }
 
 // FeedEntry -
 type FeedEntry struct {
 	ID        string `db:"id,omitempty" json:"id"`
-	FeedID    string `db:"feedID" json:"feedID"`
+	FeedID    string `db:"feedid" json:"feedID"`
 	CreatedAt string `db:"createdAt" json:"createdAt"`
 }

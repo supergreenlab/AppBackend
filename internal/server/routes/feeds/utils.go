@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"reflect"
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
@@ -113,7 +114,7 @@ func decodeJSON(fnObject func() interface{}) func(fn httprouter.Handle) httprout
 	return func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			o := fnObject()
-			err := decodeJSONBody(w, r, &o)
+			err := decodeJSONBody(w, r, o)
 			if err != nil {
 				var mr *malformedRequest
 				if errors.As(err, &mr) {
@@ -127,6 +128,18 @@ func decodeJSON(fnObject func() interface{}) func(fn httprouter.Handle) httprout
 			ctx := context.WithValue(r.Context(), objectContextKey{}, o)
 			fn(w, r.WithContext(ctx), p)
 		}
+	}
+}
+
+func setUserID(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		o := r.Context().Value(objectContextKey{})
+		uid := r.Context().Value(userIDContextKey{}).(string)
+
+		reflect.ValueOf(o).Elem().FieldByName("UserID").SetString(uid)
+
+		ctx := context.WithValue(r.Context(), objectContextKey{}, o)
+		fn(w, r.WithContext(ctx), p)
 	}
 }
 
@@ -160,16 +173,21 @@ func outputObjectID(w http.ResponseWriter, r *http.Request, p httprouter.Params)
 	}
 }
 
-func simpleInsert(collection string, factory func() interface{}) func() httprouter.Handle {
+func simpleInsert(collection string, factory func() interface{}, addUserID bool) func() httprouter.Handle {
 	return func() httprouter.Handle {
 		s := middleware.NewStack()
 
 		s.Use(decodeJSON(factory))
+		if addUserID {
+			s.Use(setUserID)
+		}
 		s.Use(insertObject(collection))
 
 		return s.Wrap(outputObjectID)
 	}
 }
+
+type userIDContextKey struct{}
 
 func jwtToken(fn httprouter.Handle) httprouter.Handle {
 	hmacSampleSecret := []byte(viper.GetString("JWTSecret"))
@@ -191,7 +209,8 @@ func jwtToken(fn httprouter.Handle) httprouter.Handle {
 		}
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			fmt.Println(claims)
+			ctx := context.WithValue(r.Context(), userIDContextKey{}, claims["id"])
+			fn(w, r.WithContext(ctx), p)
 		} else {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
