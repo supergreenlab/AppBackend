@@ -9,6 +9,7 @@ require (
 	github.com/aws/aws-sdk-go v1.29.31 // indirect
 	github.com/cockroachdb/cockroach-go v0.0.0-20200312223839-f565e4789405 // indirect
 	github.com/denisenkom/go-mssqldb v0.0.0-20200206145737-bbfc9a55622e // indirect
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
 	github.com/gocql/gocql v0.0.0-20200324094621-6d895e38b0a5 // indirect

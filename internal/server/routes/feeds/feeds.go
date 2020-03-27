@@ -4,6 +4,11 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
 	"github.com/rileyr/middleware/wares"
+	"github.com/spf13/pflag"
+)
+
+var (
+	jwtSecret = pflag.String("jwtsecret", "", "JWT secret")
 )
 
 // InitFeeds -
@@ -16,6 +21,7 @@ func InitFeeds(router *httprouter.Router) {
 
 	auth := middleware.NewStack()
 	auth.Use(wares.Logging)
+	auth.Use(jwtToken)
 	auth.Use(createDBSession)
 
 	router.POST("/user", anon.Wrap(createUserHandler()))

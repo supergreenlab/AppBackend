@@ -9,11 +9,13 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/golang/gddo/httputil/header"
 	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
 	"github.com/rileyr/middleware"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"upper.io/db.v3/lib/sqlbuilder"
 	"upper.io/db.v3/postgresql"
 )
@@ -154,7 +156,7 @@ func outputObjectID(w http.ResponseWriter, r *http.Request, p httprouter.Params)
 	}{id.(string)}
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		panic(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
@@ -170,6 +172,29 @@ func simpleInsert(collection string, factory func() interface{}) func() httprout
 }
 
 func jwtToken(fn httprouter.Handle) httprouter.Handle {
+	hmacSampleSecret := []byte(viper.GetString("JWTSecret"))
+
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		authentication := r.Header.Get("Authentication")
+		tokenString := strings.ReplaceAll(authentication, "Bearer ", "")
+
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+			}
+			return hmacSampleSecret, nil
+		})
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			fmt.Println(claims)
+		} else {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
 	}
 }
