@@ -25,7 +25,27 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
+
+var (
+	pgPassword = pflag.String("pgpassword", "password", "PostgreSQL password")
+)
+
+func initDB() {
+	m, err := migrate.New(
+		"file://db/migrations",
+		fmt.Sprintf("postgres://postgres:%s@postgres:5432/sglapp?sslmode=disable", viper.GetString("PGPassword")))
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := m.Up(); err != nil && err.Error() != "no change" {
+		log.Fatal(err)
+	}
+}
 
 func main() {
 	viper.SetConfigName("appbackend")
@@ -40,8 +60,12 @@ func main() {
 	viper.SetEnvPrefix("APPBACKEND")
 	viper.AutomaticEnv()
 
+	viper.SetDefault("PGPassword", "password")
+
 	pflag.Parse()
 	viper.BindPFlags(pflag.CommandLine)
+
+	initDB()
 
 	server.Start()
 

@@ -29,6 +29,8 @@ import (
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/prometheus"
 	"github.com/julienschmidt/httprouter"
+	"github.com/rileyr/middleware"
+	"github.com/rileyr/middleware/wares"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -37,16 +39,26 @@ var (
 	cidFilter   = regexp.MustCompile("[^a-f0-9]*")
 )
 
+func InitMetrics(router *httprouter.Router) {
+	s := middleware.NewStack()
+
+	s.Use(wares.Logging)
+
+	router.GET("/metrics", s.Wrap(ServeMetricsHandler))
+}
+
 func ServeMetricsHandler(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	var err error
 	q := r.URL.Query().Get("q")
 	if q == "" {
 		log.Error("q parameter error missing")
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+	q = queryFilter.ReplaceAllString(q, "")
+
 	timeFrom := time.Now().Unix() - 60*60*72
 	timeTo := time.Now().Unix()
-	q = queryFilter.ReplaceAllString(q, "")
 	if r.URL.Query().Get("t") != "" {
 		t, err := strconv.Atoi(r.URL.Query().Get("t"))
 		if err != nil {
@@ -58,19 +70,33 @@ func ServeMetricsHandler(w http.ResponseWriter, r *http.Request, p httprouter.Pa
 	} else if r.URL.Query().Get("t1") != "" && r.URL.Query().Get("t2") != "" {
 		t1, err := strconv.Atoi(r.URL.Query().Get("t1"))
 		if err != nil {
-			log.Errorf("t parameter error: %s\n", err)
+			log.Errorf("t1 parameter error: %s\n", err)
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 
 		t2, err := strconv.Atoi(r.URL.Query().Get("t2"))
 		if err != nil {
-			log.Errorf("t parameter error: %s\n", err)
+			log.Errorf("t2 parameter error: %s\n", err)
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 		timeFrom = time.Now().Unix() - 60*60*int64(t1)
 		timeTo = time.Now().Unix() - 60*60*int64(t2)
+	} else if r.URL.Query().Get("timeFrom") != "" && r.URL.Query().Get("timeTo") != "" {
+		timeFrom, err = strconv.ParseInt(r.URL.Query().Get("timeFrom"), 10, 64)
+		if err != nil {
+			log.Errorf("timeFrom parameter error: %s\n", err)
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		timeTo, err = strconv.ParseInt(r.URL.Query().Get("timeTo"), 10, 64)
+		if err != nil {
+			log.Errorf("timeTo parameter error: %s\n", err)
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 	}
 
 	n, err := strconv.Atoi(r.URL.Query().Get("n"))
