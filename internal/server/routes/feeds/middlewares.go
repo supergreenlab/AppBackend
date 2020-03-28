@@ -77,8 +77,8 @@ func insertObject(collection string) func(fn httprouter.Handle) httprouter.Handl
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			o := r.Context().Value(objectContextKey{})
 			sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
-			users := sess.Collection(collection)
-			id, err := users.Insert(o)
+			col := sess.Collection(collection)
+			id, err := col.Insert(o)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -117,6 +117,16 @@ func jwtToken(fn httprouter.Handle) httprouter.Handle {
 			fn(w, r.WithContext(ctx), p)
 		} else {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+	}
+}
+
+func userEndIDRequired(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		ueid := r.Context().Value(userEndIDContextKey{})
+		if ueid == nil {
+			http.Error(w, "Missing userEndID", http.StatusBadRequest)
 			return
 		}
 	}

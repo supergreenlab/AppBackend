@@ -71,9 +71,6 @@ type UserEnd struct {
 	ID     string `db:"id,omitempty" json:"id"`
 	UserID string `db:"userid" json:"userID"`
 
-	Sent  bool `db:"sent" json:"sent"`
-	Dirty bool `db:"dirty" json:"dirty"`
-
 	CreatedAt string `db:"cat,omitempty" json:"cat"`
 	UpdatedAt string `db:"uat,omitempty" json:"uat"`
 }

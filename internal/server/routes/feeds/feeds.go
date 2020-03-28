@@ -11,27 +11,44 @@ var (
 	jwtSecret = pflag.String("jwtsecret", "", "JWT secret")
 )
 
-// InitFeeds -
-func InitFeeds(router *httprouter.Router) {
-	initDB()
-
+func anonStack() middleware.Stack {
 	anon := middleware.NewStack()
 	anon.Use(wares.Logging)
 	anon.Use(createDBSession)
+	return anon
+}
 
+func authStack(withUserEndID bool) middleware.Stack {
 	auth := middleware.NewStack()
 	auth.Use(wares.Logging)
 	auth.Use(jwtToken)
 	auth.Use(createDBSession)
 
-	router.POST("/user", anon.Wrap(createUserHandler()))
+	if withUserEndID == true {
+		auth.Use(userEndIDRequired)
+	}
 
-	router.POST("/userend", auth.Wrap(createUserEndHandler()))
+	return auth
+}
 
-	router.POST("/plantsharing", auth.Wrap(createPlantSharingHandler()))
-	router.POST("/plant", auth.Wrap(createPlantHandler()))
-	router.POST("/timelapse", auth.Wrap(createTimelapseHandler()))
-	router.POST("/device", auth.Wrap(createDeviceHandler()))
-	router.POST("/feed", auth.Wrap(createFeedHandler()))
-	router.POST("/feedEntry", auth.Wrap(createFeedEntryHandler()))
+// InitFeeds -
+func InitFeeds(router *httprouter.Router) {
+	initDB()
+
+	anon := anonStack()
+	auth := authStack(false)
+	authWithUserEndID := authStack(true)
+
+	router.POST("/login", anon.Wrap(loginHandler()))
+
+	router.POST("/user", anon.Wrap(createUserHandler))
+
+	router.POST("/userend", auth.Wrap(createUserEndHandler))
+	router.POST("/plantsharing", auth.Wrap(createPlantSharingHandler))
+
+	router.POST("/plant", authWithUserEndID.Wrap(createPlantHandler))
+	router.POST("/timelapse", authWithUserEndID.Wrap(createTimelapseHandler))
+	router.POST("/device", authWithUserEndID.Wrap(createDeviceHandler))
+	router.POST("/feed", authWithUserEndID.Wrap(createFeedHandler))
+	router.POST("/feedEntry", authWithUserEndID.Wrap(createFeedEntryHandler))
 }
