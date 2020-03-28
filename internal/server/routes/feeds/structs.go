@@ -19,6 +19,9 @@ type Plant struct {
 	DeviceBox int    `db:"deviceBox,omitempty" json:"deviceBox"`
 	Name      string `db:"name" json:"name"`
 	Settings  string `db:"settings" json:"settings"`
+
+	CreatedAt string `db:"cat,omitempty" json:"cat"`
+	UpdatedAt string `db:"uat,omitempty" json:"uat"`
 }
 
 // Timelapse -
@@ -32,6 +35,9 @@ type Timelapse struct {
 	Strain       string `db:"strain" json:"strain"`
 	DropboxToken string `db:"dropboxtoken" json:"dropboxToken"`
 	UploadName   string `db:"uploadname" json:"uploadName"`
+
+	CreatedAt string `db:"cat,omitempty" json:"cat"`
+	UpdatedAt string `db:"uat,omitempty" json:"uat"`
 }
 
 // Device -
@@ -41,6 +47,9 @@ type Device struct {
 	Name       string `db:"name" json:"name"`
 	IP         string `db:"ip" json:"ip"`
 	Mdns       string `db:"mdns" json:"mdns"`
+
+	CreatedAt string `db:"cat,omitempty" json:"cat"`
+	UpdatedAt string `db:"uat,omitempty" json:"uat"`
 }
 
 // Feed -
@@ -48,13 +57,19 @@ type Feed struct {
 	ID     string `db:"id,omitempty" json:"id"`
 	UserID string `db:"userid,omitempty" json:"userID"`
 	Name   string `db:"name" json:"name"`
+
+	CreatedAt string `db:"cat,omitempty" json:"cat"`
+	UpdatedAt string `db:"uat,omitempty" json:"uat"`
 }
 
 // FeedEntry -
 type FeedEntry struct {
-	ID        string `db:"id,omitempty" json:"id"`
-	FeedID    string `db:"feedid" json:"feedID"`
-	CreatedAt string `db:"createdAt" json:"createdAt"`
+	ID     string `db:"id,omitempty" json:"id"`
+	FeedID string `db:"feedid" json:"feedID"`
+	Date   string `db:"createdat" json:"createdAt"`
+
+	CreatedAt string `db:"cat,omitempty" json:"cat"`
+	UpdatedAt string `db:"uat,omitempty" json:"uat"`
 }
 
 // PlantSharing -

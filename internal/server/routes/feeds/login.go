@@ -23,11 +23,11 @@ func loginHandler() httprouter.Handle {
 	s.Use(decodeJSON(func() interface{} { return &loginParams{} }))
 
 	return s.Wrap(func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		lp := r.Context().Value(objectContextKey{}).(loginParams)
+		lp := r.Context().Value(objectContextKey{}).(*loginParams)
 		sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
 
 		u := User{}
-		err := sess.Select("id").From("users").Where("nickname = ?", lp.Handle).One(&u)
+		err := sess.Select("id", "password").From("users").Where("nickname = ?", lp.Handle).One(&u)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -43,5 +43,6 @@ func loginHandler() httprouter.Handle {
 
 		tokenString, err := token.SignedString(hmacSampleSecret)
 		w.Header().Set("X-SGL-Token", tokenString)
+		w.WriteHeader(http.StatusOK)
 	})
 }

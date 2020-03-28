@@ -14,12 +14,14 @@ var createUserHandler = insertEndpoint(
 	[]middleware.Middleware{
 		func(fn httprouter.Handle) httprouter.Handle {
 			return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-				u := r.Context().Value(objectContextKey{}).(User)
+				u := r.Context().Value(objectContextKey{}).(*User)
 				bc, err := bcrypt.GenerateFromPassword([]byte(u.Password), 8)
 				u.Password = string(bc)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
 				}
+				fn(w, r, p)
 			}
 		},
 	},
