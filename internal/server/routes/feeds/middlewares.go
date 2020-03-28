@@ -90,6 +90,7 @@ func insertObject(collection string) func(fn httprouter.Handle) httprouter.Handl
 }
 
 type userIDContextKey struct{}
+type userEndIDContextKey struct{}
 
 func jwtToken(fn httprouter.Handle) httprouter.Handle {
 	hmacSampleSecret := []byte(viper.GetString("JWTSecret"))
@@ -111,7 +112,8 @@ func jwtToken(fn httprouter.Handle) httprouter.Handle {
 		}
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			ctx := context.WithValue(r.Context(), userIDContextKey{}, claims["id"])
+			ctx := context.WithValue(r.Context(), userIDContextKey{}, claims["userID"])
+			ctx = context.WithValue(ctx, userEndIDContextKey{}, claims["userEndID"])
 			fn(w, r.WithContext(ctx), p)
 		} else {
 			http.Error(w, err.Error(), http.StatusUnauthorized)

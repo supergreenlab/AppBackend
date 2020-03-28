@@ -1,27 +1,59 @@
 package feeds
 
-import (
-	"github.com/julienschmidt/httprouter"
-	"github.com/rileyr/middleware"
+import "github.com/rileyr/middleware"
+
+var createUserHandler = insertEndpoint(
+	"users",
+	func() interface{} { return &User{} },
+	nil,
+	nil,
 )
 
-func insertEndpoint(collection string, factory func() interface{}, addUserID bool) func() httprouter.Handle {
-	return func() httprouter.Handle {
-		s := middleware.NewStack()
+var createUserEndHandler = insertEndpoint(
+	"userends",
+	func() interface{} { return &UserEnd{} },
+	[]middleware.Middleware{setUserID},
+	nil,
+)
 
-		s.Use(decodeJSON(factory))
-		if addUserID {
-			s.Use(setUserID)
-		}
-		s.Use(insertObject(collection))
+var createPlantHandler = insertEndpoint(
+	"plants",
+	func() interface{} { return &Plant{} },
+	[]middleware.Middleware{setUserID},
+	nil,
+)
 
-		return s.Wrap(outputObjectID)
-	}
-}
+var createTimelapseHandler = insertEndpoint(
+	"timelapses",
+	func() interface{} { return &Timelapse{} },
+	[]middleware.Middleware{setUserID},
+	nil,
+)
 
-var createUserHandler = insertEndpoint("users", func() interface{} { return &User{} }, false)
-var createPlantHandler = insertEndpoint("plants", func() interface{} { return &Plant{} }, true)
-var createTimelapseHandler = insertEndpoint("timelapses", func() interface{} { return &Timelapse{} }, false)
-var createDeviceHandler = insertEndpoint("devices", func() interface{} { return &Device{} }, false)
-var createFeedHandler = insertEndpoint("feeds", func() interface{} { return &Feed{} }, true)
-var createFeedEntryHandler = insertEndpoint("feedEntries", func() interface{} { return &FeedEntry{} }, false)
+var createDeviceHandler = insertEndpoint(
+	"devices",
+	func() interface{} { return &Device{} },
+	nil,
+	nil,
+)
+
+var createFeedHandler = insertEndpoint(
+	"feeds",
+	func() interface{} { return &Feed{} },
+	[]middleware.Middleware{setUserID},
+	nil,
+)
+
+var createFeedEntryHandler = insertEndpoint(
+	"feedentries",
+	func() interface{} { return &FeedEntry{} },
+	nil,
+	nil,
+)
+
+var createPlantSharingHandler = insertEndpoint(
+	"plantsharings",
+	func() interface{} { return &PlantSharing{} },
+	[]middleware.Middleware{setUserID},
+	nil,
+)

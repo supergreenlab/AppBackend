@@ -3,7 +3,7 @@ create extension if not exists moddatetime;
 create extension if not exists "uuid-ossp";
 
 create table if not exists users(
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id uuid primary key default uuid_generate_v4(),
   nickname varchar(64),
   password varchar(60),
 
@@ -19,11 +19,11 @@ for each row
   execute procedure moddatetime(uat);
 
 create table if not exists plants(
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id uuid primary key default uuid_generate_v4(),
   userid uuid not null,
   feedid uuid not null,
   deviceid uuid,
-  deviceBox int,
+  devicebox int,
   name varchar(64),
 
   settings jsonb,
@@ -31,6 +31,8 @@ create table if not exists plants(
   cat timestamptz default now(),
   uat timestamptz default now()
 );
+
+create index p_uid on plants (userid);
 
 drop trigger if exists uat_plants on plants;
 
@@ -40,17 +42,22 @@ for each row
   execute procedure moddatetime(uat);
 
 create table if not exists timelapses(
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id uuid primary key default uuid_generate_v4(),
+  userid uuid not null,
   plantid uuid not null,
   controllerid varchar(64),
-  rotate varchar(5),
-  name varchar(64),
-  strain varchar(64),
-  uploadName varchar(64),
+  rotate varchar(5) not null default 'false',
+  name varchar(64) not null,
+  strain varchar(64) not null,
+  dropboxtoken varchar(64) not null,
+  uploadname varchar(64) not null,
 
   cat timestamptz default now(),
   uat timestamptz default now()
 );
+
+create index t_uid on timelapses (userid);
+create index t_pid on timelapses (plantid);
 
 drop trigger if exists uat_timelapses on timelapses;
 
@@ -60,15 +67,18 @@ for each row
   execute procedure moddatetime(uat);
 
 create table if not exists devices(
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  identifier varchar(16),
-  name varchar(24),
-  ip varchar(15),
-  mdns varchar(64),
+  id uuid primary key default uuid_generate_v4(),
+  userid uuid not null,
+  identifier varchar(16) not null,
+  name varchar(24) not null,
+  ip varchar(15) not null,
+  mdns varchar(64) not null,
 
   cat timestamptz default now(),
   uat timestamptz default now()
 );
+
+create index d_uid on devices (userid);
 
 drop trigger if exists uat_devices on devices;
 
@@ -78,13 +88,15 @@ for each row
   execute procedure moddatetime(uat);
 
 create table if not exists feeds(
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id uuid primary key default uuid_generate_v4(),
   userid uuid not null,
-  name varchar(24),
+  name varchar(24) not null,
 
   cat timestamptz default now(),
   uat timestamptz default now()
 );
+
+create index f_uid on feeds (userid);
 
 drop trigger if exists uat_feeds on feeds;
 
@@ -93,18 +105,214 @@ before update on feeds
 for each row
   execute procedure moddatetime(uat);
 
-create table if not exists feedEntries(
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  feedid uuid,
-  createdAt timestamptz,
+create table if not exists feedentries(
+  id uuid primary key default uuid_generate_v4(),
+  feedid uuid not null,
+  etype varchar(24) not null,
+  createdat timestamptz not null,
+
+  params jsonb not null default '{}'::jsonb,
 
   cat timestamptz default now(),
   uat timestamptz default now()
 );
 
-drop trigger if exists uat_feedEntries on feedEntries;
+create index fe_fid on feedentries (feedid);
 
-create trigger uat_feedEntries
-before update on feedEntries
+drop trigger if exists uat_feedentries on feedentries;
+
+create trigger uat_feedentries
+before update on feedentries
+for each row
+  execute procedure moddatetime(uat);
+
+create table if not exists feedmedias(
+  id uuid primary key default uuid_generate_v4(),
+  feedentryid uuid not null,
+  isvideo boolean not null,
+
+  params jsonb not null default '{}'::jsonb,
+
+  cat timestamptz default now(),
+  uat timestamptz default now()
+);
+
+create index fm_feid on feedmedias (feedentryid);
+
+drop trigger if exists uat_feedmedias on feedmedias;
+
+create trigger uat_feedmedias
+before update on feedmedias
+for each row
+  execute procedure moddatetime(uat);
+
+create table if not exists plantsharings(
+  userid uuid not null,
+  plantid uuid not null,
+
+  cat timestamptz default now(),
+  uat timestamptz default now()
+);
+
+create index ps_uuids on plantsharings (userid, plantid);
+
+drop trigger if exists uat_plantsharings on plantsharings;
+
+create trigger uat_plantsharings
+before update on plantsharings
+for each row
+  execute procedure moddatetime(uat);
+
+--
+-- userend tables
+--
+
+create table if not exists userends(
+  id uuid primary key default uuid_generate_v4(),
+  userid uuid not null,
+
+  cat timestamptz default now(),
+  uat timestamptz default now()
+);
+
+create index ue_uuids on userends (userid);
+
+drop trigger if exists uat_userends on userends;
+
+create trigger uat_userends
+before update on userends
+for each row
+  execute procedure moddatetime(uat);
+
+create table if not exists userend_plants(
+  userendid uuid not null,
+  plantid uuid not null,
+
+  sent boolean not null default false,
+  dirty boolean not null default false,
+
+  cat timestamptz default now(),
+  uat timestamptz default now()
+);
+
+create index uep_uuids on userend_plants (userendid, plantid);
+create index uep_sent on userend_plants (sent);
+create index uep_dirty on userend_plants (dirty);
+
+drop trigger if exists uat_userend_plants on userend_plants;
+
+create trigger uat_userend_plants
+before update on userend_plants
+for each row
+  execute procedure moddatetime(uat);
+
+create table if not exists userend_timelapses(
+  userendid uuid not null,
+  timelapseid uuid not null,
+
+  sent boolean not null default false,
+  dirty boolean not null default false,
+
+  cat timestamptz default now(),
+  uat timestamptz default now()
+);
+
+create index uet_uuids on userend_timelapses (userendid, timelapseid);
+create index uet_sent on userend_timelapses (sent);
+create index uet_dirty on userend_timelapses (dirty);
+
+drop trigger if exists uat_userend_plants on userend_plants;
+
+create trigger uat_userend_plants
+before update on userend_plants
+for each row
+  execute procedure moddatetime(uat);
+
+
+create table if not exists userend_devices(
+  userendid uuid not null,
+  deviceid uuid not null,
+
+  sent boolean not null default false,
+  dirty boolean not null default false,
+
+  cat timestamptz default now(),
+  uat timestamptz default now()
+);
+
+create index ued_uuids on userend_devices (userendid, deviceid);
+create index ued_sent on userend_devices (sent);
+create index ued_dirty on userend_devices (dirty);
+
+drop trigger if exists uat_userend_devices on userend_devices;
+
+create trigger uat_userend_devices
+before update on userend_devices
+for each row
+  execute procedure moddatetime(uat);
+
+create table if not exists userend_feeds(
+  userendid uuid not null,
+  feedid uuid not null,
+
+  sent boolean not null default false,
+  dirty boolean not null default false,
+
+  cat timestamptz default now(),
+  uat timestamptz default now()
+);
+
+create index uef_uuids on userend_feeds (userendid, feedid);
+create index uef_sent on userend_feeds (sent);
+create index uef_dirty on userend_feeds (dirty);
+
+drop trigger if exists uat_userend_feeds on userend_feeds;
+
+create trigger uat_userend_feeds
+before update on userend_feeds
+for each row
+  execute procedure moddatetime(uat);
+
+create table if not exists userend_feedentries(
+  userendid uuid not null,
+  feedentryid uuid not null,
+
+  sent boolean not null default false,
+  dirty boolean not null default false,
+
+  cat timestamptz default now(),
+  uat timestamptz default now()
+);
+
+create index uefe_uuids on userend_feedentries (userendid, feedentryid);
+create index uefe_sent on userend_feedentries (sent);
+create index uefe_dirty on userend_feedentries (dirty);
+
+drop trigger if exists uat_userend_feedentries on userend_feedentries;
+
+create trigger uat_userend_feedentries
+before update on userend_feedentries
+for each row
+  execute procedure moddatetime(uat);
+
+create table if not exists userend_feedmedias(
+  userendid uuid not null,
+  feedmediaid uuid not null,
+
+  sent boolean not null default false,
+  dirty boolean not null default false,
+
+  cat timestamptz default now(),
+  uat timestamptz default now()
+);
+
+create index uefm_uuids on userend_feedmedias (userendid, feedmediaid);
+create index uefm_sent on userend_feedmedias (sent);
+create index uefm_dirty on userend_feedmedias (dirty);
+
+drop trigger if exists uat_userend_feedmedias on userend_feedmedias;
+
+create trigger uat_userend_feedmedias
+before update on userend_feedmedias
 for each row
   execute procedure moddatetime(uat);
