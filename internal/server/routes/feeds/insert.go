@@ -1,11 +1,28 @@
 package feeds
 
-import "github.com/rileyr/middleware"
+import (
+	"net/http"
+
+	"github.com/julienschmidt/httprouter"
+	"github.com/rileyr/middleware"
+	"golang.org/x/crypto/bcrypt"
+)
 
 var createUserHandler = insertEndpoint(
 	"users",
 	func() interface{} { return &User{} },
-	nil,
+	[]middleware.Middleware{
+		func(fn httprouter.Handle) httprouter.Handle {
+			return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+				u := r.Context().Value(objectContextKey{}).(User)
+				bc, err := bcrypt.GenerateFromPassword([]byte(u.Password), 8)
+				u.Password = string(bc)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+				}
+			}
+		},
+	},
 	nil,
 )
 

@@ -7,6 +7,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
 	"github.com/spf13/viper"
+	"golang.org/x/crypto/bcrypt"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
@@ -26,7 +27,12 @@ func loginHandler() httprouter.Handle {
 		sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
 
 		u := User{}
-		err := sess.Select("id").From("users").Where("nickname = ? and password = ?", lp.Handle, lp.Password).One(&u)
+		err := sess.Select("id").From("users").Where("nickname = ?", lp.Handle).One(&u)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(lp.Password))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
