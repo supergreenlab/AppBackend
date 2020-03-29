@@ -28,7 +28,7 @@ type Plant struct {
 type Timelapse struct {
 	ID           string `db:"id,omitempty" json:"id"`
 	UserID       string `db:"userid,omitempty" json:"userID"`
-	PlantID      string `db:"boxid" json:"boxID"`
+	PlantID      string `db:"plantid" json:"plantID"`
 	ControllerID string `db:"controllerid" json:"controllerID"`
 	Rotate       string `db:"rotate" json:"rotate"`
 	Name         string `db:"name" json:"name"`
@@ -66,7 +66,22 @@ type Feed struct {
 type FeedEntry struct {
 	ID     string `db:"id,omitempty" json:"id"`
 	FeedID string `db:"feedid" json:"feedID"`
-	Date   string `db:"createdat" json:"createdAt"`
+	Date   string `db:"createdat" json:"date"`
+	Type   string `db:"etype" json:"type"`
+
+	Params string `db:"params" json:"params"`
+
+	CreatedAt string `db:"cat,omitempty" json:"cat"`
+	UpdatedAt string `db:"uat,omitempty" json:"uat"`
+}
+
+// FeedMedia -
+type FeedMedia struct {
+	ID          string `db:"id,omitempty" json:"id"`
+	FeedEntryID string `db:"feedentryid" json:"feedEntryID"`
+	FileRef     string `db:"fileref" json:"fileRef"`
+
+	Params string `db:"params" json:"params"`
 
 	CreatedAt string `db:"cat,omitempty" json:"cat"`
 	UpdatedAt string `db:"uat,omitempty" json:"uat"`
@@ -76,6 +91,8 @@ type FeedEntry struct {
 type PlantSharing struct {
 	UserID  string `db:"userid,omitempty" json:"userID"`
 	PlantID string `db:"plantid" json:"plantID"`
+
+	Params string `db:"params" json:"params"`
 
 	CreatedAt string `db:"cat,omitempty" json:"cat"`
 	UpdatedAt string `db:"uat,omitempty" json:"uat"`

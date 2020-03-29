@@ -1,2 +1,4 @@
 PGPassword=""
 JWTSecret=""
+S3AccessKey=""
+S3SecretKey=""

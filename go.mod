@@ -16,12 +16,13 @@ require (
 	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/golang-migrate/migrate/v4 v4.10.0
 	github.com/golang/gddo v0.0.0-20200324184333-3c2cc9a6329d
-	github.com/google/uuid v1.1.1 // indirect
+	github.com/google/uuid v1.1.1
 	github.com/jackc/pgconn v1.4.0 // indirect
 	github.com/jmespath/go-jmespath v0.3.0 // indirect
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/klauspost/compress v1.10.3 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
+	github.com/minio/minio-go/v6 v6.0.50
 	github.com/nakagami/firebirdsql v0.0.0-20200321090558-89c04e66f1df // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/rileyr/middleware v0.0.0-20171218202914-adaf4755ca16

@@ -37,12 +37,13 @@ func loginHandler() httprouter.Handle {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"userID": u.ID,
 		})
-
 		tokenString, err := token.SignedString(hmacSampleSecret)
-		w.Header().Set("X-SGL-Token", tokenString)
+		w.Header().Set("x-sgl-token", tokenString)
+
 		w.WriteHeader(http.StatusOK)
 	})
 }

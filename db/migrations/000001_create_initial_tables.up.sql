@@ -129,7 +129,7 @@ for each row
 create table if not exists feedmedias(
   id uuid primary key default uuid_generate_v4(),
   feedentryid uuid not null,
-  isvideo boolean not null,
+  fileref varchar not null,
 
   params jsonb not null default '{}'::jsonb,
 
