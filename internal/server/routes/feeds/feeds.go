@@ -46,6 +46,7 @@ func InitFeeds(router *httprouter.Router) {
 	router.POST("/userend", auth.Wrap(createUserEndHandler))
 	router.POST("/plantsharing", auth.Wrap(createPlantSharingHandler))
 
+	router.POST("/box", authWithUserEndID.Wrap(createBoxHandler))
 	router.POST("/plant", authWithUserEndID.Wrap(createPlantHandler))
 	router.POST("/timelapse", authWithUserEndID.Wrap(createTimelapseHandler))
 	router.POST("/device", authWithUserEndID.Wrap(createDeviceHandler))

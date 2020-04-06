@@ -11,6 +11,8 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
+	"github.com/rileyr/middleware"
+	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"upper.io/db.v3/lib/sqlbuilder"
@@ -61,12 +63,53 @@ func decodeJSON(fnObject func() interface{}) func(fn httprouter.Handle) httprout
 func setUserID(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		o := r.Context().Value(objectContextKey{})
-		uid := r.Context().Value(userIDContextKey{}).(string)
+		uid := r.Context().Value(userIDContextKey{}).(uuid.UUID)
 
-		reflect.ValueOf(o).Elem().FieldByName("UserID").SetString(uid)
+		reflect.ValueOf(o).Elem().FieldByName("UserID").Set(reflect.ValueOf(uid))
 
 		ctx := context.WithValue(r.Context(), objectContextKey{}, o)
 		fn(w, r.WithContext(ctx), p)
+	}
+}
+
+func checkAccessRight(collection, field string, optional bool, factory func() interface{}) middleware.Middleware {
+	return func(fn httprouter.Handle) httprouter.Handle {
+		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+			o := r.Context().Value(objectContextKey{})
+			uid := r.Context().Value(userIDContextKey{}).(uuid.UUID)
+			sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
+
+			var id uuid.UUID
+			idFieldValue := reflect.ValueOf(o).Elem().FieldByName(field).Interface()
+			if v, ok := idFieldValue.(uuid.UUID); ok == true {
+				id = v
+			} else if v, ok := idFieldValue.(uuid.NullUUID); ok == true {
+				if !v.Valid && !optional {
+					http.Error(w, "Access denied", http.StatusUnauthorized)
+					return
+				} else if !v.Valid && optional {
+					fn(w, r, p)
+					return
+				}
+				id = v.UUID
+			}
+
+			parent := factory()
+			err := sess.Collection(collection).Find("id", id).One(parent)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			uidParent := reflect.ValueOf(parent).Elem().FieldByName("UserID").Interface().(uuid.UUID)
+
+			if !uuid.Equal(uid, uidParent) {
+				http.Error(w, "Access denied", http.StatusUnauthorized)
+				return
+			}
+
+			fn(w, r, p)
+		}
 	}
 }
 
@@ -112,8 +155,10 @@ func jwtToken(fn httprouter.Handle) httprouter.Handle {
 		}
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			ctx := context.WithValue(r.Context(), userIDContextKey{}, claims["userID"])
-			ctx = context.WithValue(ctx, userEndIDContextKey{}, claims["userEndID"])
+			ctx := context.WithValue(r.Context(), userIDContextKey{}, uuid.FromStringOrNil(claims["userID"].(string)))
+			if userEndID, ok := claims["userEndID"]; ok == true {
+				ctx = context.WithValue(ctx, userEndIDContextKey{}, uuid.FromStringOrNil(userEndID.(string)))
+			}
 			fn(w, r.WithContext(ctx), p)
 		} else {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -129,5 +174,6 @@ func userEndIDRequired(fn httprouter.Handle) httprouter.Handle {
 			http.Error(w, "Missing userEndID", http.StatusBadRequest)
 			return
 		}
+		fn(w, r, p)
 	}
 }

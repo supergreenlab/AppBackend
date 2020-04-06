@@ -26,6 +26,7 @@ require (
 	github.com/nakagami/firebirdsql v0.0.0-20200321090558-89c04e66f1df // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/rileyr/middleware v0.0.0-20171218202914-adaf4755ca16
+	github.com/satori/go.uuid v1.2.0
 	github.com/shopspring/decimal v0.0.0-20200227202807-02e2044944cc // indirect
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/pflag v1.0.5

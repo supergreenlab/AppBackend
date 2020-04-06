@@ -17,12 +17,12 @@ type loginParams struct {
 }
 
 func loginHandler() httprouter.Handle {
-	hmacSampleSecret := []byte(viper.GetString("JWTSecret"))
 	s := middleware.NewStack()
 
 	s.Use(decodeJSON(func() interface{} { return &loginParams{} }))
 
 	return s.Wrap(func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		hmacSampleSecret := []byte(viper.GetString("JWTSecret"))
 		lp := r.Context().Value(objectContextKey{}).(*loginParams)
 		sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
 
@@ -39,9 +39,14 @@ func loginHandler() httprouter.Handle {
 		}
 
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-			"userID": u.ID,
+			"userID": u.ID.UUID.String(),
 		})
 		tokenString, err := token.SignedString(hmacSampleSecret)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		w.Header().Set("x-sgl-token", tokenString)
 
 		w.WriteHeader(http.StatusOK)

@@ -18,12 +18,33 @@ before update on users
 for each row
   execute procedure moddatetime(uat);
 
+create table if not exists boxes(
+  id uuid primary key default uuid_generate_v4(),
+  userid uuid not null,
+  deviceid uuid,
+  devicebox int,
+  name varchar(64),
+
+  settings jsonb,
+
+  cat timestamptz default now(),
+  uat timestamptz default now()
+);
+
+create index b_uid on boxes (userid);
+
+drop trigger if exists uat_boxes on boxes;
+
+create trigger uat_boxes
+before update on boxes
+for each row
+  execute procedure moddatetime(uat);
+
 create table if not exists plants(
   id uuid primary key default uuid_generate_v4(),
   userid uuid not null,
+  boxid uuid not null,
   feedid uuid not null,
-  deviceid uuid,
-  devicebox int,
   name varchar(64),
 
   settings jsonb,
@@ -107,6 +128,7 @@ for each row
 
 create table if not exists feedentries(
   id uuid primary key default uuid_generate_v4(),
+  userid uuid not null,
   feedid uuid not null,
   etype varchar(24) not null,
   createdat timestamptz not null,
@@ -128,6 +150,7 @@ for each row
 
 create table if not exists feedmedias(
   id uuid primary key default uuid_generate_v4(),
+  userid uuid not null,
   feedentryid uuid not null,
   fileref varchar not null,
 
@@ -149,6 +172,7 @@ for each row
 create table if not exists plantsharings(
   userid uuid not null,
   plantid uuid not null,
+  touserid uuid not null,
 
   cat timestamptz default now(),
   uat timestamptz default now()
