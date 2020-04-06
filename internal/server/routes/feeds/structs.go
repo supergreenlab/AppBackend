@@ -131,6 +131,18 @@ type UserEnd struct {
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
 }
 
+// UserEndBox -
+type UserEndBox struct {
+	UserEndID uuid.UUID `db:"userendid,omitempty" json:"userEndID"`
+	BoxID     uuid.UUID `db:"boxid" json:"boxID"`
+
+	Sent  bool `db:"sent" json:"sent"`
+	Dirty bool `db:"dirty" json:"dirty"`
+
+	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
+	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
+}
+
 // UserEndPlant -
 type UserEndPlant struct {
 	UserEndID uuid.UUID `db:"userendid,omitempty" json:"userEndID"`
@@ -180,7 +192,7 @@ type UserEndFeed struct {
 }
 
 // UserEndFeedEntries -
-type UserEndFeedEntries struct {
+type UserEndFeedEntry struct {
 	UserEndID   uuid.UUID `db:"userendid,omitempty" json:"userEndID"`
 	FeedEntryID uuid.UUID `db:"feedentryid" json:"feedEntryID"`
 
@@ -192,7 +204,7 @@ type UserEndFeedEntries struct {
 }
 
 // UserEndFeedMedias -
-type UserEndFeedMedias struct {
+type UserEndFeedMedia struct {
 	UserEndID   uuid.UUID `db:"userendid,omitempty" json:"userEndID"`
 	FeedMediaID uuid.UUID `db:"feedmediaid" json:"feedMediaID"`
 

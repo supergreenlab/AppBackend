@@ -52,12 +52,12 @@ var createUserEndHandler = insertEndpoint(
 		func(fn httprouter.Handle) httprouter.Handle {
 			return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 				hmacSampleSecret := []byte(viper.GetString("JWTSecret"))
-				ue := r.Context().Value(objectContextKey{}).(*UserEnd)
+				id := r.Context().Value(insertedIDContextKey{}).(uuid.UUID)
 				uid := r.Context().Value(userIDContextKey{}).(uuid.UUID)
 
 				token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 					"userID":    uid.String(),
-					"userEndID": ue.ID.UUID.String(),
+					"userEndID": id.String(),
 				})
 				tokenString, err := token.SignedString(hmacSampleSecret)
 				if err != nil {
@@ -80,7 +80,9 @@ var createBoxHandler = insertEndpoint(
 		setUserID,
 		checkAccessRight("devices", "DeviceID", true, func() interface{} { return &Device{} }),
 	},
-	nil,
+	[]middleware.Middleware{
+		createUserEndObjects("userend_devices", "DeviceID", func() interface{} { return &UserEndDevice{} }),
+	},
 )
 
 var createPlantHandler = insertEndpoint(
@@ -90,7 +92,9 @@ var createPlantHandler = insertEndpoint(
 		setUserID,
 		checkAccessRight("boxes", "BoxID", false, func() interface{} { return &Box{} }),
 	},
-	nil,
+	[]middleware.Middleware{
+		createUserEndObjects("userend_plants", "PlantID", func() interface{} { return &UserEndPlant{} }),
+	},
 )
 
 var createTimelapseHandler = insertEndpoint(
@@ -100,21 +104,27 @@ var createTimelapseHandler = insertEndpoint(
 		setUserID,
 		checkAccessRight("plants", "PlantID", false, func() interface{} { return &Plant{} }),
 	},
-	nil,
+	[]middleware.Middleware{
+		createUserEndObjects("userend_timelapses", "TimelapseID", func() interface{} { return &UserEndTimelapse{} }),
+	},
 )
 
 var createDeviceHandler = insertEndpoint(
 	"devices",
 	func() interface{} { return &Device{} },
 	[]middleware.Middleware{setUserID},
-	nil,
+	[]middleware.Middleware{
+		createUserEndObjects("userend_devices", "DeviceID", func() interface{} { return &UserEndDevice{} }),
+	},
 )
 
 var createFeedHandler = insertEndpoint(
 	"feeds",
 	func() interface{} { return &Feed{} },
 	[]middleware.Middleware{setUserID},
-	nil,
+	[]middleware.Middleware{
+		createUserEndObjects("userend_feeds", "FeedID", func() interface{} { return &UserEndFeed{} }),
+	},
 )
 
 var createFeedEntryHandler = insertEndpoint(
@@ -124,7 +134,9 @@ var createFeedEntryHandler = insertEndpoint(
 		setUserID,
 		checkAccessRight("feeds", "FeedID", false, func() interface{} { return &Feed{} }),
 	},
-	nil,
+	[]middleware.Middleware{
+		createUserEndObjects("userend_feedentries", "FeedEntryID", func() interface{} { return &UserEndFeedEntry{} }),
+	},
 )
 
 var createFeedMediaHandler = insertEndpoint(
@@ -134,7 +146,9 @@ var createFeedMediaHandler = insertEndpoint(
 		setUserID,
 		checkAccessRight("feedentries", "FeedEntryID", false, func() interface{} { return &FeedEntry{} }),
 	},
-	nil,
+	[]middleware.Middleware{
+		createUserEndObjects("userend_feedmedias", "FeedMediaID", func() interface{} { return &UserEndFeedMedia{} }),
+	},
 )
 
 var createPlantSharingHandler = insertEndpoint(
