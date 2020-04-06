@@ -9,10 +9,10 @@ import (
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
 	"github.com/rileyr/middleware"
-	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"upper.io/db.v3/lib/sqlbuilder"
@@ -103,7 +103,7 @@ func checkAccessRight(collection, field string, optional bool, factory func() in
 
 			uidParent := reflect.ValueOf(parent).Elem().FieldByName("UserID").Interface().(uuid.UUID)
 
-			if !uuid.Equal(uid, uidParent) {
+			if uid != uidParent {
 				http.Error(w, "Access denied", http.StatusUnauthorized)
 				return
 			}

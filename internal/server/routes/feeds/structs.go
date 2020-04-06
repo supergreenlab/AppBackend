@@ -1,10 +1,9 @@
 package feeds
 
 import (
-	"database/sql"
 	"time"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 )
 
 // User -
@@ -21,8 +20,8 @@ type User struct {
 type Box struct {
 	ID        uuid.NullUUID `db:"id,omitempty" json:"id"`
 	UserID    uuid.UUID     `db:"userid" json:"userID"`
-	DeviceID  uuid.NullUUID `db:"deviceid,omitempty" json:"deviceID"`
-	DeviceBox sql.NullInt32 `db:"devicebox,omitempty" json:"deviceBox"`
+	DeviceID  uuid.NullUUID `db:"deviceid,omitempty" json:"deviceID,omitempty"`
+	DeviceBox *uint         `db:"devicebox,omitempty" json:"deviceBox,omitempty"`
 	Name      string        `db:"name" json:"name"`
 
 	Settings string `db:"settings" json:"settings"`
