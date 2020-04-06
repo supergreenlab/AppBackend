@@ -208,6 +208,23 @@ before update on userends
 for each row
   execute procedure moddatetime(uat);
 
+create table if not exists userend_boxes(
+  userendid uuid not null,
+  boxid uuid not null,
+
+  sent boolean not null default false,
+  dirty boolean not null default false,
+
+  cat timestamptz default now(),
+  uat timestamptz default now()
+);
+
+create index ueb_uuids on userend_boxes (userendid, boxid);
+create index ueb_sent on userend_boxes (sent);
+create index ueb_dirty on userend_boxes (dirty);
+
+drop trigger if exists uat_userend_boxes on userend_boxes;
+
 create table if not exists userend_plants(
   userendid uuid not null,
   plantid uuid not null,

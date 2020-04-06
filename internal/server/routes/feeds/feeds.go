@@ -54,4 +54,5 @@ func InitFeeds(router *httprouter.Router) {
 	router.POST("/feedEntry", authWithUserEndID.Wrap(createFeedEntryHandler))
 	router.POST("/feedMedia", authWithUserEndID.Wrap(createFeedMediaHandler))
 	router.POST("/feedMedia/:id/uploadURL", authWithUserEndID.Wrap(uploadURLHandler))
+	router.GET("/sync", authWithUserEndID.Wrap(syncHandler))
 }
