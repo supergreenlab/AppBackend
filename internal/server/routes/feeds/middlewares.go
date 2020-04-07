@@ -178,7 +178,7 @@ func userEndIDRequired(fn httprouter.Handle) httprouter.Handle {
 	}
 }
 
-func createUserEndObjects(collection, field string, factory func() interface{}) middleware.Middleware {
+func createUserEndObjects(collection, field string, factory func() UserEndObject) middleware.Middleware {
 	return func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
@@ -195,14 +195,13 @@ func createUserEndObjects(collection, field string, factory func() interface{}) 
 			}
 
 			for _, uend := range uends {
-				uendid := reflect.ValueOf(&uend).Elem().FieldByName("ID").Interface().(uuid.NullUUID)
 				ueo := factory()
-				reflect.ValueOf(ueo).Elem().FieldByName(field).Set(reflect.ValueOf(id))
-				reflect.ValueOf(ueo).Elem().FieldByName("UserEndID").Set(reflect.ValueOf(uendid.UUID))
-				if uendid.UUID == ueid {
-					reflect.ValueOf(ueo).Elem().FieldByName("Sent").SetBool(true)
+				ueo.SetObjectID(id)
+				ueo.SetUserEndID(uend.ID.UUID)
+				if uend.ID.UUID == ueid {
+					ueo.SetSent(true)
 				} else {
-					reflect.ValueOf(ueo).Elem().FieldByName("Dirty").SetBool(true)
+					ueo.SetDirty(true)
 				}
 				sess.Collection(collection).Insert(ueo)
 			}

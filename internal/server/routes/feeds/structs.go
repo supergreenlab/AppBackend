@@ -74,6 +74,7 @@ func (o Plant) GetID() uuid.UUID {
 	return o.ID.UUID
 }
 
+// Plants -
 type Plants []Plant
 
 // Each -
@@ -280,7 +281,7 @@ func (ueo *UserEndBox) SetDirty(dirty bool) {
 	ueo.Dirty = dirty
 }
 
-// SetDirty -
+// SetSent -
 func (ueo *UserEndBox) SetSent(sent bool) {
 	ueo.Sent = sent
 }
@@ -312,7 +313,7 @@ func (ueo *UserEndPlant) SetDirty(dirty bool) {
 	ueo.Dirty = dirty
 }
 
-// SetDirty -
+// SetSent -
 func (ueo *UserEndPlant) SetSent(sent bool) {
 	ueo.Sent = sent
 }
@@ -344,7 +345,7 @@ func (ueo *UserEndTimelapse) SetDirty(dirty bool) {
 	ueo.Dirty = dirty
 }
 
-// SetDirty -
+// SetSent -
 func (ueo *UserEndTimelapse) SetSent(sent bool) {
 	ueo.Sent = sent
 }
@@ -376,7 +377,7 @@ func (ueo *UserEndDevice) SetDirty(dirty bool) {
 	ueo.Dirty = dirty
 }
 
-// SetDirty -
+// SetSent -
 func (ueo *UserEndDevice) SetSent(sent bool) {
 	ueo.Sent = sent
 }
@@ -408,7 +409,7 @@ func (ueo *UserEndFeed) SetDirty(dirty bool) {
 	ueo.Dirty = dirty
 }
 
-// SetDirty -
+// SetSent -
 func (ueo *UserEndFeed) SetSent(sent bool) {
 	ueo.Sent = sent
 }
@@ -440,7 +441,7 @@ func (ueo *UserEndFeedEntry) SetDirty(dirty bool) {
 	ueo.Dirty = dirty
 }
 
-// SetDirty -
+// SetSent -
 func (ueo *UserEndFeedEntry) SetSent(sent bool) {
 	ueo.Sent = sent
 }
@@ -472,7 +473,7 @@ func (ueo *UserEndFeedMedia) SetDirty(dirty bool) {
 	ueo.Dirty = dirty
 }
 
-// SetDirty -
+// SetSent -
 func (ueo *UserEndFeedMedia) SetSent(sent bool) {
 	ueo.Sent = sent
 }
