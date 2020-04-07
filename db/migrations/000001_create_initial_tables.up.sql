@@ -152,7 +152,8 @@ create table if not exists feedmedias(
   id uuid primary key default uuid_generate_v4(),
   userid uuid not null,
   feedentryid uuid not null,
-  fileref varchar not null,
+  filepath varchar not null,
+  thumbnailpath varchar not null,
 
   params jsonb not null default '{}'::jsonb,
 

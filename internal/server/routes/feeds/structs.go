@@ -199,10 +199,11 @@ func (os FeedEntries) Each(fn func(Object)) {
 
 // FeedMedia -
 type FeedMedia struct {
-	ID          uuid.NullUUID `db:"id,omitempty" json:"id"`
-	UserID      uuid.UUID     `db:"userid" json:"userID"`
-	FeedEntryID uuid.UUID     `db:"feedentryid" json:"feedEntryID"`
-	FileRef     string        `db:"fileref" json:"fileRef"`
+	ID            uuid.NullUUID `db:"id,omitempty" json:"id"`
+	UserID        uuid.UUID     `db:"userid" json:"userID"`
+	FeedEntryID   uuid.UUID     `db:"feedentryid" json:"feedEntryID"`
+	FilePath      string        `db:"filepath" json:"filePath"`
+	ThumbnailPath string        `db:"thumbnailpath" json:"thumbnailPath"`
 
 	Params string `db:"params" json:"params"`
 
