@@ -16,6 +16,16 @@ type User struct {
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
 }
 
+// Object -
+type Object interface {
+	GetID() uuid.UUID
+}
+
+// Objects -
+type Objects interface {
+	Each(func(Object))
+}
+
 // Box -
 type Box struct {
 	ID        uuid.NullUUID `db:"id,omitempty" json:"id"`
@@ -30,6 +40,21 @@ type Box struct {
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
 }
 
+// GetID -
+func (o Box) GetID() uuid.UUID {
+	return o.ID.UUID
+}
+
+// Boxes -
+type Boxes []Box
+
+// Each -
+func (os Boxes) Each(fn func(Object)) {
+	for _, o := range os {
+		fn(o)
+	}
+}
+
 // Plant -
 type Plant struct {
 	ID     uuid.NullUUID `db:"id,omitempty" json:"id"`
@@ -42,6 +67,20 @@ type Plant struct {
 
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
+}
+
+// GetID -
+func (o Plant) GetID() uuid.UUID {
+	return o.ID.UUID
+}
+
+type Plants []Plant
+
+// Each -
+func (os Plants) Each(fn func(Object)) {
+	for _, o := range os {
+		fn(o)
+	}
 }
 
 // Timelapse -
@@ -60,6 +99,21 @@ type Timelapse struct {
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
 }
 
+// GetID -
+func (o Timelapse) GetID() uuid.UUID {
+	return o.ID.UUID
+}
+
+// Timelapses -
+type Timelapses []Timelapse
+
+// Each -
+func (os Timelapses) Each(fn func(Object)) {
+	for _, o := range os {
+		fn(o)
+	}
+}
+
 // Device -
 type Device struct {
 	ID         uuid.NullUUID `db:"id,omitempty" json:"id"`
@@ -73,6 +127,21 @@ type Device struct {
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
 }
 
+// GetID -
+func (o Device) GetID() uuid.UUID {
+	return o.ID.UUID
+}
+
+// Devices -
+type Devices []Device
+
+// Each -
+func (os Devices) Each(fn func(Object)) {
+	for _, o := range os {
+		fn(o)
+	}
+}
+
 // Feed -
 type Feed struct {
 	ID     uuid.NullUUID `db:"id,omitempty" json:"id"`
@@ -81,6 +150,21 @@ type Feed struct {
 
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
+}
+
+// GetID -
+func (o Feed) GetID() uuid.UUID {
+	return o.ID.UUID
+}
+
+// Feeds -
+type Feeds []Feed
+
+// Each -
+func (os Feeds) Each(fn func(Object)) {
+	for _, o := range os {
+		fn(o)
+	}
 }
 
 // FeedEntry -
@@ -97,6 +181,21 @@ type FeedEntry struct {
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
 }
 
+// GetID -
+func (o FeedEntry) GetID() uuid.UUID {
+	return o.ID.UUID
+}
+
+// FeedEntries -
+type FeedEntries []FeedEntry
+
+// Each -
+func (os FeedEntries) Each(fn func(Object)) {
+	for _, o := range os {
+		fn(o)
+	}
+}
+
 // FeedMedia -
 type FeedMedia struct {
 	ID          uuid.NullUUID `db:"id,omitempty" json:"id"`
@@ -108,6 +207,21 @@ type FeedMedia struct {
 
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
+}
+
+// GetID -
+func (o FeedMedia) GetID() uuid.UUID {
+	return o.ID.UUID
+}
+
+// FeedMedias -
+type FeedMedias []FeedMedia
+
+// Each -
+func (os FeedMedias) Each(fn func(Object)) {
+	for _, o := range os {
+		fn(o)
+	}
 }
 
 // PlantSharing -
@@ -131,6 +245,14 @@ type UserEnd struct {
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
 }
 
+// UserEndObject -
+type UserEndObject interface {
+	SetUserEndID(uuid.UUID)
+	SetObjectID(uuid.UUID)
+	SetDirty(bool)
+	SetSent(bool)
+}
+
 // UserEndBox -
 type UserEndBox struct {
 	UserEndID uuid.UUID `db:"userendid,omitempty" json:"userEndID"`
@@ -141,6 +263,26 @@ type UserEndBox struct {
 
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
+}
+
+// SetUserEndID -
+func (ueo *UserEndBox) SetUserEndID(id uuid.UUID) {
+	ueo.UserEndID = id
+}
+
+// SetObjectID -
+func (ueo *UserEndBox) SetObjectID(id uuid.UUID) {
+	ueo.BoxID = id
+}
+
+// SetDirty -
+func (ueo *UserEndBox) SetDirty(dirty bool) {
+	ueo.Dirty = dirty
+}
+
+// SetDirty -
+func (ueo *UserEndBox) SetSent(sent bool) {
+	ueo.Sent = sent
 }
 
 // UserEndPlant -
@@ -155,6 +297,26 @@ type UserEndPlant struct {
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
 }
 
+// SetUserEndID -
+func (ueo *UserEndPlant) SetUserEndID(id uuid.UUID) {
+	ueo.UserEndID = id
+}
+
+// SetObjectID -
+func (ueo *UserEndPlant) SetObjectID(id uuid.UUID) {
+	ueo.PlantID = id
+}
+
+// SetDirty -
+func (ueo *UserEndPlant) SetDirty(dirty bool) {
+	ueo.Dirty = dirty
+}
+
+// SetDirty -
+func (ueo *UserEndPlant) SetSent(sent bool) {
+	ueo.Sent = sent
+}
+
 // UserEndTimelapse -
 type UserEndTimelapse struct {
 	UserEndID   uuid.UUID `db:"userendid,omitempty" json:"userEndID"`
@@ -165,6 +327,26 @@ type UserEndTimelapse struct {
 
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
+}
+
+// SetUserEndID -
+func (ueo *UserEndTimelapse) SetUserEndID(id uuid.UUID) {
+	ueo.UserEndID = id
+}
+
+// SetObjectID -
+func (ueo *UserEndTimelapse) SetObjectID(id uuid.UUID) {
+	ueo.TimelapseID = id
+}
+
+// SetDirty -
+func (ueo *UserEndTimelapse) SetDirty(dirty bool) {
+	ueo.Dirty = dirty
+}
+
+// SetDirty -
+func (ueo *UserEndTimelapse) SetSent(sent bool) {
+	ueo.Sent = sent
 }
 
 // UserEndDevice -
@@ -179,6 +361,26 @@ type UserEndDevice struct {
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
 }
 
+// SetUserEndID -
+func (ueo *UserEndDevice) SetUserEndID(id uuid.UUID) {
+	ueo.UserEndID = id
+}
+
+// SetObjectID -
+func (ueo *UserEndDevice) SetObjectID(id uuid.UUID) {
+	ueo.DeviceID = id
+}
+
+// SetDirty -
+func (ueo *UserEndDevice) SetDirty(dirty bool) {
+	ueo.Dirty = dirty
+}
+
+// SetDirty -
+func (ueo *UserEndDevice) SetSent(sent bool) {
+	ueo.Sent = sent
+}
+
 // UserEndFeed -
 type UserEndFeed struct {
 	UserEndID uuid.UUID `db:"userendid,omitempty" json:"userEndID"`
@@ -191,7 +393,27 @@ type UserEndFeed struct {
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
 }
 
-// UserEndFeedEntries -
+// SetUserEndID -
+func (ueo *UserEndFeed) SetUserEndID(id uuid.UUID) {
+	ueo.UserEndID = id
+}
+
+// SetObjectID -
+func (ueo *UserEndFeed) SetObjectID(id uuid.UUID) {
+	ueo.FeedID = id
+}
+
+// SetDirty -
+func (ueo *UserEndFeed) SetDirty(dirty bool) {
+	ueo.Dirty = dirty
+}
+
+// SetDirty -
+func (ueo *UserEndFeed) SetSent(sent bool) {
+	ueo.Sent = sent
+}
+
+// UserEndFeedEntry -
 type UserEndFeedEntry struct {
 	UserEndID   uuid.UUID `db:"userendid,omitempty" json:"userEndID"`
 	FeedEntryID uuid.UUID `db:"feedentryid" json:"feedEntryID"`
@@ -203,7 +425,27 @@ type UserEndFeedEntry struct {
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
 }
 
-// UserEndFeedMedias -
+// SetUserEndID -
+func (ueo *UserEndFeedEntry) SetUserEndID(id uuid.UUID) {
+	ueo.UserEndID = id
+}
+
+// SetObjectID -
+func (ueo *UserEndFeedEntry) SetObjectID(id uuid.UUID) {
+	ueo.FeedEntryID = id
+}
+
+// SetDirty -
+func (ueo *UserEndFeedEntry) SetDirty(dirty bool) {
+	ueo.Dirty = dirty
+}
+
+// SetDirty -
+func (ueo *UserEndFeedEntry) SetSent(sent bool) {
+	ueo.Sent = sent
+}
+
+// UserEndFeedMedia -
 type UserEndFeedMedia struct {
 	UserEndID   uuid.UUID `db:"userendid,omitempty" json:"userEndID"`
 	FeedMediaID uuid.UUID `db:"feedmediaid" json:"feedMediaID"`
@@ -213,4 +455,24 @@ type UserEndFeedMedia struct {
 
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
+}
+
+// SetUserEndID -
+func (ueo *UserEndFeedMedia) SetUserEndID(id uuid.UUID) {
+	ueo.UserEndID = id
+}
+
+// SetObjectID -
+func (ueo *UserEndFeedMedia) SetObjectID(id uuid.UUID) {
+	ueo.FeedMediaID = id
+}
+
+// SetDirty -
+func (ueo *UserEndFeedMedia) SetDirty(dirty bool) {
+	ueo.Dirty = dirty
+}
+
+// SetDirty -
+func (ueo *UserEndFeedMedia) SetSent(sent bool) {
+	ueo.Sent = sent
 }

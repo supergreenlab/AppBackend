@@ -1,6 +1,7 @@
 package feeds
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/dgrijalva/jwt-go"
@@ -44,6 +45,16 @@ var createUserHandler = insertEndpoint(
 	nil,
 )
 
+func fillUserEnd(sess sqlbuilder.Database, ueid uuid.UUID, collection string, all Objects, factory func() UserEndObject) {
+	all.Each(func(a Object) {
+		ueo := factory()
+		ueo.SetUserEndID(ueid)
+		ueo.SetObjectID(a.GetID())
+		ueo.SetDirty(true)
+		sess.Collection(fmt.Sprintf("userend_%s", collection)).Insert(ueo)
+	})
+}
+
 var createUserEndHandler = insertEndpoint(
 	"userends",
 	func() interface{} { return &UserEnd{} },
@@ -52,6 +63,7 @@ var createUserEndHandler = insertEndpoint(
 		func(fn httprouter.Handle) httprouter.Handle {
 			return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 				hmacSampleSecret := []byte(viper.GetString("JWTSecret"))
+				sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
 				id := r.Context().Value(insertedIDContextKey{}).(uuid.UUID)
 				uid := r.Context().Value(userIDContextKey{}).(uuid.UUID)
 
@@ -66,6 +78,34 @@ var createUserEndHandler = insertEndpoint(
 				}
 
 				w.Header().Set("x-sgl-token", tokenString)
+
+				boxes := []Box{}
+				sess.Select("*").From("boxes").Where("userid = ?", uid).All(&boxes)
+				fillUserEnd(sess, id, "boxes", Boxes(boxes), func() UserEndObject { return &UserEndBox{} })
+
+				plants := []Plant{}
+				sess.Select("*").From("plants").Where("userid = ?", uid).All(&plants)
+				fillUserEnd(sess, id, "plants", Plants(plants), func() UserEndObject { return &UserEndPlant{} })
+
+				timelapses := []Timelapse{}
+				sess.Select("*").From("timelapses").Where("userid = ?", uid).All(&timelapses)
+				fillUserEnd(sess, id, "timelapses", Timelapses(timelapses), func() UserEndObject { return &UserEndTimelapse{} })
+
+				devices := []Device{}
+				sess.Select("*").From("devices").Where("userid = ?", uid).All(&devices)
+				fillUserEnd(sess, id, "devices", Devices(devices), func() UserEndObject { return &UserEndDevice{} })
+
+				feeds := []Feed{}
+				sess.Select("*").From("feeds").Where("userid = ?", uid).All(&feeds)
+				fillUserEnd(sess, id, "feeds", Feeds(feeds), func() UserEndObject { return &UserEndFeed{} })
+
+				feedEntries := []FeedEntry{}
+				sess.Select("*").From("feedentries").Where("userid = ?", uid).All(&feedEntries)
+				fillUserEnd(sess, id, "feedentries", FeedEntries(feedEntries), func() UserEndObject { return &UserEndFeedEntry{} })
+
+				feedMedias := []FeedMedia{}
+				sess.Select("*").From("feedmedias").Where("userid = ?", uid).All(&feedMedias)
+				fillUserEnd(sess, id, "feedmedias", FeedMedias(feedMedias), func() UserEndObject { return &UserEndFeedMedia{} })
 
 				fn(w, r, p)
 			}
