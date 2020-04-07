@@ -53,6 +53,21 @@ func InitFeeds(router *httprouter.Router) {
 	router.POST("/feed", authWithUserEndID.Wrap(createFeedHandler))
 	router.POST("/feedEntry", authWithUserEndID.Wrap(createFeedEntryHandler))
 	router.POST("/feedMedia", authWithUserEndID.Wrap(createFeedMediaHandler))
-	router.POST("/feedMedia/:id/uploadURL", authWithUserEndID.Wrap(uploadURLHandler))
-	router.GET("/sync", authWithUserEndID.Wrap(syncHandler))
+	//router.POST("/feedMedia/:id/uploadURL", authWithUserEndID.Wrap(uploadURLHandler))
+
+	router.GET("/box/sync", authWithUserEndID.Wrap(syncBoxesHandler))
+	router.GET("/plant/sync", authWithUserEndID.Wrap(syncPlantsHandler))
+	router.GET("/timelapse/sync", authWithUserEndID.Wrap(syncTimelapsesHandler))
+	router.GET("/device/sync", authWithUserEndID.Wrap(syncDevicesHandler))
+	router.GET("/feed/sync", authWithUserEndID.Wrap(syncFeedsHandler))
+	router.GET("/feedEntry/sync", authWithUserEndID.Wrap(syncFeedEntriesHandler))
+	router.GET("/feedMedia/sync", authWithUserEndID.Wrap(syncFeedMediasHandler))
+
+	router.POST("/box/sync/:id", authWithUserEndID.Wrap(syncedBoxHandler))
+	router.POST("/plant/sync/:id", authWithUserEndID.Wrap(syncedPlantHandler))
+	router.POST("/timelapse/sync/:id", authWithUserEndID.Wrap(syncedTimelapseHandler))
+	router.POST("/device/sync/:id", authWithUserEndID.Wrap(syncedDeviceHandler))
+	router.POST("/feed/sync/:id", authWithUserEndID.Wrap(syncedFeedHandler))
+	router.POST("/feedEntry/sync/:id", authWithUserEndID.Wrap(syncedFeedEntryHandler))
+	router.POST("/feedMedia/sync/:id", authWithUserEndID.Wrap(syncedFeedMediaHandler))
 }
