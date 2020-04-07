@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
+	"github.com/sirupsen/logrus"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
@@ -19,7 +21,7 @@ type syncResponse struct {
 func syncCollection(collection, id string, factory func() interface{}, postSelect []middleware.Middleware) httprouter.Handle {
 	s := middleware.NewStack()
 
-	s.Use(func(fn httprouter.Handle) {
+	s.Use(func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
 			ueid := r.Context().Value(userEndIDContextKey{}).(uuid.UUID)
@@ -39,7 +41,7 @@ func syncCollection(collection, id string, factory func() interface{}, postSelec
 		}
 	}
 
-	return s.Wrap(func() {
+	return s.Wrap(func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		o := r.Context().Value(objectContextKey{})
 		if err := json.NewEncoder(w).Encode(syncResponse{o}); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -55,10 +57,32 @@ var syncDevicesHandler = syncCollection("devices", "deviceid", func() interface{
 var syncFeedsHandler = syncCollection("feeds", "feedid", func() interface{} { return &[]Feed{} }, nil)
 var syncFeedEntriesHandler = syncCollection("feedentries", "feedentryid", func() interface{} { return &[]FeedEntry{} }, nil)
 var syncFeedMediasHandler = syncCollection("feedmedias", "feedmediaid", func() interface{} { return &[]FeedMedia{} }, []middleware.Middleware{
-	func(fn httprouter.Handle) {
+	func(fn httprouter.Handle) httprouter.Handle {
+		expiry := time.Second * 60 * 60
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-			o := r.Context().Value(objectContextKey{}).(*[]FeedMedias)
-			fn(w, r, p)
+			minioClient := createMinioClient()
+			feedMedias := r.Context().Value(objectContextKey{}).(*[]FeedMedia)
+			for i, fm := range *feedMedias {
+				url1, err := minioClient.PresignedGetObject("feedmedias", fm.FilePath, expiry, nil)
+				if err != nil {
+					logrus.Errorln(err)
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				fm.FilePath = url1.RequestURI()
+
+				url2, err := minioClient.PresignedGetObject("feedmedias", fm.ThumbnailPath, expiry, nil)
+				if err != nil {
+					logrus.Errorln(err)
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				fm.ThumbnailPath = url2.RequestURI()
+				logrus.Println(fm)
+				(*feedMedias)[i] = fm
+			}
+			ctx := context.WithValue(r.Context(), objectContextKey{}, feedMedias)
+			fn(w, r.WithContext(ctx), p)
 		}
 	},
 })
