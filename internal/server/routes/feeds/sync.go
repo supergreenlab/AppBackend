@@ -10,6 +10,10 @@ import (
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
+type syncResponse struct {
+	Items interface{} `json:"items"`
+}
+
 func syncCollection(collection, id string, factory func() interface{}) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
@@ -19,7 +23,7 @@ func syncCollection(collection, id string, factory func() interface{}) httproute
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if err := json.NewEncoder(w).Encode(res); err != nil {
+		if err := json.NewEncoder(w).Encode(syncResponse{res}); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
