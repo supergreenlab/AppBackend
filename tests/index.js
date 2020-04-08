@@ -29,7 +29,6 @@ const main = async() => {
   try {
     const resp = await axios.put(`${MINIO_SERVER}${filePath}`, fs.createReadStream('logo.jpg'), {
       headers: {
-        'Content-Type': 'image/jpg',
         'Content-Length': stats['size'],
       }
     })

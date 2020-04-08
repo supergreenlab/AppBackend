@@ -78,7 +78,6 @@ var syncFeedMediasHandler = syncCollection("feedmedias", "feedmediaid", func() i
 					return
 				}
 				fm.ThumbnailPath = url2.RequestURI()
-				logrus.Println(fm)
 				(*feedMedias)[i] = fm
 			}
 			ctx := context.WithValue(r.Context(), objectContextKey{}, feedMedias)
