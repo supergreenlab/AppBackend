@@ -62,6 +62,7 @@ type Plant struct {
 	BoxID  uuid.UUID     `db:"boxid" json:"boxID"`
 	FeedID uuid.UUID     `db:"feedid" json:"feedID"`
 	Name   string        `db:"name" json:"name"`
+	Single bool          `db:"single" json:"single"`
 
 	Settings string `db:"settings" json:"settings"`
 
@@ -123,6 +124,7 @@ type Device struct {
 	Name       string        `db:"name" json:"name"`
 	IP         string        `db:"ip" json:"ip"`
 	Mdns       string        `db:"mdns" json:"mdns"`
+	Config     string        `db:"config" json:"config"`
 
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`

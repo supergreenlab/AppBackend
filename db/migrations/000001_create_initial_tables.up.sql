@@ -4,8 +4,8 @@ create extension if not exists "uuid-ossp";
 
 create table if not exists users(
   id uuid primary key default uuid_generate_v4(),
-  nickname varchar(64),
-  password varchar(60),
+  nickname varchar(64) not null,
+  password varchar(60) not null,
 
   cat timestamptz default now(),
   uat timestamptz default now()
@@ -23,7 +23,7 @@ create table if not exists boxes(
   userid uuid not null,
   deviceid uuid,
   devicebox int,
-  name varchar(64),
+  name varchar(64) not null,
 
   settings jsonb,
 
@@ -45,7 +45,8 @@ create table if not exists plants(
   userid uuid not null,
   boxid uuid not null,
   feedid uuid not null,
-  name varchar(64),
+  name varchar(64) not null,
+  single boolean not null default true,
 
   settings jsonb,
 
@@ -66,7 +67,7 @@ create table if not exists timelapses(
   id uuid primary key default uuid_generate_v4(),
   userid uuid not null,
   plantid uuid not null,
-  controllerid varchar(64),
+  controllerid varchar(64) not null,
   rotate varchar(5) not null default 'false',
   name varchar(64) not null,
   strain varchar(64) not null,
@@ -94,6 +95,7 @@ create table if not exists devices(
   name varchar(24) not null,
   ip varchar(15) not null,
   mdns varchar(64) not null,
+  config varchar not null,
 
   cat timestamptz default now(),
   uat timestamptz default now()
