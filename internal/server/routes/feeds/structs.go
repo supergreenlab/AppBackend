@@ -147,9 +147,10 @@ func (os Devices) Each(fn func(Object)) {
 
 // Feed -
 type Feed struct {
-	ID     uuid.NullUUID `db:"id,omitempty" json:"id"`
-	UserID uuid.UUID     `db:"userid" json:"userID"`
-	Name   string        `db:"name" json:"name"`
+	ID         uuid.NullUUID `db:"id,omitempty" json:"id"`
+	UserID     uuid.UUID     `db:"userid" json:"userID"`
+	Name       string        `db:"name" json:"name"`
+	IsNewsFeed bool          `db:"isnewsfeed" json:"isNewsFeed"`
 
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`

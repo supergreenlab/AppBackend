@@ -38,7 +38,9 @@ func initStorage() {
 func createMinioClient() *minio.Client {
 	accessKey := viper.GetString("S3AccessKey")
 	secretKey := viper.GetString("S3SecretKey")
-	minioClient, err := minio.New("minio:9000", accessKey, secretKey, false)
+	host := viper.GetString("S3Host")
+	secure := viper.GetString("S3Secure") == "true"
+	minioClient, err := minio.New(host, accessKey, secretKey, secure)
 	if err != nil {
 		fmt.Println(err)
 		return nil

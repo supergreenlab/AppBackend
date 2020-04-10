@@ -32,6 +32,7 @@ import (
 )
 
 var (
+	devMode    = pflag.String("devmode", "", "Sets app to development mode")
 	pgPassword = pflag.String("pgpassword", "password", "PostgreSQL password")
 )
 
