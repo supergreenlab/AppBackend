@@ -16,9 +16,15 @@ type User struct {
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
 }
 
+// UserObject -
+type UserObject interface {
+	SetUserID(uuid.UUID)
+	GetUserID() uuid.UUID
+}
+
 // Object -
 type Object interface {
-	GetID() uuid.UUID
+	GetID() uuid.NullUUID
 }
 
 // Objects -
@@ -41,8 +47,18 @@ type Box struct {
 }
 
 // GetID -
-func (o Box) GetID() uuid.UUID {
-	return o.ID.UUID
+func (o Box) GetID() uuid.NullUUID {
+	return o.ID
+}
+
+// SetUserID -
+func (o *Box) SetUserID(userID uuid.UUID) {
+	o.UserID = userID
+}
+
+// GetUserID -
+func (o Box) GetUserID() uuid.UUID {
+	return o.UserID
 }
 
 // Boxes -
@@ -71,8 +87,18 @@ type Plant struct {
 }
 
 // GetID -
-func (o Plant) GetID() uuid.UUID {
-	return o.ID.UUID
+func (o Plant) GetID() uuid.NullUUID {
+	return o.ID
+}
+
+// SetUserID -
+func (o *Plant) SetUserID(userID uuid.UUID) {
+	o.UserID = userID
+}
+
+// GetUserID -
+func (o Plant) GetUserID() uuid.UUID {
+	return o.UserID
 }
 
 // Plants -
@@ -102,8 +128,18 @@ type Timelapse struct {
 }
 
 // GetID -
-func (o Timelapse) GetID() uuid.UUID {
-	return o.ID.UUID
+func (o Timelapse) GetID() uuid.NullUUID {
+	return o.ID
+}
+
+// SetUserID -
+func (o *Timelapse) SetUserID(userID uuid.UUID) {
+	o.UserID = userID
+}
+
+// GetUserID -
+func (o Timelapse) GetUserID() uuid.UUID {
+	return o.UserID
 }
 
 // Timelapses -
@@ -131,8 +167,18 @@ type Device struct {
 }
 
 // GetID -
-func (o Device) GetID() uuid.UUID {
-	return o.ID.UUID
+func (o Device) GetID() uuid.NullUUID {
+	return o.ID
+}
+
+// SetUserID -
+func (o *Device) SetUserID(userID uuid.UUID) {
+	o.UserID = userID
+}
+
+// GetUserID -
+func (o Device) GetUserID() uuid.UUID {
+	return o.UserID
 }
 
 // Devices -
@@ -157,8 +203,18 @@ type Feed struct {
 }
 
 // GetID -
-func (o Feed) GetID() uuid.UUID {
-	return o.ID.UUID
+func (o Feed) GetID() uuid.NullUUID {
+	return o.ID
+}
+
+// SetUserID -
+func (o *Feed) SetUserID(userID uuid.UUID) {
+	o.UserID = userID
+}
+
+// GetUserID -
+func (o Feed) GetUserID() uuid.UUID {
+	return o.UserID
 }
 
 // Feeds -
@@ -186,8 +242,18 @@ type FeedEntry struct {
 }
 
 // GetID -
-func (o FeedEntry) GetID() uuid.UUID {
-	return o.ID.UUID
+func (o FeedEntry) GetID() uuid.NullUUID {
+	return o.ID
+}
+
+// SetUserID -
+func (o *FeedEntry) SetUserID(userID uuid.UUID) {
+	o.UserID = userID
+}
+
+// GetUserID -
+func (o FeedEntry) GetUserID() uuid.UUID {
+	return o.UserID
 }
 
 // FeedEntries -
@@ -215,8 +281,18 @@ type FeedMedia struct {
 }
 
 // GetID -
-func (o FeedMedia) GetID() uuid.UUID {
-	return o.ID.UUID
+func (o FeedMedia) GetID() uuid.NullUUID {
+	return o.ID
+}
+
+// SetUserID -
+func (o *FeedMedia) SetUserID(userID uuid.UUID) {
+	o.UserID = userID
+}
+
+// GetUserID -
+func (o FeedMedia) GetUserID() uuid.UUID {
+	return o.UserID
 }
 
 // FeedMedias -
@@ -248,6 +324,16 @@ type UserEnd struct {
 
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
+}
+
+// SetUserID -
+func (o *UserEnd) SetUserID(userID uuid.UUID) {
+	o.UserID = userID
+}
+
+// GetUserID -
+func (o UserEnd) GetUserID() uuid.UUID {
+	return o.UserID
 }
 
 // UserEndObject -

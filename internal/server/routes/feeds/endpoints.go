@@ -18,3 +18,13 @@ func outputObjectID(w http.ResponseWriter, r *http.Request, p httprouter.Params)
 		return
 	}
 }
+
+func outputOK(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	response := struct {
+		Status string `json:"status"`
+	}{"OK"}
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}

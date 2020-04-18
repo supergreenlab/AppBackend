@@ -8,24 +8,49 @@ import (
 func insertEndpoint(
 	collection string,
 	factory func() interface{},
-	preInsert []middleware.Middleware,
-	postInsert []middleware.Middleware,
+	pre []middleware.Middleware,
+	post []middleware.Middleware,
 ) httprouter.Handle {
 	s := middleware.NewStack()
 
 	s.Use(decodeJSON(factory))
-	if preInsert != nil {
-		for _, m := range preInsert {
+	if pre != nil {
+		for _, m := range pre {
 			s.Use(m)
 		}
 	}
 	s.Use(insertObject(collection))
 
-	if postInsert != nil {
-		for _, m := range postInsert {
+	if post != nil {
+		for _, m := range post {
 			s.Use(m)
 		}
 	}
 
 	return s.Wrap(outputObjectID)
+}
+
+func updateEndpoint(
+	collection string,
+	factory func() interface{},
+	pre []middleware.Middleware,
+	post []middleware.Middleware,
+) httprouter.Handle {
+	s := middleware.NewStack()
+
+	s.Use(decodeJSON(factory))
+	if pre != nil {
+		for _, m := range pre {
+			s.Use(m)
+		}
+	}
+	s.Use(updateObject(collection))
+
+	if post != nil {
+		for _, m := range post {
+			s.Use(m)
+		}
+	}
+
+	return s.Wrap(outputOK)
 }

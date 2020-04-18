@@ -62,10 +62,10 @@ func decodeJSON(fnObject func() interface{}) func(fn httprouter.Handle) httprout
 
 func setUserID(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		o := r.Context().Value(objectContextKey{})
+		o := r.Context().Value(objectContextKey{}).(UserObject)
 		uid := r.Context().Value(userIDContextKey{}).(uuid.UUID)
 
-		reflect.ValueOf(o).Elem().FieldByName("UserID").Set(reflect.ValueOf(uid))
+		o.SetUserID(uid)
 
 		ctx := context.WithValue(r.Context(), objectContextKey{}, o)
 		fn(w, r.WithContext(ctx), p)
@@ -75,7 +75,7 @@ func setUserID(fn httprouter.Handle) httprouter.Handle {
 func checkAccessRight(collection, field string, optional bool, factory func() interface{}) middleware.Middleware {
 	return func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-			o := r.Context().Value(objectContextKey{})
+			o := r.Context().Value(objectContextKey{}).(UserObject)
 			uid := r.Context().Value(userIDContextKey{}).(uuid.UUID)
 			sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
 
@@ -101,10 +101,10 @@ func checkAccessRight(collection, field string, optional bool, factory func() in
 				return
 			}
 
-			uidParent := reflect.ValueOf(parent).Elem().FieldByName("UserID").Interface().(uuid.UUID)
+			uidParent := o.GetUserID()
 
 			if uid != uidParent {
-				http.Error(w, "Access denied", http.StatusUnauthorized)
+				http.Error(w, "Parent is owned by another user", http.StatusUnauthorized)
 				return
 			}
 
@@ -127,6 +127,25 @@ func insertObject(collection string) func(fn httprouter.Handle) httprouter.Handl
 				return
 			}
 			ctx := context.WithValue(r.Context(), insertedIDContextKey{}, uuid.FromStringOrNil(string(id.([]uint8))))
+			fn(w, r.WithContext(ctx), p)
+		}
+	}
+}
+
+type updatedIDContextKey struct{}
+
+func updateObject(collection string) func(fn httprouter.Handle) httprouter.Handle {
+	return func(fn httprouter.Handle) httprouter.Handle {
+		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+			o := r.Context().Value(objectContextKey{}).(Object)
+			sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
+			col := sess.Collection(collection)
+			err := col.Find(o.GetID()).Update(o)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			ctx := context.WithValue(r.Context(), updatedIDContextKey{}, o.GetID().UUID)
 			fn(w, r.WithContext(ctx), p)
 		}
 	}
@@ -178,7 +197,18 @@ func userEndIDRequired(fn httprouter.Handle) httprouter.Handle {
 	}
 }
 
-func createUserEndObjects(collection, field string, factory func() UserEndObject) middleware.Middleware {
+func objectIDRequired(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		o := r.Context().Value(objectContextKey{}).(Object)
+		if o.GetID().Valid == false {
+			http.Error(w, "Missing object's ID", http.StatusBadRequest)
+			return
+		}
+		fn(w, r, p)
+	}
+}
+
+func createUserEndObjects(collection string, factory func() UserEndObject) middleware.Middleware {
 	return func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
@@ -204,6 +234,26 @@ func createUserEndObjects(collection, field string, factory func() UserEndObject
 					ueo.SetDirty(true)
 				}
 				sess.Collection(collection).Insert(ueo)
+			}
+
+			fn(w, r, p)
+		}
+	}
+}
+
+func updateUserEndObjects(collection, field string) middleware.Middleware {
+	return func(fn httprouter.Handle) httprouter.Handle {
+		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+			sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
+			uid := r.Context().Value(userIDContextKey{}).(uuid.UUID)
+			ueid := r.Context().Value(userEndIDContextKey{}).(uuid.UUID)
+
+			id := r.Context().Value(updatedIDContextKey{}).(uuid.UUID)
+
+			_, err := sess.Update(collection).Set("dirty", true).Where(field, id).And("userendid != ?", ueid).And("userendid in (select id from userends where userid = ?)", uid).Exec()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
 			}
 
 			fn(w, r, p)
