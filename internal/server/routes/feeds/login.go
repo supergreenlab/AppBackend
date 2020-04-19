@@ -6,6 +6,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/bcrypt"
 	"upper.io/db.v3/lib/sqlbuilder"
@@ -29,11 +30,13 @@ func loginHandler() httprouter.Handle {
 		u := User{}
 		err := sess.Select("id", "password").From("users").Where("nickname = ?", lp.Handle).One(&u)
 		if err != nil {
+			logrus.Errorln(err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(lp.Password))
 		if err != nil {
+			logrus.Errorln(err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -43,6 +46,7 @@ func loginHandler() httprouter.Handle {
 		})
 		tokenString, err := token.SignedString(hmacSampleSecret)
 		if err != nil {
+			logrus.Errorln(err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

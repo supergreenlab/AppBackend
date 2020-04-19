@@ -31,6 +31,7 @@ func syncCollection(collection, id string, factory func() interface{}, customSel
 				customSelect(selector)
 			}
 			if err := selector.OrderBy("cat ASC").All(res); err != nil {
+				logrus.Error(err.Error())
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -48,6 +49,7 @@ func syncCollection(collection, id string, factory func() interface{}, customSel
 	return s.Wrap(func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		o := r.Context().Value(objectContextKey{})
 		if err := json.NewEncoder(w).Encode(syncResponse{o}); err != nil {
+			logrus.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -98,6 +100,7 @@ func syncedHandler(collection, field string) httprouter.Handle {
 		ueid := r.Context().Value(userEndIDContextKey{}).(uuid.UUID)
 		_, err := sess.Update(collection).Set("sent", true, "dirty", false).Where(fmt.Sprintf("%s = ?", field), p.ByName("id")).And("userendid = ?", ueid).Exec()
 		if err != nil {
+			logrus.Errorln(err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}

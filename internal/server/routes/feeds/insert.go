@@ -8,6 +8,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/bcrypt"
 	"upper.io/db.v3/lib/sqlbuilder"
@@ -21,13 +22,15 @@ var createUserHandler = insertEndpoint(
 			return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 				u := r.Context().Value(objectContextKey{}).(*User)
 				sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
-				n, err := sess.Collection("users").Find().Where("nickname = ?", u.Nickname).Count()
+				n, err := sess.Collection("users").Find().Where("nickname = ?", u.Nickname).Count() // TODO this is stupid
 				if err != nil {
+					logrus.Errorln(err.Error())
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
 
 				if n > 0 {
+					logrus.Errorln("User already exists")
 					http.Error(w, "User already exists", http.StatusBadRequest)
 					return
 				}
@@ -35,6 +38,7 @@ var createUserHandler = insertEndpoint(
 				bc, err := bcrypt.GenerateFromPassword([]byte(u.Password), 8)
 				u.Password = string(bc)
 				if err != nil {
+					logrus.Errorln(err.Error())
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
@@ -73,6 +77,7 @@ var createUserEndHandler = insertEndpoint(
 				})
 				tokenString, err := token.SignedString(hmacSampleSecret)
 				if err != nil {
+					logrus.Errorln(err.Error())
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}

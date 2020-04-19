@@ -47,6 +47,7 @@ func decodeJSON(fnObject func() interface{}) func(fn httprouter.Handle) httprout
 			if err != nil {
 				var mr *malformedRequest
 				if errors.As(err, &mr) {
+					logrus.Errorln(err.Error())
 					http.Error(w, mr.msg, mr.status)
 				} else {
 					log.Println(err.Error())
@@ -85,6 +86,7 @@ func checkAccessRight(collection, field string, optional bool, factory func() in
 				id = v
 			} else if v, ok := idFieldValue.(uuid.NullUUID); ok == true {
 				if !v.Valid && !optional {
+					logrus.Errorf("Missing value for field %s", field)
 					http.Error(w, "Access denied", http.StatusUnauthorized)
 					return
 				} else if !v.Valid && optional {
@@ -97,6 +99,7 @@ func checkAccessRight(collection, field string, optional bool, factory func() in
 			parent := factory()
 			err := sess.Collection(collection).Find("id", id).One(parent)
 			if err != nil {
+				logrus.Errorln(err.Error())
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
@@ -104,6 +107,7 @@ func checkAccessRight(collection, field string, optional bool, factory func() in
 			uidParent := o.GetUserID()
 
 			if uid != uidParent {
+				logrus.Errorln(err.Error())
 				http.Error(w, "Parent is owned by another user", http.StatusUnauthorized)
 				return
 			}
@@ -123,6 +127,7 @@ func insertObject(collection string) func(fn httprouter.Handle) httprouter.Handl
 			col := sess.Collection(collection)
 			id, err := col.Insert(o)
 			if err != nil {
+				logrus.Errorln(err.Error())
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -142,6 +147,7 @@ func updateObject(collection string) func(fn httprouter.Handle) httprouter.Handl
 			col := sess.Collection(collection)
 			err := col.Find(o.GetID()).Update(o)
 			if err != nil {
+				logrus.Errorln(err.Error())
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -169,6 +175,7 @@ func jwtToken(fn httprouter.Handle) httprouter.Handle {
 		})
 
 		if err != nil {
+			logrus.Errorln(err.Error())
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
@@ -180,6 +187,7 @@ func jwtToken(fn httprouter.Handle) httprouter.Handle {
 			}
 			fn(w, r.WithContext(ctx), p)
 		} else {
+			logrus.Errorln(err.Error())
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
@@ -190,6 +198,7 @@ func userEndIDRequired(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		ueid := r.Context().Value(userEndIDContextKey{})
 		if ueid == nil {
+			logrus.Errorln("Missing userEndID")
 			http.Error(w, "Missing userEndID", http.StatusBadRequest)
 			return
 		}
@@ -201,6 +210,7 @@ func objectIDRequired(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		o := r.Context().Value(objectContextKey{}).(Object)
 		if o.GetID().Valid == false {
+			logrus.Errorln("Missing object's ID")
 			http.Error(w, "Missing object's ID", http.StatusBadRequest)
 			return
 		}
@@ -220,6 +230,7 @@ func createUserEndObjects(collection string, factory func() UserEndObject) middl
 			uends := []UserEnd{}
 			err := sess.Collection("userends").Find("userid", uid).All(&uends)
 			if err != nil {
+				logrus.Errorln(err.Error())
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -252,6 +263,7 @@ func updateUserEndObjects(collection, field string) middleware.Middleware {
 
 			_, err := sess.Update(collection).Set("dirty", true).Where(field, id).And("userendid != ?", ueid).And("userendid in (select id from userends where userid = ?)", uid).Exec()
 			if err != nil {
+				logrus.Errorln(err.Error())
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}

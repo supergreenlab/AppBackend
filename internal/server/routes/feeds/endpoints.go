@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
+	"github.com/sirupsen/logrus"
 )
 
 func outputObjectID(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -14,6 +15,7 @@ func outputObjectID(w http.ResponseWriter, r *http.Request, p httprouter.Params)
 		ID string `json:"id"`
 	}{id.String()}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
+		logrus.Error(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -24,6 +26,7 @@ func outputOK(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		Status string `json:"status"`
 	}{"OK"}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
+		logrus.Error(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

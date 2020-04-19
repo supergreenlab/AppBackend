@@ -71,6 +71,7 @@ func feedMediaUploadURLHandler(w http.ResponseWriter, r *http.Request, p httprou
 	} else if strings.HasSuffix(fmup.FileName, ".jpg") {
 		path = fmt.Sprintf("pictures-%s.jpg", uuid.New().String())
 	} else {
+		logrus.Errorln("Unknown file type")
 		http.Error(w, "Unknown file type", http.StatusBadRequest)
 		return
 	}
@@ -97,6 +98,7 @@ func feedMediaUploadURLHandler(w http.ResponseWriter, r *http.Request, p httprou
 	res.ThumbnailPath = url2.RequestURI()
 
 	if err := json.NewEncoder(w).Encode(res); err != nil {
+		logrus.Errorln(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
