@@ -18,7 +18,7 @@ type syncResponse struct {
 	Items interface{} `json:"items"`
 }
 
-func syncCollection(collection, id string, factory func() interface{}, postSelect []middleware.Middleware) httprouter.Handle {
+func syncCollection(collection, id string, factory func() interface{}, customSelect func(sqlbuilder.Selector) sqlbuilder.Selector, postSelect []middleware.Middleware) httprouter.Handle {
 	s := middleware.NewStack()
 
 	s.Use(func(fn httprouter.Handle) httprouter.Handle {
@@ -26,7 +26,11 @@ func syncCollection(collection, id string, factory func() interface{}, postSelec
 			sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
 			ueid := r.Context().Value(userEndIDContextKey{}).(uuid.UUID)
 			res := factory()
-			if err := sess.Select("a.*").From(fmt.Sprintf("%s a", collection)).Join(fmt.Sprintf("userend_%s b", collection)).On(fmt.Sprintf("b.%s = a.id", id)).Where("b.userendid = ?", ueid).And("dirty = true").All(res); err != nil {
+			selector := sess.Select("a.*").From(fmt.Sprintf("%s a", collection)).Join(fmt.Sprintf("userend_%s b", collection)).On(fmt.Sprintf("b.%s = a.id", id)).Where("b.userendid = ?", ueid).And("dirty = true")
+			if customSelect != nil {
+				customSelect(selector)
+			}
+			if err := selector.OrderBy("cat ASC").All(res); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -50,13 +54,15 @@ func syncCollection(collection, id string, factory func() interface{}, postSelec
 	})
 }
 
-var syncBoxesHandler = syncCollection("boxes", "boxid", func() interface{} { return &[]Box{} }, nil)
-var syncPlantsHandler = syncCollection("plants", "plantid", func() interface{} { return &[]Plant{} }, nil)
-var syncTimelapsesHandler = syncCollection("timelapses", "timelapseid", func() interface{} { return &[]Timelapse{} }, nil)
-var syncDevicesHandler = syncCollection("devices", "deviceid", func() interface{} { return &[]Device{} }, nil)
-var syncFeedsHandler = syncCollection("feeds", "feedid", func() interface{} { return &[]Feed{} }, nil)
-var syncFeedEntriesHandler = syncCollection("feedentries", "feedentryid", func() interface{} { return &[]FeedEntry{} }, nil)
-var syncFeedMediasHandler = syncCollection("feedmedias", "feedmediaid", func() interface{} { return &[]FeedMedia{} }, []middleware.Middleware{
+var syncBoxesHandler = syncCollection("boxes", "boxid", func() interface{} { return &[]Box{} }, nil, nil)
+var syncPlantsHandler = syncCollection("plants", "plantid", func() interface{} { return &[]Plant{} }, nil, nil)
+var syncTimelapsesHandler = syncCollection("timelapses", "timelapseid", func() interface{} { return &[]Timelapse{} }, nil, nil)
+var syncDevicesHandler = syncCollection("devices", "deviceid", func() interface{} { return &[]Device{} }, nil, nil)
+var syncFeedsHandler = syncCollection("feeds", "feedid", func() interface{} { return &[]Feed{} }, func(selector sqlbuilder.Selector) sqlbuilder.Selector {
+	return selector.And("isnewsfeed", false)
+}, nil)
+var syncFeedEntriesHandler = syncCollection("feedentries", "feedentryid", func() interface{} { return &[]FeedEntry{} }, nil, nil)
+var syncFeedMediasHandler = syncCollection("feedmedias", "feedmediaid", func() interface{} { return &[]FeedMedia{} }, nil, []middleware.Middleware{
 	func(fn httprouter.Handle) httprouter.Handle {
 		expiry := time.Second * 60 * 60
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
