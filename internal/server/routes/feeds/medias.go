@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/minio/minio-go/v6"
 	"github.com/sirupsen/logrus"
@@ -67,11 +67,11 @@ func feedMediaUploadURLHandler(w http.ResponseWriter, r *http.Request, p httprou
 
 	path := ""
 	if strings.HasSuffix(fmup.FileName, ".mp4") {
-		path = fmt.Sprintf("videos-%s.mp4", uuid.New().String())
+		path = fmt.Sprintf("videos-%s.mp4", uuid.Must(uuid.NewV4()).String())
 	} else if strings.HasSuffix(fmup.FileName, ".jpg") {
-		path = fmt.Sprintf("pictures-%s.jpg", uuid.New().String())
+		path = fmt.Sprintf("pictures-%s.jpg", uuid.Must(uuid.NewV4()).String())
 	} else {
-		logrus.Errorln("Unknown file type")
+		logrus.Errorf("Unknown file type %s", fmup.FileName)
 		http.Error(w, "Unknown file type", http.StatusBadRequest)
 		return
 	}
@@ -88,7 +88,7 @@ func feedMediaUploadURLHandler(w http.ResponseWriter, r *http.Request, p httprou
 	}
 	res.FilePath = url1.RequestURI()
 
-	path = fmt.Sprintf("thumbnail-%s.jpg", uuid.New().String())
+	path = fmt.Sprintf("thumbnail-%s.jpg", uuid.Must(uuid.NewV4()).String())
 	url2, err := minioClient.PresignedPutObject("feedmedias", path, expiry)
 	if err != nil {
 		logrus.Errorln(err)

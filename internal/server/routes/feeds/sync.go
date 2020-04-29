@@ -28,7 +28,7 @@ func syncCollection(collection, id string, factory func() interface{}, customSel
 			res := factory()
 			selector := sess.Select("a.*").From(fmt.Sprintf("%s a", collection)).Join(fmt.Sprintf("userend_%s b", collection)).On(fmt.Sprintf("b.%s = a.id", id)).Where("b.userendid = ?", ueid).And("dirty = true")
 			if customSelect != nil {
-				customSelect(selector)
+				selector = customSelect(selector)
 			}
 			if err := selector.OrderBy("cat ASC").All(res); err != nil {
 				logrus.Error(err.Error())
@@ -63,7 +63,9 @@ var syncDevicesHandler = syncCollection("devices", "deviceid", func() interface{
 var syncFeedsHandler = syncCollection("feeds", "feedid", func() interface{} { return &[]Feed{} }, func(selector sqlbuilder.Selector) sqlbuilder.Selector {
 	return selector.And("isnewsfeed", false)
 }, nil)
-var syncFeedEntriesHandler = syncCollection("feedentries", "feedentryid", func() interface{} { return &[]FeedEntry{} }, nil, nil)
+var syncFeedEntriesHandler = syncCollection("feedentries", "feedentryid", func() interface{} { return &[]FeedEntry{} }, func(selector sqlbuilder.Selector) sqlbuilder.Selector {
+	return selector.Join("feeds f").On("f.id = a.feedid").Where("f.isnewsfeed", false)
+}, nil)
 var syncFeedMediasHandler = syncCollection("feedmedias", "feedmediaid", func() interface{} { return &[]FeedMedia{} }, nil, []middleware.Middleware{
 	func(fn httprouter.Handle) httprouter.Handle {
 		expiry := time.Second * 60 * 60

@@ -160,7 +160,6 @@ type Device struct {
 	Name       string        `db:"name" json:"name"`
 	IP         string        `db:"ip" json:"ip"`
 	Mdns       string        `db:"mdns" json:"mdns"`
-	Config     string        `db:"config" json:"config"`
 
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
