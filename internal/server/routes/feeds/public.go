@@ -62,7 +62,12 @@ func fetchPublicFeedEntries(w http.ResponseWriter, r *http.Request, p httprouter
 	}
 
 	feedEntries := []FeedEntry{}
-	if err := sess.Select("*").From("feedentries fe").Join("feeds f").On("fe.feedid = f.id").Join("plants p").On("p.feedid = f.id").Where("p.is_public = ?", true).And("p.id = ?", p.ByName("id")).And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')").OrderBy("fe.cat DESC").Offset(offset).Limit(limit).All(&feedEntries); err != nil {
+	selector := sess.Select("*").From("feedentries fe")
+	selector = selector.Join("feeds f").On("fe.feedid = f.id")
+	selector = selector.Join("plants p").On("p.feedid = f.id")
+	selector = selector.Where("p.is_public = ?", true).And("p.id = ?", p.ByName("id")).And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')")
+	selector = selector.OrderBy("fe.cat DESC").Offset(offset).Limit(limit)
+	if err := selector.All(&feedEntries); err != nil {
 		logrus.Error(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
