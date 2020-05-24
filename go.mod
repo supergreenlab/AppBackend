@@ -22,6 +22,7 @@ require (
 	github.com/jmespath/go-jmespath v0.3.0 // indirect
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/klauspost/compress v1.10.3 // indirect
+	github.com/lib/pq v1.3.0
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/minio/minio-go/v6 v6.0.50
 	github.com/nakagami/firebirdsql v0.0.0-20200321090558-89c04e66f1df // indirect
