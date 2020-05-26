@@ -99,6 +99,9 @@ func InitFeeds(router *httprouter.Router) {
 	router.POST("/feedEntry/:id/sync", authWithUserEndID.Wrap(syncedFeedEntryHandler))
 	router.POST("/feedMedia/:id/sync", authWithUserEndID.Wrap(syncedFeedMediaHandler))
 
+	router.GET("/public/plants", anon.Wrap(fetchPublicPlants))
 	router.GET("/public/plant/:id", anon.Wrap(fetchPublicPlant))
 	router.GET("/public/plant/:id/feedEntries", anon.Wrap(fetchPublicFeedEntries))
+	router.GET("/public/feedEntry/:id/feedMedias", anon.Wrap(fetchPublicFeedMedias))
+	router.GET("/public/feedMedia/:id", anon.Wrap(fetchPublicFeedMedia))
 }

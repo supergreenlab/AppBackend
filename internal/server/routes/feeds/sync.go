@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
@@ -86,26 +85,16 @@ var syncFeedEntriesHandler = syncCollection("feedentries", "feedentryid", func()
 }, nil)
 var syncFeedMediasHandler = syncCollection("feedmedias", "feedmediaid", func() interface{} { return &[]FeedMedia{} }, nil, []middleware.Middleware{
 	func(fn httprouter.Handle) httprouter.Handle {
-		expiry := time.Second * 60 * 60
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-			minioClient := createMinioClient()
+			var err error
 			feedMedias := r.Context().Value(objectContextKey{}).(*[]FeedMedia)
 			for i, fm := range *feedMedias {
-				url1, err := minioClient.PresignedGetObject("feedmedias", fm.FilePath, expiry, nil)
+				fm, err = loadFeedMediaPublicURLs(fm)
 				if err != nil {
 					logrus.Errorln(err)
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
-				fm.FilePath = url1.RequestURI()
-
-				url2, err := minioClient.PresignedGetObject("feedmedias", fm.ThumbnailPath, expiry, nil)
-				if err != nil {
-					logrus.Errorln(err)
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-				fm.ThumbnailPath = url2.RequestURI()
 				(*feedMedias)[i] = fm
 			}
 			ctx := context.WithValue(r.Context(), objectContextKey{}, feedMedias)

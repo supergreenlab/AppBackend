@@ -29,8 +29,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// TODO split this file
-
 type malformedRequest struct {
 	status int
 	msg    string

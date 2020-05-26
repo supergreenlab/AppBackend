@@ -96,7 +96,7 @@ type Plant struct {
 	BoxID  uuid.UUID     `db:"boxid" json:"boxID"`
 	FeedID uuid.UUID     `db:"feedid" json:"feedID"`
 	Name   string        `db:"name" json:"name"`
-	Single bool          `db:"single" json:"single"`
+	Single bool          `db:"single" json:"single"` // TODO remove this field
 
 	Settings string `db:"settings" json:"settings"`
 

@@ -28,6 +28,74 @@ import (
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
+type publicPlantResult struct {
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	ThumbnailPath string `json:"thumbnailPath"`
+	FilePath      string `json:"filePath"`
+}
+
+type publicPlantsResult struct {
+	Plants []publicPlantResult `json:"plants"`
+}
+
+func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
+
+	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
+	if err != nil {
+		logrus.Error(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+	if err != nil || limit == 0 || limit > 50 {
+		logrus.Error(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	plants := []Plant{}
+	selector := sess.Select("*")
+	selector = selector.From("plants")
+	selector = selector.Where("is_public = ?", true)
+	selector = selector.OrderBy("cat desc").Offset(offset).Limit(limit)
+	if err := selector.All(&plants); err != nil {
+		logrus.Error(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	results := make([]publicPlantResult, 0, len(plants))
+	for _, p := range plants {
+		selector := sess.Select("*")
+		selector = selector.From("feedmedias fm")
+		selector = selector.Join("feedentries fe").On("fm.feedentryid = fe.id")
+		selector = selector.Join("plants p").On("fe.feedid = p.feedid")
+		selector = selector.Where("p.id = ?", p.ID)
+		selector = selector.OrderBy("fm.cat desc").Limit(1)
+		fm := FeedMedia{}
+		if err := selector.One(&fm); err != nil {
+			logrus.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		fm, err = loadFeedMediaPublicURLs(fm)
+		if err != nil {
+			logrus.Errorln(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		results = append(results, publicPlantResult{p.ID.UUID.String(), p.Name, fm.FilePath, fm.ThumbnailPath})
+	}
+	if err := json.NewEncoder(w).Encode(publicPlantsResult{results}); err != nil {
+		logrus.Error(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 func fetchPublicPlant(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
 
@@ -42,6 +110,10 @@ func fetchPublicPlant(w http.ResponseWriter, r *http.Request, p httprouter.Param
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+type publicFeedEntriesResult struct {
+	Entries []FeedEntry `json:"entries"`
 }
 
 func fetchPublicFeedEntries(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -62,7 +134,7 @@ func fetchPublicFeedEntries(w http.ResponseWriter, r *http.Request, p httprouter
 	}
 
 	feedEntries := []FeedEntry{}
-	selector := sess.Select("*").From("feedentries fe")
+	selector := sess.Select("fe.*").From("feedentries fe")
 	selector = selector.Join("feeds f").On("fe.feedid = f.id")
 	selector = selector.Join("plants p").On("p.feedid = f.id")
 	selector = selector.Where("p.is_public = ?", true).And("p.id = ?", p.ByName("id")).And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')")
@@ -72,7 +144,73 @@ func fetchPublicFeedEntries(w http.ResponseWriter, r *http.Request, p httprouter
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err := json.NewEncoder(w).Encode(feedEntries); err != nil {
+	if err := json.NewEncoder(w).Encode(publicFeedEntriesResult{feedEntries}); err != nil {
+		logrus.Error(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+type publicFeedMediasResult struct {
+	Medias []FeedMedia `json:"medias"`
+}
+
+func fetchPublicFeedMedias(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
+
+	feedMedias := []FeedMedia{}
+	selector := sess.Select("fm.*").From("feedmedias fm")
+	selector = selector.Join("feedentries fe").On("fm.feedentryid = fe.id")
+	selector = selector.Join("feeds f").On("fe.feedid = f.id")
+	selector = selector.Join("plants p").On("p.feedid = f.id")
+	selector = selector.Where("p.is_public = ?", true).And("fe.id = ?", p.ByName("id"))
+	if err := selector.All(&feedMedias); err != nil {
+		logrus.Error(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var err error
+	for i, fm := range feedMedias {
+		fm, err = loadFeedMediaPublicURLs(fm)
+		if err != nil {
+			logrus.Errorln(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		feedMedias[i] = fm
+	}
+
+	if err := json.NewEncoder(w).Encode(publicFeedMediasResult{feedMedias}); err != nil {
+		logrus.Error(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func fetchPublicFeedMedia(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
+
+	feedMedia := FeedMedia{}
+	selector := sess.Select("fm.*").From("feedmedias fm")
+	selector = selector.Join("feedentries fe").On("fm.feedentryid = fe.id")
+	selector = selector.Join("feeds f").On("fe.feedid = f.id")
+	selector = selector.Join("plants p").On("p.feedid = f.id")
+	selector = selector.Where("p.is_public = ?", true).And("fm.id = ?", p.ByName("id"))
+	if err := selector.One(&feedMedia); err != nil {
+		logrus.Error(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var err error
+	feedMedia, err = loadFeedMediaPublicURLs(feedMedia)
+	if err != nil {
+		logrus.Errorln(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(feedMedia); err != nil {
 		logrus.Error(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
