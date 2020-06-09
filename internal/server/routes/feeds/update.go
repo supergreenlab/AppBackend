@@ -26,8 +26,8 @@ var updateBoxHandler = updateEndpoint(
 	[]middleware.Middleware{
 		objectIDRequired,
 		setUserID,
-		checkAccessRight("boxes", "ID", false, func() interface{} { return &Box{} }),
-		checkAccessRight("devices", "DeviceID", true, func() interface{} { return &Device{} }),
+		checkAccessRight("boxes", "ID", false, func() UserObject { return &Box{} }),
+		checkAccessRight("devices", "DeviceID", true, func() UserObject { return &Device{} }),
 	},
 	[]middleware.Middleware{
 		updateUserEndObjects("userend_devices", "deviceid"),
@@ -40,8 +40,8 @@ var updatePlantHandler = updateEndpoint(
 	[]middleware.Middleware{
 		objectIDRequired,
 		setUserID,
-		checkAccessRight("plants", "ID", false, func() interface{} { return &Plant{} }),
-		checkAccessRight("boxes", "BoxID", false, func() interface{} { return &Box{} }),
+		checkAccessRight("plants", "ID", false, func() UserObject { return &Plant{} }),
+		checkAccessRight("boxes", "BoxID", false, func() UserObject { return &Box{} }),
 	},
 	[]middleware.Middleware{
 		updateUserEndObjects("userend_plants", "plantid"),
@@ -54,8 +54,8 @@ var updateTimelapseHandler = updateEndpoint(
 	[]middleware.Middleware{
 		objectIDRequired,
 		setUserID,
-		checkAccessRight("timelapses", "ID", false, func() interface{} { return &Timelapse{} }),
-		checkAccessRight("plants", "PlantID", false, func() interface{} { return &Plant{} }),
+		checkAccessRight("timelapses", "ID", false, func() UserObject { return &Timelapse{} }),
+		checkAccessRight("plants", "PlantID", false, func() UserObject { return &Plant{} }),
 	},
 	[]middleware.Middleware{
 		updateUserEndObjects("userend_timelapses", "timelapseid"),
@@ -68,7 +68,7 @@ var updateDeviceHandler = updateEndpoint(
 	[]middleware.Middleware{
 		objectIDRequired,
 		setUserID,
-		checkAccessRight("devices", "ID", false, func() interface{} { return &Device{} }),
+		checkAccessRight("devices", "ID", false, func() UserObject { return &Device{} }),
 	},
 	[]middleware.Middleware{
 		updateUserEndObjects("userend_devices", "deviceid"),
@@ -81,7 +81,7 @@ var updateFeedHandler = updateEndpoint(
 	[]middleware.Middleware{
 		objectIDRequired,
 		setUserID,
-		checkAccessRight("feeds", "ID", false, func() interface{} { return &Feed{} }),
+		checkAccessRight("feeds", "ID", false, func() UserObject { return &Feed{} }),
 	},
 	[]middleware.Middleware{
 		updateUserEndObjects("userend_feeds", "feedid"),
@@ -94,8 +94,8 @@ var updateFeedEntryHandler = updateEndpoint(
 	[]middleware.Middleware{
 		objectIDRequired,
 		setUserID,
-		checkAccessRight("feedentries", "ID", false, func() interface{} { return &FeedEntry{} }),
-		checkAccessRight("feeds", "FeedID", false, func() interface{} { return &Feed{} }),
+		checkAccessRight("feedentries", "ID", false, func() UserObject { return &FeedEntry{} }),
+		checkAccessRight("feeds", "FeedID", false, func() UserObject { return &Feed{} }),
 	},
 	[]middleware.Middleware{
 		updateUserEndObjects("userend_feedentries", "feedentryid"),
@@ -108,8 +108,8 @@ var updateFeedMediaHandler = updateEndpoint(
 	[]middleware.Middleware{
 		objectIDRequired,
 		setUserID,
-		checkAccessRight("feedmedias", "ID", false, func() interface{} { return &FeedMedia{} }),
-		checkAccessRight("feedentries", "FeedEntryID", false, func() interface{} { return &FeedEntry{} }),
+		checkAccessRight("feedmedias", "ID", false, func() UserObject { return &FeedMedia{} }),
+		checkAccessRight("feedentries", "FeedEntryID", false, func() UserObject { return &FeedEntry{} }),
 	},
 	[]middleware.Middleware{
 		updateUserEndObjects("userend_feedmedias", "feedmediaid"),

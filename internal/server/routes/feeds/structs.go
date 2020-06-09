@@ -249,7 +249,7 @@ type FeedEntry struct {
 	ID     uuid.NullUUID `db:"id,omitempty" json:"id"`
 	UserID uuid.UUID     `db:"userid" json:"userID"`
 	FeedID uuid.UUID     `db:"feedid" json:"feedID"`
-	Date   string        `db:"createdat" json:"date"`
+	Date   time.Time     `db:"createdat" json:"date"`
 	Type   string        `db:"etype" json:"type"`
 
 	Params string `db:"params" json:"params"`

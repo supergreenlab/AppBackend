@@ -91,7 +91,7 @@ func setUserID(fn httprouter.Handle) httprouter.Handle {
 	}
 }
 
-func checkAccessRight(collection, field string, optional bool, factory func() interface{}) middleware.Middleware {
+func checkAccessRight(collection, field string, optional bool, factory func() UserObject) middleware.Middleware {
 	return func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			o := r.Context().Value(objectContextKey{}).(UserObject)
@@ -122,7 +122,7 @@ func checkAccessRight(collection, field string, optional bool, factory func() in
 				return
 			}
 
-			uidParent := o.GetUserID()
+			uidParent := parent.GetUserID()
 
 			if uid != uidParent {
 				logrus.Errorln(err.Error())

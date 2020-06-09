@@ -25,14 +25,15 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
+	db "upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
 type publicPlantResult struct {
 	ID            string `json:"id"`
 	Name          string `json:"name"`
-	ThumbnailPath string `json:"thumbnailPath"`
 	FilePath      string `json:"filePath"`
+	ThumbnailPath string `json:"thumbnailPath"`
 }
 
 type publicPlantsResult struct {
@@ -57,10 +58,10 @@ func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Para
 	}
 
 	plants := []Plant{}
-	selector := sess.Select("*")
+	selector := sess.Select("plants.*", db.Raw("(select feedentries.cat from feedentries where feedentries.feedid = plants.feedid order by cat desc limit 1) as lastfe"))
 	selector = selector.From("plants")
 	selector = selector.Where("is_public = ?", true)
-	selector = selector.OrderBy("cat desc").Offset(offset).Limit(limit)
+	selector = selector.OrderBy("lastfe desc").Offset(offset).Limit(limit)
 	if err := selector.All(&plants); err != nil {
 		logrus.Error(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -68,7 +69,7 @@ func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Para
 	}
 	results := make([]publicPlantResult, 0, len(plants))
 	for _, p := range plants {
-		selector := sess.Select("*")
+		selector := sess.Select("fm.*")
 		selector = selector.From("feedmedias fm")
 		selector = selector.Join("feedentries fe").On("fm.feedentryid = fe.id")
 		selector = selector.Join("plants p").On("fe.feedid = p.feedid")
@@ -138,7 +139,7 @@ func fetchPublicFeedEntries(w http.ResponseWriter, r *http.Request, p httprouter
 	selector = selector.Join("feeds f").On("fe.feedid = f.id")
 	selector = selector.Join("plants p").On("p.feedid = f.id")
 	selector = selector.Where("p.is_public = ?", true).And("p.id = ?", p.ByName("id")).And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')")
-	selector = selector.OrderBy("fe.cat DESC").Offset(offset).Limit(limit)
+	selector = selector.OrderBy("fe.createdat DESC").Offset(offset).Limit(limit)
 	if err := selector.All(&feedEntries); err != nil {
 		logrus.Error(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

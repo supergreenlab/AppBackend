@@ -141,7 +141,7 @@ var createBoxHandler = insertEndpoint(
 	func() interface{} { return &Box{} },
 	[]middleware.Middleware{
 		setUserID,
-		checkAccessRight("devices", "DeviceID", true, func() interface{} { return &Device{} }),
+		checkAccessRight("devices", "DeviceID", true, func() UserObject { return &Device{} }),
 	},
 	[]middleware.Middleware{
 		createUserEndObjects("userend_devices", func() UserEndObject { return &UserEndDevice{} }),
@@ -153,7 +153,7 @@ var createPlantHandler = insertEndpoint(
 	func() interface{} { return &Plant{} },
 	[]middleware.Middleware{
 		setUserID,
-		checkAccessRight("boxes", "BoxID", false, func() interface{} { return &Box{} }),
+		checkAccessRight("boxes", "BoxID", false, func() UserObject { return &Box{} }),
 	},
 	[]middleware.Middleware{
 		createUserEndObjects("userend_plants", func() UserEndObject { return &UserEndPlant{} }),
@@ -165,7 +165,7 @@ var createTimelapseHandler = insertEndpoint(
 	func() interface{} { return &Timelapse{} },
 	[]middleware.Middleware{
 		setUserID,
-		checkAccessRight("plants", "PlantID", false, func() interface{} { return &Plant{} }),
+		checkAccessRight("plants", "PlantID", false, func() UserObject { return &Plant{} }),
 	},
 	[]middleware.Middleware{
 		createUserEndObjects("userend_timelapses", func() UserEndObject { return &UserEndTimelapse{} }),
@@ -195,7 +195,7 @@ var createFeedEntryHandler = insertEndpoint(
 	func() interface{} { return &FeedEntry{} },
 	[]middleware.Middleware{
 		setUserID,
-		checkAccessRight("feeds", "FeedID", false, func() interface{} { return &Feed{} }),
+		checkAccessRight("feeds", "FeedID", false, func() UserObject { return &Feed{} }),
 	},
 	[]middleware.Middleware{
 		createUserEndObjects("userend_feedentries", func() UserEndObject { return &UserEndFeedEntry{} }),
@@ -207,7 +207,7 @@ var createFeedMediaHandler = insertEndpoint(
 	func() interface{} { return &FeedMedia{} },
 	[]middleware.Middleware{
 		setUserID,
-		checkAccessRight("feedentries", "FeedEntryID", false, func() interface{} { return &FeedEntry{} }),
+		checkAccessRight("feedentries", "FeedEntryID", false, func() UserObject { return &FeedEntry{} }),
 	},
 	[]middleware.Middleware{
 		createUserEndObjects("userend_feedmedias", func() UserEndObject { return &UserEndFeedMedia{} }),
@@ -219,7 +219,7 @@ var createPlantSharingHandler = insertEndpoint(
 	func() interface{} { return &PlantSharing{} },
 	[]middleware.Middleware{
 		setUserID,
-		checkAccessRight("feedentries", "FeedEntryID", false, func() interface{} { return &FeedEntry{} }),
+		checkAccessRight("feedentries", "FeedEntryID", false, func() UserObject { return &FeedEntry{} }),
 	},
 	nil,
 )
