@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"reflect"
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
@@ -98,33 +97,7 @@ func checkAccessRight(collection, field string, optional bool, factory func() Us
 			uid := r.Context().Value(userIDContextKey{}).(uuid.UUID)
 			sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
 
-			var id uuid.UUID
-			idFieldValue := reflect.ValueOf(o).Elem().FieldByName(field).Interface()
-			if v, ok := idFieldValue.(uuid.UUID); ok == true {
-				id = v
-			} else if v, ok := idFieldValue.(uuid.NullUUID); ok == true {
-				if !v.Valid && !optional {
-					logrus.Errorf("Missing value for field %s", field)
-					http.Error(w, "Access denied", http.StatusUnauthorized)
-					return
-				} else if !v.Valid && optional {
-					fn(w, r, p)
-					return
-				}
-				id = v.UUID
-			}
-
-			parent := factory()
-			err := sess.Collection(collection).Find("id", id).One(parent)
-			if err != nil {
-				logrus.Errorln(err.Error())
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-
-			uidParent := parent.GetUserID()
-
-			if uid != uidParent {
+			if err := checkUserID(sess, uid, o, collection, field, optional, factory); err != nil {
 				logrus.Errorln(err.Error())
 				http.Error(w, "Parent is owned by another user", http.StatusUnauthorized)
 				return

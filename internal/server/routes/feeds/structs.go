@@ -34,12 +34,6 @@ type User struct {
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
 }
 
-// UserObject -
-type UserObject interface {
-	SetUserID(uuid.UUID)
-	GetUserID() uuid.UUID
-}
-
 // Object -
 type Object interface {
 	GetID() uuid.NullUUID
@@ -48,6 +42,13 @@ type Object interface {
 // Objects -
 type Objects interface {
 	Each(func(Object))
+}
+
+// UserObject -
+type UserObject interface {
+	Object
+	SetUserID(uuid.UUID)
+	GetUserID() uuid.UUID
 }
 
 // Box -
@@ -341,6 +342,11 @@ type UserEnd struct {
 
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
+}
+
+// GetID -
+func (o UserEnd) GetID() uuid.NullUUID {
+	return o.ID
 }
 
 // SetUserID -

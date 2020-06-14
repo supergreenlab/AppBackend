@@ -23,10 +23,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
 	"strings"
 
+	"github.com/gofrs/uuid"
 	"github.com/golang/gddo/httputil/header"
 	"github.com/pkg/errors"
+	"upper.io/db.v3/lib/sqlbuilder"
 )
 
 type malformedRequest struct {
@@ -93,5 +96,33 @@ func decodeJSONBody(w http.ResponseWriter, r *http.Request, dst interface{}) err
 		return &malformedRequest{status: http.StatusBadRequest, msg: msg}
 	}
 
+	return nil
+}
+
+func checkUserID(sess sqlbuilder.Database, uid uuid.UUID, o UserObject, collection, field string, optional bool, factory func() UserObject) error {
+	var id uuid.UUID
+	idFieldValue := reflect.ValueOf(o).Elem().FieldByName(field).Interface()
+	if v, ok := idFieldValue.(uuid.UUID); ok == true {
+		id = v
+	} else if v, ok := idFieldValue.(uuid.NullUUID); ok == true {
+		if !v.Valid && !optional {
+			return fmt.Errorf("Missing value for field %s", field)
+		} else if !v.Valid && optional {
+			return nil
+		}
+		id = v.UUID
+	}
+
+	parent := factory()
+	err := sess.Collection(collection).Find("id", id).One(parent)
+	if err != nil {
+		return err
+	}
+
+	uidParent := parent.GetUserID()
+
+	if uid != uidParent {
+		return fmt.Errorf("Parent is owned by another user")
+	}
 	return nil
 }
