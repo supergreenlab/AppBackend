@@ -61,6 +61,8 @@ type Box struct {
 
 	Settings string `db:"settings" json:"settings"`
 
+	Deleted bool `db:"deleted" json:"deleted"`
+
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
 }
@@ -100,6 +102,8 @@ type Plant struct {
 	Single bool          `db:"single" json:"single"` // TODO remove this field
 
 	Settings string `db:"settings" json:"settings"`
+
+	Deleted bool `db:"deleted" json:"deleted"`
 
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
@@ -142,6 +146,8 @@ type Timelapse struct {
 	DropboxToken string        `db:"dropboxtoken" json:"dropboxToken"`
 	UploadName   string        `db:"uploadname" json:"uploadName"`
 
+	Deleted bool `db:"deleted" json:"deleted"`
+
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
 }
@@ -180,6 +186,8 @@ type Device struct {
 	IP         string        `db:"ip" json:"ip"`
 	Mdns       string        `db:"mdns" json:"mdns"`
 
+	Deleted bool `db:"deleted" json:"deleted"`
+
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
 }
@@ -215,6 +223,8 @@ type Feed struct {
 	UserID     uuid.UUID     `db:"userid" json:"userID"`
 	Name       string        `db:"name" json:"name"`
 	IsNewsFeed bool          `db:"isnewsfeed" json:"isNewsFeed"`
+
+	Deleted bool `db:"deleted" json:"deleted"`
 
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
@@ -255,6 +265,8 @@ type FeedEntry struct {
 
 	Params string `db:"params" json:"params"`
 
+	Deleted bool `db:"deleted" json:"deleted"`
+
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
 }
@@ -293,6 +305,8 @@ type FeedMedia struct {
 	ThumbnailPath string        `db:"thumbnailpath" json:"thumbnailPath"`
 
 	Params string `db:"params" json:"params"`
+
+	Deleted bool `db:"deleted" json:"deleted"`
 
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`

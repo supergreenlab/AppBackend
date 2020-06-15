@@ -19,6 +19,7 @@
 package feeds
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gofrs/uuid"
@@ -35,7 +36,7 @@ type deletesRequest struct {
 	}
 }
 
-var types map[string]func() UserObject = map[string]func() UserObject{
+var factories map[string]func() UserObject = map[string]func() UserObject{
 	"boxes":       func() UserObject { return &Box{} },
 	"plants":      func() UserObject { return &Plant{} },
 	"timelapses":  func() UserObject { return &Timelapse{} },
@@ -43,6 +44,16 @@ var types map[string]func() UserObject = map[string]func() UserObject{
 	"feeds":       func() UserObject { return &Feed{} },
 	"feedentries": func() UserObject { return &FeedEntry{} },
 	"feedmedias":  func() UserObject { return &FeedMedia{} },
+}
+
+var idFields map[string]string = map[string]string{
+	"boxes":       "boxid",
+	"plants":      "plantid",
+	"timelapses":  "timelapseid",
+	"devices":     "deviceid",
+	"feeds":       "feedid",
+	"feedentries": "feedentryid",
+	"feedmedias":  "feedmediaid",
 }
 
 func createDeleteHandler() httprouter.Handle {
@@ -56,9 +67,10 @@ func createDeleteHandler() httprouter.Handle {
 		uid := r.Context().Value(userIDContextKey{}).(uuid.UUID)
 		sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
 		deletes := r.Context().Value(objectContextKey{}).(*deletesRequest)
+		ueid := r.Context().Value(userEndIDContextKey{}).(uuid.UUID)
 
 		for _, del := range deletes.Deletes {
-			factory, ok := types[del.Type]
+			factory, ok := factories[del.Type]
 			if ok == false {
 				logrus.Warningf("Unknown type %s", del.Type)
 				continue
@@ -77,6 +89,12 @@ func createDeleteHandler() httprouter.Handle {
 			}
 
 			if _, err := sess.Update(del.Type).Set("deleted", true).Where("id = ?", o.GetID()).Exec(); err != nil {
+				logrus.Warning(err.Error())
+				continue
+			}
+
+			field := idFields[del.Type]
+			if _, err := sess.Update(fmt.Sprintf("userend_%s", del.Type)).Set("dirty", true).Where(field, del.ID).And("userendid != ?", ueid).And("userendid in (select id from userends where userid = ?)", uid).Exec(); err != nil {
 				logrus.Warning(err.Error())
 				continue
 			}
