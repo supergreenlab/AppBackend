@@ -33,7 +33,7 @@ type deletesRequest struct {
 	Deletes []struct {
 		ID   string `json:"id"`
 		Type string `json:"type"`
-	}
+	} `json:"deletes"`
 }
 
 var factories map[string]func() UserObject = map[string]func() UserObject{
@@ -93,10 +93,17 @@ func createDeleteHandler() httprouter.Handle {
 				continue
 			}
 
+			collection := fmt.Sprintf("userend_%s", del.Type)
 			field := idFields[del.Type]
-			if _, err := sess.Update(fmt.Sprintf("userend_%s", del.Type)).Set("dirty", true).Where(field, del.ID).And("userendid != ?", ueid).And("userendid in (select id from userends where userid = ?)", uid).Exec(); err != nil {
+			if _, err := sess.Update(collection).Set("dirty", true).Where(field, del.ID).And("userendid != ?", ueid).And("userendid in (select id from userends where userid = ?)", uid).Exec(); err != nil {
 				logrus.Warning(err.Error())
 				continue
+			}
+
+			if _, err := sess.DeleteFrom(collection).Where(fmt.Sprintf("%s = ?", field), del.ID).And("userendid = ?", ueid).Exec(); err != nil {
+				logrus.Errorln(err)
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
 			}
 		}
 	})

@@ -58,9 +58,9 @@ func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Para
 	}
 
 	plants := []Plant{}
-	selector := sess.Select("plants.*", db.Raw("(select feedentries.cat from feedentries where feedentries.feedid = plants.feedid order by cat desc limit 1) as lastfe"))
+	selector := sess.Select("plants.*", db.Raw("(select feedentries.cat from feedentries where feedentries.feedid = plants.feedid and feedentries.deleted = false order by cat desc limit 1) as lastfe"))
 	selector = selector.From("plants")
-	selector = selector.Where("is_public = ?", true)
+	selector = selector.Where("is_public = ?", true).And("plants.deleted = ?", false)
 	selector = selector.OrderBy("lastfe desc").Offset(offset).Limit(limit)
 	if err := selector.All(&plants); err != nil {
 		logrus.Error(err.Error())
@@ -71,7 +71,7 @@ func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Para
 	for _, p := range plants {
 		selector := sess.Select("fm.*")
 		selector = selector.From("feedmedias fm")
-		selector = selector.Join("feedentries fe").On("fm.feedentryid = fe.id")
+		selector = selector.Join("feedentries fe").On("fm.feedentryid = fe.id and fe.deleted = ?", false)
 		selector = selector.Join("plants p").On("fe.feedid = p.feedid")
 		selector = selector.Where("p.id = ?", p.ID)
 		selector = selector.OrderBy("fm.cat desc").Limit(1)
@@ -101,7 +101,7 @@ func fetchPublicPlant(w http.ResponseWriter, r *http.Request, p httprouter.Param
 	sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
 
 	plant := Plant{}
-	if err := sess.Select("*").From("plants").Where("is_public = ?", true).And("id = ?", p.ByName("id")).One(&plant); err != nil {
+	if err := sess.Select("*").From("plants").Where("is_public = ?", true).And("deleted = ?", false).And("id = ?", p.ByName("id")).One(&plant); err != nil {
 		logrus.Error(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -138,7 +138,7 @@ func fetchPublicFeedEntries(w http.ResponseWriter, r *http.Request, p httprouter
 	selector := sess.Select("fe.*").From("feedentries fe")
 	selector = selector.Join("feeds f").On("fe.feedid = f.id")
 	selector = selector.Join("plants p").On("p.feedid = f.id")
-	selector = selector.Where("p.is_public = ?", true).And("p.id = ?", p.ByName("id")).And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')")
+	selector = selector.Where("p.is_public = ?", true).And("p.id = ?", p.ByName("id")).And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')").And("fe.deleted = ?", false)
 	selector = selector.OrderBy("fe.createdat DESC").Offset(offset).Limit(limit)
 	if err := selector.All(&feedEntries); err != nil {
 		logrus.Error(err.Error())
@@ -164,7 +164,7 @@ func fetchPublicFeedMedias(w http.ResponseWriter, r *http.Request, p httprouter.
 	selector = selector.Join("feedentries fe").On("fm.feedentryid = fe.id")
 	selector = selector.Join("feeds f").On("fe.feedid = f.id")
 	selector = selector.Join("plants p").On("p.feedid = f.id")
-	selector = selector.Where("p.is_public = ?", true).And("fe.id = ?", p.ByName("id"))
+	selector = selector.Where("p.is_public = ?", true).And("fe.id = ?", p.ByName("id")).And("fm.deleted = ?", false)
 	if err := selector.All(&feedMedias); err != nil {
 		logrus.Error(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -197,7 +197,7 @@ func fetchPublicFeedMedia(w http.ResponseWriter, r *http.Request, p httprouter.P
 	selector = selector.Join("feedentries fe").On("fm.feedentryid = fe.id")
 	selector = selector.Join("feeds f").On("fe.feedid = f.id")
 	selector = selector.Join("plants p").On("p.feedid = f.id")
-	selector = selector.Where("p.is_public = ?", true).And("fm.id = ?", p.ByName("id"))
+	selector = selector.Where("p.is_public = ?", true).And("fm.id = ?", p.ByName("id")).And("fm.deleted = ?", false)
 	if err := selector.One(&feedMedia); err != nil {
 		logrus.Error(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

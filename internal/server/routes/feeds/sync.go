@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
@@ -107,11 +108,31 @@ func syncedHandler(collection, field string) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
 		ueid := r.Context().Value(userEndIDContextKey{}).(uuid.UUID)
-		_, err := sess.Update(collection).Set("sent", true, "dirty", false).Where(fmt.Sprintf("%s = ?", field), p.ByName("id")).And("userendid = ?", ueid).Exec()
+
+		var deleted struct {
+			Deleted bool `db:"deleted"`
+		}
+		err := sess.Select("deleted").From(strings.Replace(collection, "userend_", "", 1)).Where("id", p.ByName("id")).One(&deleted)
 		if err != nil {
-			logrus.Errorln(err)
+			logrus.Errorln(err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
+		}
+
+		if deleted.Deleted == true {
+			_, err := sess.DeleteFrom(collection).Where(fmt.Sprintf("%s = ?", field), p.ByName("id")).And("userendid = ?", ueid).Exec()
+			if err != nil {
+				logrus.Errorln(err)
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+		} else {
+			_, err := sess.Update(collection).Set("sent", true, "dirty", false).Where(fmt.Sprintf("%s = ?", field), p.ByName("id")).And("userendid = ?", ueid).Exec()
+			if err != nil {
+				logrus.Errorln(err)
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 		}
 	}
 }

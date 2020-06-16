@@ -103,31 +103,31 @@ var createUserEndHandler = insertEndpoint(
 				w.Header().Set("x-sgl-token", tokenString)
 
 				boxes := []Box{}
-				sess.Select("*").From("boxes").Where("userid = ?", uid).All(&boxes)
+				sess.Select("*").From("boxes").Where("userid = ?", uid).And("deleted = ?", false).All(&boxes)
 				fillUserEnd(sess, id, "boxes", Boxes(boxes), func() UserEndObject { return &UserEndBox{} })
 
 				plants := []Plant{}
-				sess.Select("*").From("plants").Where("userid = ?", uid).All(&plants)
+				sess.Select("*").From("plants").Where("userid = ?", uid).And("deleted = ?", false).All(&plants)
 				fillUserEnd(sess, id, "plants", Plants(plants), func() UserEndObject { return &UserEndPlant{} })
 
 				timelapses := []Timelapse{}
-				sess.Select("*").From("timelapses").Where("userid = ?", uid).All(&timelapses)
+				sess.Select("*").From("timelapses").Where("userid = ?", uid).And("deleted = ?", false).All(&timelapses)
 				fillUserEnd(sess, id, "timelapses", Timelapses(timelapses), func() UserEndObject { return &UserEndTimelapse{} })
 
 				devices := []Device{}
-				sess.Select("*").From("devices").Where("userid = ?", uid).All(&devices)
+				sess.Select("*").From("devices").Where("userid = ?", uid).And("deleted = ?", false).All(&devices)
 				fillUserEnd(sess, id, "devices", Devices(devices), func() UserEndObject { return &UserEndDevice{} })
 
 				feeds := []Feed{}
-				sess.Select("*").From("feeds").Where("userid = ?", uid).All(&feeds)
+				sess.Select("*").From("feeds").Where("userid = ?", uid).And("deleted = ?", false).All(&feeds)
 				fillUserEnd(sess, id, "feeds", Feeds(feeds), func() UserEndObject { return &UserEndFeed{} })
 
 				feedEntries := []FeedEntry{}
-				sess.Select("*").From("feedentries").Where("userid = ?", uid).All(&feedEntries)
+				sess.Select("*").From("feedentries").Where("userid = ?", uid).And("deleted = ?", false).All(&feedEntries)
 				fillUserEnd(sess, id, "feedentries", FeedEntries(feedEntries), func() UserEndObject { return &UserEndFeedEntry{} })
 
 				feedMedias := []FeedMedia{}
-				sess.Select("*").From("feedmedias").Where("userid = ?", uid).All(&feedMedias)
+				sess.Select("*").From("feedmedias").Where("userid = ?", uid).And("deleted = ?", false).All(&feedMedias)
 				fillUserEnd(sess, id, "feedmedias", FeedMedias(feedMedias), func() UserEndObject { return &UserEndFeedMedia{} })
 
 				fn(w, r, p)
