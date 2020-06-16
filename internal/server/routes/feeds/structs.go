@@ -55,7 +55,7 @@ type UserObject interface {
 type Box struct {
 	ID        uuid.NullUUID `db:"id,omitempty" json:"id"`
 	UserID    uuid.UUID     `db:"userid" json:"userID"`
-	DeviceID  uuid.NullUUID `db:"deviceid,omitempty" json:"deviceID,omitempty"`
+	DeviceID  uuid.NullUUID `db:"deviceid" json:"deviceID"`
 	DeviceBox *uint         `db:"devicebox,omitempty" json:"deviceBox,omitempty"`
 	Name      string        `db:"name" json:"name"`
 
