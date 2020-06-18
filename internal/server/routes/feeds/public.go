@@ -138,7 +138,7 @@ func fetchPublicFeedEntries(w http.ResponseWriter, r *http.Request, p httprouter
 	selector := sess.Select("fe.*").From("feedentries fe")
 	selector = selector.Join("feeds f").On("fe.feedid = f.id")
 	selector = selector.Join("plants p").On("p.feedid = f.id")
-	selector = selector.Where("p.is_public = ?", true).And("p.id = ?", p.ByName("id")).And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')").And("fe.deleted = ?", false)
+	selector = selector.Where("p.is_public = ?", true).And("p.id = ?", p.ByName("id")).And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')").And("fe.deleted = ?", false).And("p.deleted = ?", false)
 	selector = selector.OrderBy("fe.createdat DESC").Offset(offset).Limit(limit)
 	if err := selector.All(&feedEntries); err != nil {
 		logrus.Error(err.Error())
