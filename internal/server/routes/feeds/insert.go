@@ -144,7 +144,7 @@ var createBoxHandler = insertEndpoint(
 		checkAccessRight("devices", "DeviceID", true, func() UserObject { return &Device{} }),
 	},
 	[]middleware.Middleware{
-		createUserEndObjects("userend_boxes", func() UserEndObject { return &UserEndDevice{} }),
+		createUserEndObjects("userend_boxes", func() UserEndObject { return &UserEndBox{} }),
 	},
 )
 
