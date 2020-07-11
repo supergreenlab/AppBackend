@@ -100,6 +100,7 @@ type Plant struct {
 	FeedID uuid.UUID     `db:"feedid" json:"feedID"`
 	Name   string        `db:"name" json:"name"`
 	Single bool          `db:"single" json:"single"` // TODO remove this field
+	Public bool          `db:"is_public" json:"public"`
 
 	Settings string `db:"settings" json:"settings"`
 

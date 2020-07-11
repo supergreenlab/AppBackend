@@ -29,7 +29,26 @@ import (
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
-type publicPlantResult struct {
+func loadLastFeedMediaForPlant(sess sqlbuilder.Database, p Plant) (FeedMedia, error) {
+	var err error
+	selector := sess.Select("fm.*")
+	selector = selector.From("feedmedias fm")
+	selector = selector.Join("feedentries fe").On("fm.feedentryid = fe.id and fe.deleted = ?", false)
+	selector = selector.Join("plants p").On("fe.feedid = p.feedid")
+	selector = selector.Where("p.id = ?", p.ID)
+	selector = selector.OrderBy("fm.cat desc").Limit(1)
+	fm := FeedMedia{}
+	if err = selector.One(&fm); err != nil {
+		return fm, err
+	}
+	fm, err = loadFeedMediaPublicURLs(fm)
+	if err != nil {
+		return fm, err
+	}
+	return fm, nil
+}
+
+type publicListingPlantResult struct {
 	ID            string `json:"id"`
 	Name          string `json:"name"`
 	FilePath      string `json:"filePath"`
@@ -37,7 +56,7 @@ type publicPlantResult struct {
 }
 
 type publicPlantsResult struct {
-	Plants []publicPlantResult `json:"plants"`
+	Plants []publicListingPlantResult `json:"plants"`
 }
 
 func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -67,34 +86,30 @@ func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Para
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	results := make([]publicPlantResult, 0, len(plants))
-	for _, p := range plants {
-		selector := sess.Select("fm.*")
-		selector = selector.From("feedmedias fm")
-		selector = selector.Join("feedentries fe").On("fm.feedentryid = fe.id and fe.deleted = ?", false)
-		selector = selector.Join("plants p").On("fe.feedid = p.feedid")
-		selector = selector.Where("p.id = ?", p.ID)
-		selector = selector.OrderBy("fm.cat desc").Limit(1)
-		fm := FeedMedia{}
-		if err := selector.One(&fm); err != nil {
-			logrus.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		fm, err = loadFeedMediaPublicURLs(fm)
+	results := make([]publicListingPlantResult, 0, len(plants))
+	for _, plant := range plants {
+		fm, err := loadLastFeedMediaForPlant(sess, plant)
 		if err != nil {
-			logrus.Errorln(err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			logrus.Warningln(err)
+			continue
 		}
 
-		results = append(results, publicPlantResult{p.ID.UUID.String(), p.Name, fm.FilePath, fm.ThumbnailPath})
+		results = append(results, publicListingPlantResult{plant.ID.UUID.String(), plant.Name, fm.FilePath, fm.ThumbnailPath})
 	}
 	if err := json.NewEncoder(w).Encode(publicPlantsResult{results}); err != nil {
 		logrus.Error(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+type publicPlantResult struct {
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	FilePath      string `json:"filePath"`
+	ThumbnailPath string `json:"thumbnailPath"`
+	Settings      string `json:"settings"`
+	BoxSettings   string `json:"boxSettings"`
 }
 
 func fetchPublicPlant(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -106,7 +121,19 @@ func fetchPublicPlant(w http.ResponseWriter, r *http.Request, p httprouter.Param
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err := json.NewEncoder(w).Encode(plant); err != nil {
+	fm, err := loadLastFeedMediaForPlant(sess, plant)
+	if err != nil {
+		logrus.Errorln(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	box := Box{}
+	if err := sess.Select("*").From("boxes").And("id = ?", plant.BoxID).One(&box); err != nil {
+		logrus.Error(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(publicPlantResult{plant.ID.UUID.String(), plant.Name, fm.FilePath, fm.ThumbnailPath, plant.Settings, box.Settings}); err != nil {
 		logrus.Error(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
