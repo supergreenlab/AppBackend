@@ -19,6 +19,7 @@
 package feeds
 
 import (
+	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
 	"github.com/rileyr/middleware/wares"
@@ -32,18 +33,18 @@ var (
 func anonStack() middleware.Stack {
 	anon := middleware.NewStack()
 	anon.Use(wares.Logging)
-	anon.Use(createDBSession)
+	anon.Use(middlewares.CreateDBSession)
 	return anon
 }
 
 func authStack(withUserEndID bool) middleware.Stack {
 	auth := middleware.NewStack()
 	auth.Use(wares.Logging)
-	auth.Use(jwtToken)
-	auth.Use(createDBSession)
+	auth.Use(middlewares.JwtToken)
+	auth.Use(middlewares.CreateDBSession)
 
 	if withUserEndID == true {
-		auth.Use(userEndIDRequired)
+		auth.Use(middlewares.UserEndIDRequired)
 	}
 
 	return auth
@@ -51,16 +52,9 @@ func authStack(withUserEndID bool) middleware.Stack {
 
 // InitFeeds -
 func InitFeeds(router *httprouter.Router) {
-	initDB()
-	initStorage()
-
 	anon := anonStack()
 	auth := authStack(false)
 	authWithUserEndID := authStack(true)
-
-	router.POST("/login", anon.Wrap(loginHandler()))
-
-	router.POST("/user", anon.Wrap(createUserHandler))
 
 	router.POST("/userend", auth.Wrap(createUserEndHandler))
 	router.POST("/plantsharing", auth.Wrap(createPlantSharingHandler))

@@ -23,13 +23,15 @@ import (
 	"net/http"
 	"strconv"
 
+	sgldb "github.com/SuperGreenLab/AppBackend/internal/data/db"
+	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
 	db "upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
-func loadLastFeedMediaForPlant(sess sqlbuilder.Database, p Plant) (FeedMedia, error) {
+func loadLastFeedMediaForPlant(sess sqlbuilder.Database, p sgldb.Plant) (sgldb.FeedMedia, error) {
 	var err error
 	selector := sess.Select("fm.*")
 	selector = selector.From("feedmedias fm")
@@ -37,7 +39,7 @@ func loadLastFeedMediaForPlant(sess sqlbuilder.Database, p Plant) (FeedMedia, er
 	selector = selector.Join("plants p").On("fe.feedid = p.feedid")
 	selector = selector.Where("p.id = ?", p.ID)
 	selector = selector.OrderBy("fm.cat desc").Limit(1)
-	fm := FeedMedia{}
+	fm := sgldb.FeedMedia{}
 	if err = selector.One(&fm); err != nil {
 		return fm, err
 	}
@@ -60,7 +62,7 @@ type publicPlantsResult struct {
 }
 
 func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
+	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
 
 	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
 	if err != nil {
@@ -76,7 +78,7 @@ func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Para
 		return
 	}
 
-	plants := []Plant{}
+	plants := []sgldb.Plant{}
 	selector := sess.Select("plants.*", db.Raw("(select feedentries.cat from feedentries where feedentries.feedid = plants.feedid and feedentries.deleted = false order by cat desc limit 1) as lastfe"))
 	selector = selector.From("plants")
 	selector = selector.Where("is_public = ?", true).And("plants.deleted = ?", false)
@@ -113,9 +115,9 @@ type publicPlantResult struct {
 }
 
 func fetchPublicPlant(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
+	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
 
-	plant := Plant{}
+	plant := sgldb.Plant{}
 	if err := sess.Select("*").From("plants").Where("is_public = ?", true).And("deleted = ?", false).And("id = ?", p.ByName("id")).One(&plant); err != nil {
 		logrus.Error(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -126,7 +128,7 @@ func fetchPublicPlant(w http.ResponseWriter, r *http.Request, p httprouter.Param
 		logrus.Errorln(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	box := Box{}
+	box := sgldb.Box{}
 	if err := sess.Select("*").From("boxes").And("id = ?", plant.BoxID).One(&box); err != nil {
 		logrus.Error(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -141,11 +143,11 @@ func fetchPublicPlant(w http.ResponseWriter, r *http.Request, p httprouter.Param
 }
 
 type publicFeedEntriesResult struct {
-	Entries []FeedEntry `json:"entries"`
+	Entries []sgldb.FeedEntry `json:"entries"`
 }
 
 func fetchPublicFeedEntries(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
+	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
 
 	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
 	if err != nil {
@@ -161,7 +163,7 @@ func fetchPublicFeedEntries(w http.ResponseWriter, r *http.Request, p httprouter
 		return
 	}
 
-	feedEntries := []FeedEntry{}
+	feedEntries := []sgldb.FeedEntry{}
 	selector := sess.Select("fe.*").From("feedentries fe")
 	selector = selector.Join("feeds f").On("fe.feedid = f.id")
 	selector = selector.Join("plants p").On("p.feedid = f.id")
@@ -180,13 +182,13 @@ func fetchPublicFeedEntries(w http.ResponseWriter, r *http.Request, p httprouter
 }
 
 type publicFeedMediasResult struct {
-	Medias []FeedMedia `json:"medias"`
+	Medias []sgldb.FeedMedia `json:"medias"`
 }
 
 func fetchPublicFeedMedias(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
+	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
 
-	feedMedias := []FeedMedia{}
+	feedMedias := []sgldb.FeedMedia{}
 	selector := sess.Select("fm.*").From("feedmedias fm")
 	selector = selector.Join("feedentries fe").On("fm.feedentryid = fe.id")
 	selector = selector.Join("feeds f").On("fe.feedid = f.id")
@@ -217,9 +219,9 @@ func fetchPublicFeedMedias(w http.ResponseWriter, r *http.Request, p httprouter.
 }
 
 func fetchPublicFeedMedia(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
+	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
 
-	feedMedia := FeedMedia{}
+	feedMedia := sgldb.FeedMedia{}
 	selector := sess.Select("fm.*").From("feedmedias fm")
 	selector = selector.Join("feedentries fe").On("fm.feedentryid = fe.id")
 	selector = selector.Join("feeds f").On("fe.feedid = f.id")

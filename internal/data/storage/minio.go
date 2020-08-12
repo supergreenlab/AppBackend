@@ -16,20 +16,43 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package feeds
+package storage
 
 import (
+	"fmt"
+	"log"
+
+	"github.com/minio/minio-go"
 	"github.com/spf13/viper"
-	"upper.io/db.v3/postgresql"
 )
 
-var settings postgresql.ConnectionURL
-
-func initDB() {
-	settings = postgresql.ConnectionURL{
-		Host:     "postgres",
-		Database: "sglapp",
-		User:     "postgres",
-		Password: viper.GetString("PGPassword"),
+// SetupBucket - create bucket if not exists
+func SetupBucket(name string) {
+	minioClient := CreateMinioClient()
+	exists, err := minioClient.BucketExists(name)
+	if err != nil {
+		log.Fatalln(err)
 	}
+	if exists {
+		log.Printf("Already created bucket: %s\n", name)
+		return
+	}
+	err = minioClient.MakeBucket(name, "")
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
+// CreateMinioClient - creates an initialized minio client
+func CreateMinioClient() *minio.Client {
+	accessKey := viper.GetString("S3AccessKey")
+	secretKey := viper.GetString("S3SecretKey")
+	host := viper.GetString("S3Host")
+	secure := viper.GetString("S3Secure") == "true"
+	minioClient, err := minio.New(host, accessKey, secretKey, secure)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	return minioClient
 }

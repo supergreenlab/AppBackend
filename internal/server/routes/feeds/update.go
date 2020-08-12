@@ -18,100 +18,104 @@
 
 package feeds
 
-import "github.com/rileyr/middleware"
+import (
+	"github.com/SuperGreenLab/AppBackend/internal/data/db"
+	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
+	"github.com/rileyr/middleware"
+)
 
-var updateBoxHandler = updateEndpoint(
+var updateBoxHandler = middlewares.UpdateEndpoint(
 	"boxes",
-	func() interface{} { return &Box{} },
+	func() interface{} { return &db.Box{} },
 	[]middleware.Middleware{
-		objectIDRequired,
-		setUserID,
-		checkAccessRight("boxes", "ID", false, func() UserObject { return &Box{} }),
-		checkAccessRight("devices", "DeviceID", true, func() UserObject { return &Device{} }),
+		middlewares.ObjectIDRequired,
+		middlewares.SetUserID,
+		middlewares.CheckAccessRight("boxes", "ID", false, func() db.UserObject { return &db.Box{} }),
+		middlewares.CheckAccessRight("devices", "DeviceID", true, func() db.UserObject { return &db.Device{} }),
 	},
 	[]middleware.Middleware{
-		updateUserEndObjects("userend_devices", "deviceid"),
+		middlewares.UpdateUserEndObjects("userend_devices", "deviceid"),
 	},
 )
 
-var updatePlantHandler = updateEndpoint(
+var updatePlantHandler = middlewares.UpdateEndpoint(
 	"plants",
-	func() interface{} { return &Plant{} },
+	func() interface{} { return &db.Plant{} },
 	[]middleware.Middleware{
-		objectIDRequired,
-		setUserID,
-		checkAccessRight("plants", "ID", false, func() UserObject { return &Plant{} }),
-		checkAccessRight("boxes", "BoxID", false, func() UserObject { return &Box{} }),
+		middlewares.ObjectIDRequired,
+		middlewares.SetUserID,
+		middlewares.CheckAccessRight("plants", "ID", false, func() db.UserObject { return &db.Plant{} }),
+		middlewares.CheckAccessRight("boxes", "BoxID", false, func() db.UserObject { return &db.Box{} }),
 	},
 	[]middleware.Middleware{
-		updateUserEndObjects("userend_plants", "plantid"),
+		middlewares.UpdateUserEndObjects("userend_plants", "plantid"),
 	},
 )
 
-var updateTimelapseHandler = updateEndpoint(
+var updateTimelapseHandler = middlewares.UpdateEndpoint(
 	"timelapses",
-	func() interface{} { return &Timelapse{} },
+	func() interface{} { return &db.Timelapse{} },
 	[]middleware.Middleware{
-		objectIDRequired,
-		setUserID,
-		checkAccessRight("timelapses", "ID", false, func() UserObject { return &Timelapse{} }),
-		checkAccessRight("plants", "PlantID", false, func() UserObject { return &Plant{} }),
+		middlewares.ObjectIDRequired,
+		middlewares.SetUserID,
+		middlewares.CheckAccessRight("timelapses", "ID", false, func() db.UserObject { return &db.Timelapse{} }),
+		middlewares.CheckAccessRight("plants", "PlantID", false, func() db.UserObject { return &db.Plant{} }),
 	},
 	[]middleware.Middleware{
-		updateUserEndObjects("userend_timelapses", "timelapseid"),
+		middlewares.UpdateUserEndObjects("userend_timelapses", "timelapseid"),
 	},
 )
 
-var updateDeviceHandler = updateEndpoint(
+var updateDeviceHandler = middlewares.UpdateEndpoint(
 	"devices",
-	func() interface{} { return &Device{} },
+	func() interface{} { return &db.Device{} },
 	[]middleware.Middleware{
-		objectIDRequired,
-		setUserID,
-		checkAccessRight("devices", "ID", false, func() UserObject { return &Device{} }),
+		middlewares.ObjectIDRequired,
+		middlewares.SetUserID,
+		middlewares.CheckAccessRight("devices", "ID", false, func() db.UserObject { return &db.Device{} }),
 	},
 	[]middleware.Middleware{
-		updateUserEndObjects("userend_devices", "deviceid"),
+		middlewares.UpdateUserEndObjects("userend_devices", "deviceid"),
 	},
 )
 
-var updateFeedHandler = updateEndpoint(
+var updateFeedHandler = middlewares.UpdateEndpoint(
 	"feeds",
-	func() interface{} { return &Feed{} },
+	func() interface{} { return &db.Feed{} },
 	[]middleware.Middleware{
-		objectIDRequired,
-		setUserID,
-		checkAccessRight("feeds", "ID", false, func() UserObject { return &Feed{} }),
+		middlewares.ObjectIDRequired,
+		middlewares.SetUserID,
+		middlewares.CheckAccessRight("feeds", "ID", false, func() db.UserObject { return &db.Feed{} }),
 	},
 	[]middleware.Middleware{
-		updateUserEndObjects("userend_feeds", "feedid"),
+		middlewares.UpdateUserEndObjects("userend_feeds", "feedid"),
 	},
 )
 
-var updateFeedEntryHandler = updateEndpoint(
+var updateFeedEntryHandler = middlewares.UpdateEndpoint(
 	"feedentries",
-	func() interface{} { return &FeedEntry{} },
+	func() interface{} { return &db.FeedEntry{} },
 	[]middleware.Middleware{
-		objectIDRequired,
-		setUserID,
-		checkAccessRight("feedentries", "ID", false, func() UserObject { return &FeedEntry{} }),
-		checkAccessRight("feeds", "FeedID", false, func() UserObject { return &Feed{} }),
+		middlewares.ObjectIDRequired,
+		middlewares.SetUserID,
+		middlewares.CheckAccessRight("feedentries", "ID", false, func() db.UserObject { return &db.FeedEntry{} }),
+		middlewares.CheckAccessRight("feeds", "FeedID", false, func() db.UserObject { return &db.Feed{} }),
 	},
 	[]middleware.Middleware{
-		updateUserEndObjects("userend_feedentries", "feedentryid"),
+		middlewares.UpdateUserEndObjects("userend_feedentries", "feedentryid"),
 	},
 )
 
-var updateFeedMediaHandler = updateEndpoint(
+var updateFeedMediaHandler = middlewares.UpdateEndpoint(
 	"feedmedias",
-	func() interface{} { return &FeedMedia{} },
+	func() interface{} { return &db.FeedMedia{} },
 	[]middleware.Middleware{
-		objectIDRequired,
-		setUserID,
-		checkAccessRight("feedmedias", "ID", false, func() UserObject { return &FeedMedia{} }),
-		checkAccessRight("feedentries", "FeedEntryID", false, func() UserObject { return &FeedEntry{} }),
+		middlewares.ObjectIDRequired,
+		middlewares.SetUserID,
+		middlewares.CheckAccessRight("feedmedias", "ID", false, func() db.UserObject { return &db.FeedMedia{} }),
+		middlewares.CheckAccessRight("feedentries", "FeedEntryID", false, func() db.UserObject { return &db.FeedEntry{} }),
 	},
 	[]middleware.Middleware{
-		updateUserEndObjects("userend_feedmedias", "feedmediaid"),
+		middlewares.UpdateUserEndObjects("userend_feedmedias", "feedmediaid"),
 	},
 )

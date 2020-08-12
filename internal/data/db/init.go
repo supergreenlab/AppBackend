@@ -16,28 +16,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package feeds
+package db
 
 import (
-	"time"
-
-	"github.com/SuperGreenLab/AppBackend/internal/data/db"
-	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
+	"github.com/spf13/viper"
+	"upper.io/db.v3/postgresql"
 )
 
-func loadFeedMediaPublicURLs(fm db.FeedMedia) (db.FeedMedia, error) {
-	expiry := time.Second * 60 * 60
-	minioClient := storage.CreateMinioClient()
-	url1, err := minioClient.PresignedGetObject("feedmedias", fm.FilePath, expiry, nil)
-	if err != nil {
-		return fm, err
-	}
-	fm.FilePath = url1.RequestURI()
+// Settings - db connection settings
+var Settings postgresql.ConnectionURL
 
-	url2, err := minioClient.PresignedGetObject("feedmedias", fm.ThumbnailPath, expiry, nil)
-	if err != nil {
-		return fm, err
+// InitDB - initializes the Settings variable from config params
+func InitDB() {
+	Settings = postgresql.ConnectionURL{
+		Host:     "postgres",
+		Database: "sglapp",
+		User:     "postgres",
+		Password: viper.GetString("PGPassword"),
 	}
-	fm.ThumbnailPath = url2.RequestURI()
-	return fm, nil
 }

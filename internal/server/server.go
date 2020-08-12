@@ -21,16 +21,24 @@ package server
 import (
 	"net/http"
 
+	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
+
+	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/routes/feeds"
 	"github.com/SuperGreenLab/AppBackend/internal/server/routes/metrics"
+	"github.com/SuperGreenLab/AppBackend/internal/server/routes/users"
 	"github.com/julienschmidt/httprouter"
 	log "github.com/sirupsen/logrus"
 )
 
 // Start starts the server
 func Start() {
+	db.InitDB()
+	storage.SetupBucket("feedmedias")
+
 	router := httprouter.New()
 
+	users.InitUsers(router)
 	metrics.InitMetrics(router)
 	feeds.InitFeeds(router)
 

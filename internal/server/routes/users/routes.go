@@ -16,59 +16,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package feeds
+package users
 
 import (
+	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
+	"github.com/rileyr/middleware/wares"
 )
 
-func insertEndpoint(
-	collection string,
-	factory func() interface{},
-	pre []middleware.Middleware,
-	post []middleware.Middleware,
-) httprouter.Handle {
-	s := middleware.NewStack()
-
-	s.Use(decodeJSON(factory))
-	if pre != nil {
-		for _, m := range pre {
-			s.Use(m)
-		}
-	}
-	s.Use(insertObject(collection))
-
-	if post != nil {
-		for _, m := range post {
-			s.Use(m)
-		}
-	}
-
-	return s.Wrap(outputObjectID)
+func anonStack() middleware.Stack {
+	anon := middleware.NewStack()
+	anon.Use(wares.Logging)
+	anon.Use(middlewares.CreateDBSession)
+	return anon
 }
 
-func updateEndpoint(
-	collection string,
-	factory func() interface{},
-	pre []middleware.Middleware,
-	post []middleware.Middleware,
-) httprouter.Handle {
-	s := middleware.NewStack()
+// InitUsers -
+func InitUsers(router *httprouter.Router) {
+	anon := anonStack()
 
-	s.Use(decodeJSON(factory))
-	if pre != nil {
-		for _, m := range pre {
-			s.Use(m)
-		}
-	}
-	s.Use(updateObject(collection))
-
-	if post != nil {
-		for _, m := range post {
-			s.Use(m)
-		}
-	}
-
-	return s.Wrap(outputOK)
+	router.POST("/login", anon.Wrap(loginHandler()))
+	router.POST("/user", anon.Wrap(createUserHandler))
 }

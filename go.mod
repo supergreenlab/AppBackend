@@ -12,6 +12,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
+	github.com/go-ini/ini v1.57.0 // indirect
 	github.com/gocql/gocql v0.0.0-20200324094621-6d895e38b0a5 // indirect
 	github.com/gofrs/uuid v3.2.0+incompatible
 	github.com/golang-migrate/migrate v3.5.4+incompatible
@@ -24,6 +25,7 @@ require (
 	github.com/klauspost/compress v1.10.3 // indirect
 	github.com/lib/pq v1.3.0
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
+	github.com/minio/minio-go v6.0.14+incompatible
 	github.com/minio/minio-go/v6 v6.0.50
 	github.com/nakagami/firebirdsql v0.0.0-20200321090558-89c04e66f1df // indirect
 	github.com/pkg/errors v0.9.1
@@ -40,6 +42,7 @@ require (
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e // indirect
 	golang.org/x/tools v0.0.0-20200325010219-a49f79bcc224
 	google.golang.org/genproto v0.0.0-20200324203455-a04cca1dde73 // indirect
+	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	modernc.org/mathutil v1.1.0 // indirect
 	modernc.org/ql v1.0.1 // indirect
 	upper.io/db.v3 v3.6.4+incompatible

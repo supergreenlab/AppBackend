@@ -21,50 +21,20 @@ package feeds
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
+
 	"github.com/gofrs/uuid"
-	"github.com/julienschmidt/httprouter"
-	"github.com/minio/minio-go/v6"
+
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
+
+	"github.com/SuperGreenLab/AppBackend/internal/server/tools"
+
+	"github.com/julienschmidt/httprouter"
 )
-
-func setupBucket(name string) {
-	minioClient := createMinioClient()
-	exists, err := minioClient.BucketExists(name)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	if exists {
-		log.Printf("Already created bucket: %s\n", name)
-		return
-	}
-	err = minioClient.MakeBucket(name, "")
-	if err != nil {
-		log.Fatalln(err)
-	}
-}
-
-func initStorage() {
-	setupBucket("feedmedias")
-}
-
-func createMinioClient() *minio.Client {
-	accessKey := viper.GetString("S3AccessKey")
-	secretKey := viper.GetString("S3SecretKey")
-	host := viper.GetString("S3Host")
-	secure := viper.GetString("S3Secure") == "true"
-	minioClient, err := minio.New(host, accessKey, secretKey, secure)
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-	return minioClient
-}
 
 type feedMediaUploadURLParams struct {
 	FileName string `json:"fileName"`
@@ -77,7 +47,7 @@ type feedMediaUploadURLResult struct {
 
 func feedMediaUploadURLHandler(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	fmup := feedMediaUploadURLParams{}
-	if err := decodeJSONBody(w, r, &fmup); err != nil {
+	if err := tools.DecodeJSONBody(w, r, &fmup); err != nil {
 		logrus.Errorln(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -95,7 +65,7 @@ func feedMediaUploadURLHandler(w http.ResponseWriter, r *http.Request, p httprou
 	}
 
 	res := feedMediaUploadURLResult{}
-	minioClient := createMinioClient()
+	minioClient := storage.CreateMinioClient()
 	expiry := time.Second * 60 * 60
 
 	url1, err := minioClient.PresignedPutObject("feedmedias", path, expiry)

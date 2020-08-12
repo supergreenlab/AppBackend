@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package feeds
+package middlewares
 
 import (
 	"context"
@@ -24,6 +24,10 @@ import (
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/SuperGreenLab/AppBackend/internal/server/tools"
+
+	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gofrs/uuid"
@@ -33,73 +37,58 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"upper.io/db.v3/lib/sqlbuilder"
-	"upper.io/db.v3/postgresql"
 )
 
-type sessContextKey struct{}
+// ObjectContextKey - context key which stores the decoced object
+type ObjectContextKey struct{}
 
-func createDBSession(fn httprouter.Handle) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		var err error
-		sess, err := postgresql.Open(settings)
-		if err != nil {
-			logrus.Errorf("db.Open(): %q\n", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer sess.Close()
-
-		ctx := context.WithValue(r.Context(), sessContextKey{}, sess)
-		fn(w, r.WithContext(ctx), p)
-	}
-}
-
-type objectContextKey struct{}
-
-func decodeJSON(fnObject func() interface{}) func(fn httprouter.Handle) httprouter.Handle {
+// DecodeJSON - decodes the JSON payload
+func DecodeJSON(fnObject func() interface{}) func(fn httprouter.Handle) httprouter.Handle {
 	return func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			o := fnObject()
-			err := decodeJSONBody(w, r, o)
+			err := tools.DecodeJSONBody(w, r, o)
 			if err != nil {
-				var mr *malformedRequest
+				var mr *tools.MalformedRequest
 				if errors.As(err, &mr) {
 					logrus.Errorln(err.Error())
-					http.Error(w, mr.msg, mr.status)
+					http.Error(w, mr.Msg, mr.Status)
 				} else {
 					log.Println(err.Error())
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				}
 				return
 			}
-			ctx := context.WithValue(r.Context(), objectContextKey{}, o)
+			ctx := context.WithValue(r.Context(), ObjectContextKey{}, o)
 			fn(w, r.WithContext(ctx), p)
 		}
 	}
 }
 
-func setUserID(fn httprouter.Handle) httprouter.Handle {
+// SetUserID - sets the userID field for the object payload
+func SetUserID(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		o := r.Context().Value(objectContextKey{}).(UserObject)
-		uid := r.Context().Value(userIDContextKey{}).(uuid.UUID)
+		o := r.Context().Value(ObjectContextKey{}).(db.UserObject)
+		uid := r.Context().Value(UserIDContextKey{}).(uuid.UUID)
 
 		o.SetUserID(uid)
 
-		ctx := context.WithValue(r.Context(), objectContextKey{}, o)
+		ctx := context.WithValue(r.Context(), ObjectContextKey{}, o)
 		fn(w, r.WithContext(ctx), p)
 	}
 }
 
-func checkAccessRight(collection, field string, optional bool, factory func() UserObject) middleware.Middleware {
+// CheckAccessRight - checks if the user has access to the given object
+func CheckAccessRight(collection, field string, optional bool, factory func() db.UserObject) middleware.Middleware {
 	return func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-			o := r.Context().Value(objectContextKey{}).(UserObject)
-			uid := r.Context().Value(userIDContextKey{}).(uuid.UUID)
-			sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
+			o := r.Context().Value(ObjectContextKey{}).(db.UserObject)
+			uid := r.Context().Value(UserIDContextKey{}).(uuid.UUID)
+			sess := r.Context().Value(SessContextKey{}).(sqlbuilder.Database)
 
-			if err := checkUserID(sess, uid, o, collection, field, optional, factory); err != nil {
+			if err := tools.CheckUserID(sess, uid, o, collection, field, optional, factory); err != nil {
 				logrus.Errorln(err.Error())
-				http.Error(w, "Parent is owned by another user", http.StatusUnauthorized)
+				http.Error(w, "Object is owned by another user", http.StatusUnauthorized)
 				return
 			}
 
@@ -108,50 +97,14 @@ func checkAccessRight(collection, field string, optional bool, factory func() Us
 	}
 }
 
-type insertedIDContextKey struct{}
+// UserIDContextKey - context key which stores the request's userID
+type UserIDContextKey struct{}
 
-func insertObject(collection string) func(fn httprouter.Handle) httprouter.Handle {
-	return func(fn httprouter.Handle) httprouter.Handle {
-		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-			o := r.Context().Value(objectContextKey{})
-			sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
-			col := sess.Collection(collection)
-			id, err := col.Insert(o)
-			if err != nil {
-				logrus.Errorln(err.Error())
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			ctx := context.WithValue(r.Context(), insertedIDContextKey{}, uuid.FromStringOrNil(string(id.([]uint8))))
-			fn(w, r.WithContext(ctx), p)
-		}
-	}
-}
+// UserEndIDContextKey - context key which stores the request's userEndID
+type UserEndIDContextKey struct{}
 
-type updatedIDContextKey struct{}
-
-func updateObject(collection string) func(fn httprouter.Handle) httprouter.Handle {
-	return func(fn httprouter.Handle) httprouter.Handle {
-		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-			o := r.Context().Value(objectContextKey{}).(Object)
-			sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
-			col := sess.Collection(collection)
-			err := col.Find(o.GetID()).Update(o)
-			if err != nil {
-				logrus.Errorln(err.Error())
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			ctx := context.WithValue(r.Context(), updatedIDContextKey{}, o.GetID().UUID)
-			fn(w, r.WithContext(ctx), p)
-		}
-	}
-}
-
-type userIDContextKey struct{}
-type userEndIDContextKey struct{}
-
-func jwtToken(fn httprouter.Handle) httprouter.Handle {
+// JwtToken - decodes the JWT token for the request
+func JwtToken(fn httprouter.Handle) httprouter.Handle {
 	hmacSampleSecret := []byte(viper.GetString("JWTSecret"))
 
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -172,9 +125,9 @@ func jwtToken(fn httprouter.Handle) httprouter.Handle {
 		}
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			ctx := context.WithValue(r.Context(), userIDContextKey{}, uuid.FromStringOrNil(claims["userID"].(string)))
+			ctx := context.WithValue(r.Context(), UserIDContextKey{}, uuid.FromStringOrNil(claims["userID"].(string)))
 			if userEndID, ok := claims["userEndID"]; ok == true {
-				ctx = context.WithValue(ctx, userEndIDContextKey{}, uuid.FromStringOrNil(userEndID.(string)))
+				ctx = context.WithValue(ctx, UserEndIDContextKey{}, uuid.FromStringOrNil(userEndID.(string)))
 			}
 			fn(w, r.WithContext(ctx), p)
 		} else {
@@ -185,9 +138,10 @@ func jwtToken(fn httprouter.Handle) httprouter.Handle {
 	}
 }
 
-func userEndIDRequired(fn httprouter.Handle) httprouter.Handle {
+// UserEndIDRequired - Checks if the request has a userID
+func UserEndIDRequired(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		ueid := r.Context().Value(userEndIDContextKey{})
+		ueid := r.Context().Value(UserEndIDContextKey{})
 		if ueid == nil {
 			logrus.Errorln("Missing userEndID")
 			http.Error(w, "Missing userEndID", http.StatusBadRequest)
@@ -197,9 +151,10 @@ func userEndIDRequired(fn httprouter.Handle) httprouter.Handle {
 	}
 }
 
-func objectIDRequired(fn httprouter.Handle) httprouter.Handle {
+// ObjectIDRequired - Checks if the object's id is set in the payload
+func ObjectIDRequired(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		o := r.Context().Value(objectContextKey{}).(Object)
+		o := r.Context().Value(ObjectContextKey{}).(db.Object)
 		if o.GetID().Valid == false {
 			logrus.Errorln("Missing object's ID")
 			http.Error(w, "Missing object's ID", http.StatusBadRequest)
@@ -209,16 +164,17 @@ func objectIDRequired(fn httprouter.Handle) httprouter.Handle {
 	}
 }
 
-func createUserEndObjects(collection string, factory func() UserEndObject) middleware.Middleware {
+// CreateUserEndObjects - creates the UserEnd object associated with the inserted object
+func CreateUserEndObjects(collection string, factory func() db.UserEndObject) middleware.Middleware {
 	return func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-			sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
-			uid := r.Context().Value(userIDContextKey{}).(uuid.UUID)
-			ueid := r.Context().Value(userEndIDContextKey{}).(uuid.UUID)
+			sess := r.Context().Value(SessContextKey{}).(sqlbuilder.Database)
+			uid := r.Context().Value(UserIDContextKey{}).(uuid.UUID)
+			ueid := r.Context().Value(UserEndIDContextKey{}).(uuid.UUID)
 
-			id := r.Context().Value(insertedIDContextKey{}).(uuid.UUID)
+			id := r.Context().Value(InsertedIDContextKey{}).(uuid.UUID)
 
-			uends := []UserEnd{}
+			uends := []db.UserEnd{}
 			err := sess.Collection("userends").Find("userid", uid).All(&uends)
 			if err != nil {
 				logrus.Errorln(err.Error())
@@ -243,14 +199,15 @@ func createUserEndObjects(collection string, factory func() UserEndObject) middl
 	}
 }
 
-func updateUserEndObjects(collection, field string) middleware.Middleware {
+// UpdateUserEndObjects - sets the UserEnd object to dirty when updated
+func UpdateUserEndObjects(collection, field string) middleware.Middleware {
 	return func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-			sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
-			uid := r.Context().Value(userIDContextKey{}).(uuid.UUID)
-			ueid := r.Context().Value(userEndIDContextKey{}).(uuid.UUID)
+			sess := r.Context().Value(SessContextKey{}).(sqlbuilder.Database)
+			uid := r.Context().Value(UserIDContextKey{}).(uuid.UUID)
+			ueid := r.Context().Value(UserEndIDContextKey{}).(uuid.UUID)
 
-			id := r.Context().Value(updatedIDContextKey{}).(uuid.UUID)
+			id := r.Context().Value(UpdatedIDContextKey{}).(uuid.UUID)
 
 			_, err := sess.Update(collection).Set("dirty", true).Where(field, id).And("userendid != ?", ueid).And("userendid in (select id from userends where userid = ?)", uid).Exec()
 			if err != nil {

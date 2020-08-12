@@ -25,6 +25,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/SuperGreenLab/AppBackend/internal/data/db"
+	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
@@ -41,8 +43,8 @@ func syncCollection(collection, id string, factory func() interface{}, customSel
 
 	s.Use(func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-			sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
-			ueid := r.Context().Value(userEndIDContextKey{}).(uuid.UUID)
+			sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+			ueid := r.Context().Value(middlewares.UserEndIDContextKey{}).(uuid.UUID)
 			res := factory()
 			selector := sess.Select("a.*").From(fmt.Sprintf("%s a", collection)).Join(fmt.Sprintf("userend_%s b", collection)).On(fmt.Sprintf("b.%s = a.id", id)).Where("b.userendid = ?", ueid).And("dirty = true")
 			if customSelect != nil {
@@ -53,7 +55,7 @@ func syncCollection(collection, id string, factory func() interface{}, customSel
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			ctx := context.WithValue(r.Context(), objectContextKey{}, res)
+			ctx := context.WithValue(r.Context(), middlewares.ObjectContextKey{}, res)
 			fn(w, r.WithContext(ctx), p)
 		}
 	})
@@ -65,7 +67,7 @@ func syncCollection(collection, id string, factory func() interface{}, customSel
 	}
 
 	return s.Wrap(func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		o := r.Context().Value(objectContextKey{})
+		o := r.Context().Value(middlewares.ObjectContextKey{})
 		if err := json.NewEncoder(w).Encode(syncResponse{o}); err != nil {
 			logrus.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -74,21 +76,21 @@ func syncCollection(collection, id string, factory func() interface{}, customSel
 	})
 }
 
-var syncBoxesHandler = syncCollection("boxes", "boxid", func() interface{} { return &[]Box{} }, nil, nil)
-var syncPlantsHandler = syncCollection("plants", "plantid", func() interface{} { return &[]Plant{} }, nil, nil)
-var syncTimelapsesHandler = syncCollection("timelapses", "timelapseid", func() interface{} { return &[]Timelapse{} }, nil, nil)
-var syncDevicesHandler = syncCollection("devices", "deviceid", func() interface{} { return &[]Device{} }, nil, nil)
-var syncFeedsHandler = syncCollection("feeds", "feedid", func() interface{} { return &[]Feed{} }, func(selector sqlbuilder.Selector) sqlbuilder.Selector {
+var syncBoxesHandler = syncCollection("boxes", "boxid", func() interface{} { return &[]db.Box{} }, nil, nil)
+var syncPlantsHandler = syncCollection("plants", "plantid", func() interface{} { return &[]db.Plant{} }, nil, nil)
+var syncTimelapsesHandler = syncCollection("timelapses", "timelapseid", func() interface{} { return &[]db.Timelapse{} }, nil, nil)
+var syncDevicesHandler = syncCollection("devices", "deviceid", func() interface{} { return &[]db.Device{} }, nil, nil)
+var syncFeedsHandler = syncCollection("feeds", "feedid", func() interface{} { return &[]db.Feed{} }, func(selector sqlbuilder.Selector) sqlbuilder.Selector {
 	return selector.And("isnewsfeed", false)
 }, nil)
-var syncFeedEntriesHandler = syncCollection("feedentries", "feedentryid", func() interface{} { return &[]FeedEntry{} }, func(selector sqlbuilder.Selector) sqlbuilder.Selector {
+var syncFeedEntriesHandler = syncCollection("feedentries", "feedentryid", func() interface{} { return &[]db.FeedEntry{} }, func(selector sqlbuilder.Selector) sqlbuilder.Selector {
 	return selector.Join("feeds f").On("f.id = a.feedid").Where("f.isnewsfeed", false)
 }, nil)
-var syncFeedMediasHandler = syncCollection("feedmedias", "feedmediaid", func() interface{} { return &[]FeedMedia{} }, nil, []middleware.Middleware{
+var syncFeedMediasHandler = syncCollection("feedmedias", "feedmediaid", func() interface{} { return &[]db.FeedMedia{} }, nil, []middleware.Middleware{
 	func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			var err error
-			feedMedias := r.Context().Value(objectContextKey{}).(*[]FeedMedia)
+			feedMedias := r.Context().Value(middlewares.ObjectContextKey{}).(*[]db.FeedMedia)
 			for i, fm := range *feedMedias {
 				fm, err = loadFeedMediaPublicURLs(fm)
 				if err != nil {
@@ -98,7 +100,7 @@ var syncFeedMediasHandler = syncCollection("feedmedias", "feedmediaid", func() i
 				}
 				(*feedMedias)[i] = fm
 			}
-			ctx := context.WithValue(r.Context(), objectContextKey{}, feedMedias)
+			ctx := context.WithValue(r.Context(), middlewares.ObjectContextKey{}, feedMedias)
 			fn(w, r.WithContext(ctx), p)
 		}
 	},
@@ -106,8 +108,8 @@ var syncFeedMediasHandler = syncCollection("feedmedias", "feedmediaid", func() i
 
 func syncedHandler(collection, field string) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
-		ueid := r.Context().Value(userEndIDContextKey{}).(uuid.UUID)
+		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+		ueid := r.Context().Value(middlewares.UserEndIDContextKey{}).(uuid.UUID)
 
 		var deleted struct {
 			Deleted bool `db:"deleted"`

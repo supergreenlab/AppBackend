@@ -16,10 +16,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package feeds
+package users
 
 import (
+	"fmt"
 	"net/http"
+
+	"github.com/SuperGreenLab/AppBackend/internal/data/db"
+	"github.com/gofrs/uuid"
+
+	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/julienschmidt/httprouter"
@@ -38,14 +44,14 @@ type loginParams struct {
 func loginHandler() httprouter.Handle {
 	s := middleware.NewStack()
 
-	s.Use(decodeJSON(func() interface{} { return &loginParams{} }))
+	s.Use(middlewares.DecodeJSON(func() interface{} { return &loginParams{} }))
 
 	return s.Wrap(func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		hmacSampleSecret := []byte(viper.GetString("JWTSecret"))
-		lp := r.Context().Value(objectContextKey{}).(*loginParams)
-		sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
+		lp := r.Context().Value(middlewares.ObjectContextKey{}).(*loginParams)
+		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
 
-		u := User{}
+		u := db.User{}
 		err := sess.Select("id", "password").From("users").Where("nickname = ?", lp.Handle).One(&u)
 		if err != nil {
 			logrus.Errorln(err)
@@ -74,3 +80,48 @@ func loginHandler() httprouter.Handle {
 		w.WriteHeader(http.StatusOK)
 	})
 }
+
+func fillUserEnd(sess sqlbuilder.Database, ueid uuid.UUID, collection string, all db.Objects, factory func() db.UserEndObject) {
+	all.Each(func(a db.Object) {
+		ueo := factory()
+		ueo.SetUserEndID(ueid)
+		ueo.SetObjectID(a.GetID().UUID)
+		ueo.SetDirty(true)
+		sess.Collection(fmt.Sprintf("userend_%s", collection)).Insert(ueo)
+	})
+}
+
+var createUserHandler = middlewares.InsertEndpoint(
+	"users",
+	func() interface{} { return &db.User{} },
+	[]middleware.Middleware{
+		func(fn httprouter.Handle) httprouter.Handle {
+			return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+				u := r.Context().Value(middlewares.ObjectContextKey{}).(*db.User)
+				sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+				n, err := sess.Collection("users").Find().Where("nickname = ?", u.Nickname).Count() // TODO this is stupid
+				if err != nil {
+					logrus.Errorln(err.Error())
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				if n > 0 {
+					logrus.Errorln("User already exists")
+					http.Error(w, "User already exists", http.StatusBadRequest)
+					return
+				}
+
+				bc, err := bcrypt.GenerateFromPassword([]byte(u.Password), 8)
+				u.Password = string(bc)
+				if err != nil {
+					logrus.Errorln(err.Error())
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				fn(w, r, p)
+			}
+		},
+	},
+	nil,
+)

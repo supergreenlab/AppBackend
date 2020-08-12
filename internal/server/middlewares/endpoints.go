@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package feeds
+package middlewares
 
 import (
 	"encoding/json"
@@ -27,8 +27,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func outputObjectID(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	id := r.Context().Value(insertedIDContextKey{}).(uuid.UUID)
+// OutputObjectID - returns the inserted object ID
+func OutputObjectID(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	id := r.Context().Value(InsertedIDContextKey{}).(uuid.UUID)
 	response := struct {
 		ID string `json:"id"`
 	}{id.String()}
@@ -39,7 +40,8 @@ func outputObjectID(w http.ResponseWriter, r *http.Request, p httprouter.Params)
 	}
 }
 
-func outputOK(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+// OutputOK - returns the OK response
+func OutputOK(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	response := struct {
 		Status string `json:"status"`
 	}{"OK"}

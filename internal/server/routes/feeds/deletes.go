@@ -22,6 +22,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/SuperGreenLab/AppBackend/internal/data/db"
+	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
+
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
@@ -36,14 +39,14 @@ type deletesRequest struct {
 	} `json:"deletes"`
 }
 
-var factories map[string]func() UserObject = map[string]func() UserObject{
-	"boxes":       func() UserObject { return &Box{} },
-	"plants":      func() UserObject { return &Plant{} },
-	"timelapses":  func() UserObject { return &Timelapse{} },
-	"devices":     func() UserObject { return &Device{} },
-	"feeds":       func() UserObject { return &Feed{} },
-	"feedentries": func() UserObject { return &FeedEntry{} },
-	"feedmedias":  func() UserObject { return &FeedMedia{} },
+var factories map[string]func() db.UserObject = map[string]func() db.UserObject{
+	"boxes":       func() db.UserObject { return &db.Box{} },
+	"plants":      func() db.UserObject { return &db.Plant{} },
+	"timelapses":  func() db.UserObject { return &db.Timelapse{} },
+	"devices":     func() db.UserObject { return &db.Device{} },
+	"feeds":       func() db.UserObject { return &db.Feed{} },
+	"feedentries": func() db.UserObject { return &db.FeedEntry{} },
+	"feedmedias":  func() db.UserObject { return &db.FeedMedia{} },
 }
 
 var idFields map[string]string = map[string]string{
@@ -59,15 +62,15 @@ var idFields map[string]string = map[string]string{
 func createDeleteHandler() httprouter.Handle {
 	s := middleware.NewStack()
 
-	s.Use(decodeJSON(func() interface{} {
+	s.Use(middlewares.DecodeJSON(func() interface{} {
 		return &deletesRequest{}
 	}))
 
 	return s.Wrap(func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		uid := r.Context().Value(userIDContextKey{}).(uuid.UUID)
-		sess := r.Context().Value(sessContextKey{}).(sqlbuilder.Database)
-		deletes := r.Context().Value(objectContextKey{}).(*deletesRequest)
-		ueid := r.Context().Value(userEndIDContextKey{}).(uuid.UUID)
+		uid := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
+		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+		deletes := r.Context().Value(middlewares.ObjectContextKey{}).(*deletesRequest)
+		ueid := r.Context().Value(middlewares.UserEndIDContextKey{}).(uuid.UUID)
 
 		for _, del := range deletes.Deletes {
 			factory, ok := factories[del.Type]
