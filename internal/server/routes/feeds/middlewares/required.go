@@ -7,7 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// UserEndIDRequired - Checks if the request has a userID
+// UserEndIDRequired - Checks if the request has a userEndID
 func UserEndIDRequired(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		ueid := r.Context().Value(UserEndIDContextKey{})

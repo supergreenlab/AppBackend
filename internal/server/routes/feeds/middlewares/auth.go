@@ -41,7 +41,7 @@ func AuthStackWithUserEnd() middleware.Stack {
 // UserEndIDContextKey - context key which stores the request's userEndID
 type UserEndIDContextKey struct{}
 
-// JwtTokenUserEndID - Sets the
+// JwtTokenUserEndID - Sets the userEndID from the claim, does nothing if missing
 func JwtTokenUserEndID(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		claims := r.Context().Value(cmiddlewares.JwtClaimsContextKey{}).(jwt.MapClaims)

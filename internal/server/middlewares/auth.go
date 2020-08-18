@@ -56,8 +56,8 @@ func AuthStack() middleware.Stack {
 	auth := middleware.NewStack()
 	auth.Use(wares.Logging)
 	auth.Use(JwtToken)
+	auth.Use(UserIDRequired)
 	auth.Use(CreateDBSession)
-
 	return auth
 }
 
