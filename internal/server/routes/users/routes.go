@@ -32,8 +32,8 @@ func anonStack() middleware.Stack {
 	return anon
 }
 
-// InitUsers -
-func InitUsers(router *httprouter.Router) {
+// Init -
+func Init(router *httprouter.Router) {
 	anon := anonStack()
 
 	router.POST("/login", anon.Wrap(loginHandler()))

@@ -23,9 +23,11 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// InitFeeds -
-func InitFeeds(router *httprouter.Router) {
+// Init -
+func Init(router *httprouter.Router) {
 	auth := middlewares.AuthStack()
 
 	router.POST("/products", auth.Wrap(createProductsHandler))
+	router.POST("/suppliers", auth.Wrap(createSuppliersHandler))
+	router.POST("/productsuppliers", auth.Wrap(createProductSuppliersHandler))
 }

@@ -29,8 +29,6 @@ import (
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/prometheus"
 	"github.com/julienschmidt/httprouter"
-	"github.com/rileyr/middleware"
-	"github.com/rileyr/middleware/wares"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -39,14 +37,7 @@ var (
 	cidFilter   = regexp.MustCompile("[^a-f0-9]*")
 )
 
-func InitMetrics(router *httprouter.Router) {
-	s := middleware.NewStack()
-
-	s.Use(wares.Logging)
-
-	router.GET("/metrics", s.Wrap(ServeMetricsHandler))
-}
-
+// ServeMetricsHandler -
 func ServeMetricsHandler(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	var err error
 	q := r.URL.Query().Get("q")

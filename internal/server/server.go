@@ -21,6 +21,8 @@ package server
 import (
 	"net/http"
 
+	"github.com/SuperGreenLab/AppBackend/internal/server/routes/products"
+
 	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
@@ -38,9 +40,10 @@ func Start() {
 
 	router := httprouter.New()
 
-	users.InitUsers(router)
-	metrics.InitMetrics(router)
-	feeds.InitFeeds(router)
+	users.Init(router)
+	metrics.Init(router)
+	feeds.Init(router)
+	products.Init(router)
 
 	go func() { log.Fatal(http.ListenAndServe(":8080", router)) }()
 }

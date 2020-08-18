@@ -19,12 +19,31 @@
 package products
 
 import (
+	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/rileyr/middleware"
 )
 
 var createProductsHandler = middlewares.InsertEndpoint(
-	"boxes",
+	"products",
+	func() interface{} { return &db.Products{} },
+	[]middleware.Middleware{
+		middlewares.SetUserID,
+	},
+	[]middleware.Middleware{},
+)
+
+var createSuppliersHandler = middlewares.InsertEndpoint(
+	"suppliers",
+	func() interface{} { return &db.Products{} },
+	[]middleware.Middleware{
+		middlewares.SetUserID,
+	},
+	[]middleware.Middleware{},
+)
+
+var createProductSuppliersHandler = middlewares.InsertEndpoint(
+	"productsuppliers",
 	func() interface{} { return &db.Products{} },
 	[]middleware.Middleware{
 		middlewares.SetUserID,

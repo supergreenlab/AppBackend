@@ -88,8 +88,8 @@ func (o Suppliers) GetUserID() uuid.UUID {
 	return o.UserID
 }
 
-// ProductsSuppliers -
-type ProductsSuppliers struct {
+// ProductSuppliers -
+type ProductSuppliers struct {
 	ID         uuid.NullUUID `db:"id,omitempty" json:"id"`
 	UserID     uuid.UUID     `db:"userid" json:"userID"`
 	ProductID  uuid.UUID     `db:"productid" json:"productID"`
@@ -103,16 +103,16 @@ type ProductsSuppliers struct {
 }
 
 // GetID -
-func (o ProductsSuppliers) GetID() uuid.NullUUID {
+func (o ProductSuppliers) GetID() uuid.NullUUID {
 	return o.ID
 }
 
 // SetUserID -
-func (o *ProductsSuppliers) SetUserID(userID uuid.UUID) {
+func (o *ProductSuppliers) SetUserID(userID uuid.UUID) {
 	o.UserID = userID
 }
 
 // GetUserID -
-func (o ProductsSuppliers) GetUserID() uuid.UUID {
+func (o ProductSuppliers) GetUserID() uuid.UUID {
 	return o.UserID
 }

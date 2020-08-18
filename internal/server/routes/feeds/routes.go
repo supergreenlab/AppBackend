@@ -24,8 +24,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// InitFeeds -
-func InitFeeds(router *httprouter.Router) {
+// Init -
+func Init(router *httprouter.Router) {
 	anon := cmiddlewares.AnonStack()
 	auth := cmiddlewares.AuthStack()
 	authWithUserEndID := fmiddlewares.AuthStackWithUserEnd()
