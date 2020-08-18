@@ -20,12 +20,14 @@ package products
 
 import (
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
-	"github.com/julienschmidt/httprouter"
+	"github.com/rileyr/middleware"
 )
 
-// InitFeeds -
-func InitFeeds(router *httprouter.Router) {
-	auth := middlewares.AuthStack()
-
-	router.POST("/products", auth.Wrap(createProductsHandler))
-}
+var createProductsHandler = middlewares.InsertEndpoint(
+	"boxes",
+	func() interface{} { return &db.Products{} },
+	[]middleware.Middleware{
+		middlewares.SetUserID,
+	},
+	[]middleware.Middleware{},
+)

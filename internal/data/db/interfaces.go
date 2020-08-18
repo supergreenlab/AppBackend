@@ -16,16 +16,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package products
+package db
 
-import (
-	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
-	"github.com/julienschmidt/httprouter"
-)
+import "github.com/gofrs/uuid"
 
-// InitFeeds -
-func InitFeeds(router *httprouter.Router) {
-	auth := middlewares.AuthStack()
+// Object -
+type Object interface {
+	GetID() uuid.NullUUID
+}
 
-	router.POST("/products", auth.Wrap(createProductsHandler))
+// Objects -
+type Objects interface {
+	Each(func(Object))
+}
+
+// UserObject -
+type UserObject interface {
+	Object
+	SetUserID(uuid.UUID)
+	GetUserID() uuid.UUID
 }

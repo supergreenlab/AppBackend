@@ -24,33 +24,6 @@ import (
 	"github.com/gofrs/uuid"
 )
 
-// User -
-type User struct {
-	ID       uuid.NullUUID `db:"id,omitempty" json:"id"`
-	Nickname string        `db:"nickname" json:"nickname"`
-	Password string        `db:"password,omitempty" json:"password"`
-
-	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
-	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
-}
-
-// Object -
-type Object interface {
-	GetID() uuid.NullUUID
-}
-
-// Objects -
-type Objects interface {
-	Each(func(Object))
-}
-
-// UserObject -
-type UserObject interface {
-	Object
-	SetUserID(uuid.UUID)
-	GetUserID() uuid.UUID
-}
-
 // Box -
 type Box struct {
 	ID        uuid.NullUUID `db:"id,omitempty" json:"id"`

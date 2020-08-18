@@ -2,6 +2,7 @@ create extension pg_trgm;
 
 create table if not exists products(
   id uuid primary key default uuid_generate_v4(),
+  userid uuid not null,
   name varchar(256) not null,
   description varchar(4000) not null default '',
 
@@ -25,6 +26,7 @@ for each row
 
 create table if not exists suppliers {
   id uuid primary key default uuid_generate_v4(),
+  userid uuid not null,
   name varchar(256) not null,
   url varchar(256) not null,
   description varchar(4000) not null default '',
@@ -48,6 +50,7 @@ for each row
 
 create table if not exists productsuppliers(
   id uuid primary key default uuid_generate_v4(),
+  userid uuid not null,
   productid uuid not null,
   supplierid uuid not null,
   url varchar(256) not null,

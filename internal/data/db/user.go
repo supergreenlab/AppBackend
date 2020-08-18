@@ -16,16 +16,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package products
+package db
 
 import (
-	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
-	"github.com/julienschmidt/httprouter"
+	"time"
+
+	"github.com/gofrs/uuid"
 )
 
-// InitFeeds -
-func InitFeeds(router *httprouter.Router) {
-	auth := middlewares.AuthStack()
+// User -
+type User struct {
+	ID       uuid.NullUUID `db:"id,omitempty" json:"id"`
+	Nickname string        `db:"nickname" json:"nickname"`
+	Password string        `db:"password,omitempty" json:"password"`
 
-	router.POST("/products", auth.Wrap(createProductsHandler))
+	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
+	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
 }
