@@ -27,6 +27,8 @@ import (
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
+	cmiddlewares "github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
+	fmiddlewares "github.com/SuperGreenLab/AppBackend/internal/server/routes/feeds/middlewares"
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
@@ -43,8 +45,8 @@ func syncCollection(collection, id string, factory func() interface{}, customSel
 
 	s.Use(func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-			sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
-			ueid := r.Context().Value(middlewares.UserEndIDContextKey{}).(uuid.UUID)
+			sess := r.Context().Value(cmiddlewares.SessContextKey{}).(sqlbuilder.Database)
+			ueid := r.Context().Value(fmiddlewares.UserEndIDContextKey{}).(uuid.UUID)
 			res := factory()
 			selector := sess.Select("a.*").From(fmt.Sprintf("%s a", collection)).Join(fmt.Sprintf("userend_%s b", collection)).On(fmt.Sprintf("b.%s = a.id", id)).Where("b.userendid = ?", ueid).And("dirty = true")
 			if customSelect != nil {
@@ -55,7 +57,7 @@ func syncCollection(collection, id string, factory func() interface{}, customSel
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			ctx := context.WithValue(r.Context(), middlewares.ObjectContextKey{}, res)
+			ctx := context.WithValue(r.Context(), cmiddlewares.ObjectContextKey{}, res)
 			fn(w, r.WithContext(ctx), p)
 		}
 	})
@@ -108,8 +110,8 @@ var syncFeedMediasHandler = syncCollection("feedmedias", "feedmediaid", func() i
 
 func syncedHandler(collection, field string) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
-		ueid := r.Context().Value(middlewares.UserEndIDContextKey{}).(uuid.UUID)
+		sess := r.Context().Value(cmiddlewares.SessContextKey{}).(sqlbuilder.Database)
+		ueid := r.Context().Value(fmiddlewares.UserEndIDContextKey{}).(uuid.UUID)
 
 		var deleted struct {
 			Deleted bool `db:"deleted"`

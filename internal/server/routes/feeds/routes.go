@@ -19,42 +19,16 @@
 package feeds
 
 import (
-	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
+	cmiddlewares "github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
+	fmiddlewares "github.com/SuperGreenLab/AppBackend/internal/server/routes/feeds/middlewares"
 	"github.com/julienschmidt/httprouter"
-	"github.com/rileyr/middleware"
-	"github.com/rileyr/middleware/wares"
-	"github.com/spf13/pflag"
 )
-
-var (
-	jwtSecret = pflag.String("jwtsecret", "", "JWT secret")
-)
-
-func anonStack() middleware.Stack {
-	anon := middleware.NewStack()
-	anon.Use(wares.Logging)
-	anon.Use(middlewares.CreateDBSession)
-	return anon
-}
-
-func authStack(withUserEndID bool) middleware.Stack {
-	auth := middleware.NewStack()
-	auth.Use(wares.Logging)
-	auth.Use(middlewares.JwtToken)
-	auth.Use(middlewares.CreateDBSession)
-
-	if withUserEndID == true {
-		auth.Use(middlewares.UserEndIDRequired)
-	}
-
-	return auth
-}
 
 // InitFeeds -
 func InitFeeds(router *httprouter.Router) {
-	anon := anonStack()
-	auth := authStack(false)
-	authWithUserEndID := authStack(true)
+	anon := cmiddlewares.AnonStack()
+	auth := cmiddlewares.AuthStack()
+	authWithUserEndID := fmiddlewares.AuthStackWithUserEnd()
 
 	router.POST("/userend", auth.Wrap(createUserEndHandler))
 	router.POST("/plantsharing", auth.Wrap(createPlantSharingHandler))

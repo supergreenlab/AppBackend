@@ -24,6 +24,7 @@ import (
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
+	fmiddlewares "github.com/SuperGreenLab/AppBackend/internal/server/routes/feeds/middlewares"
 
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
@@ -70,7 +71,7 @@ func createDeleteHandler() httprouter.Handle {
 		uid := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
 		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
 		deletes := r.Context().Value(middlewares.ObjectContextKey{}).(*deletesRequest)
-		ueid := r.Context().Value(middlewares.UserEndIDContextKey{}).(uuid.UUID)
+		ueid := r.Context().Value(fmiddlewares.UserEndIDContextKey{}).(uuid.UUID)
 
 		for _, del := range deletes.Deletes {
 			factory, ok := factories[del.Type]

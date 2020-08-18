@@ -21,6 +21,7 @@ package feeds
 import (
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
+	fmiddlewares "github.com/SuperGreenLab/AppBackend/internal/server/routes/feeds/middlewares"
 	"github.com/rileyr/middleware"
 )
 
@@ -34,7 +35,7 @@ var updateBoxHandler = middlewares.UpdateEndpoint(
 		middlewares.CheckAccessRight("devices", "DeviceID", true, func() db.UserObject { return &db.Device{} }),
 	},
 	[]middleware.Middleware{
-		middlewares.UpdateUserEndObjects("userend_devices", "deviceid"),
+		fmiddlewares.UpdateUserEndObjects("userend_devices", "deviceid"),
 	},
 )
 
@@ -48,7 +49,7 @@ var updatePlantHandler = middlewares.UpdateEndpoint(
 		middlewares.CheckAccessRight("boxes", "BoxID", false, func() db.UserObject { return &db.Box{} }),
 	},
 	[]middleware.Middleware{
-		middlewares.UpdateUserEndObjects("userend_plants", "plantid"),
+		fmiddlewares.UpdateUserEndObjects("userend_plants", "plantid"),
 	},
 )
 
@@ -62,7 +63,7 @@ var updateTimelapseHandler = middlewares.UpdateEndpoint(
 		middlewares.CheckAccessRight("plants", "PlantID", false, func() db.UserObject { return &db.Plant{} }),
 	},
 	[]middleware.Middleware{
-		middlewares.UpdateUserEndObjects("userend_timelapses", "timelapseid"),
+		fmiddlewares.UpdateUserEndObjects("userend_timelapses", "timelapseid"),
 	},
 )
 
@@ -75,7 +76,7 @@ var updateDeviceHandler = middlewares.UpdateEndpoint(
 		middlewares.CheckAccessRight("devices", "ID", false, func() db.UserObject { return &db.Device{} }),
 	},
 	[]middleware.Middleware{
-		middlewares.UpdateUserEndObjects("userend_devices", "deviceid"),
+		fmiddlewares.UpdateUserEndObjects("userend_devices", "deviceid"),
 	},
 )
 
@@ -88,7 +89,7 @@ var updateFeedHandler = middlewares.UpdateEndpoint(
 		middlewares.CheckAccessRight("feeds", "ID", false, func() db.UserObject { return &db.Feed{} }),
 	},
 	[]middleware.Middleware{
-		middlewares.UpdateUserEndObjects("userend_feeds", "feedid"),
+		fmiddlewares.UpdateUserEndObjects("userend_feeds", "feedid"),
 	},
 )
 
@@ -102,7 +103,7 @@ var updateFeedEntryHandler = middlewares.UpdateEndpoint(
 		middlewares.CheckAccessRight("feeds", "FeedID", false, func() db.UserObject { return &db.Feed{} }),
 	},
 	[]middleware.Middleware{
-		middlewares.UpdateUserEndObjects("userend_feedentries", "feedentryid"),
+		fmiddlewares.UpdateUserEndObjects("userend_feedentries", "feedentryid"),
 	},
 )
 
@@ -116,6 +117,6 @@ var updateFeedMediaHandler = middlewares.UpdateEndpoint(
 		middlewares.CheckAccessRight("feedentries", "FeedEntryID", false, func() db.UserObject { return &db.FeedEntry{} }),
 	},
 	[]middleware.Middleware{
-		middlewares.UpdateUserEndObjects("userend_feedmedias", "feedmediaid"),
+		fmiddlewares.UpdateUserEndObjects("userend_feedmedias", "feedmediaid"),
 	},
 )

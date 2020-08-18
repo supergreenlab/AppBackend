@@ -24,6 +24,7 @@ import (
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
+	fmiddlewares "github.com/SuperGreenLab/AppBackend/internal/server/routes/feeds/middlewares"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
@@ -110,7 +111,7 @@ var createBoxHandler = middlewares.InsertEndpoint(
 		middlewares.CheckAccessRight("devices", "DeviceID", true, func() db.UserObject { return &db.Device{} }),
 	},
 	[]middleware.Middleware{
-		middlewares.CreateUserEndObjects("userend_boxes", func() db.UserEndObject { return &db.UserEndBox{} }),
+		fmiddlewares.CreateUserEndObjects("userend_boxes", func() db.UserEndObject { return &db.UserEndBox{} }),
 	},
 )
 
@@ -122,7 +123,7 @@ var createPlantHandler = middlewares.InsertEndpoint(
 		middlewares.CheckAccessRight("boxes", "BoxID", false, func() db.UserObject { return &db.Box{} }),
 	},
 	[]middleware.Middleware{
-		middlewares.CreateUserEndObjects("userend_plants", func() db.UserEndObject { return &db.UserEndPlant{} }),
+		fmiddlewares.CreateUserEndObjects("userend_plants", func() db.UserEndObject { return &db.UserEndPlant{} }),
 	},
 )
 
@@ -134,7 +135,7 @@ var createTimelapseHandler = middlewares.InsertEndpoint(
 		middlewares.CheckAccessRight("plants", "PlantID", false, func() db.UserObject { return &db.Plant{} }),
 	},
 	[]middleware.Middleware{
-		middlewares.CreateUserEndObjects("userend_timelapses", func() db.UserEndObject { return &db.UserEndTimelapse{} }),
+		fmiddlewares.CreateUserEndObjects("userend_timelapses", func() db.UserEndObject { return &db.UserEndTimelapse{} }),
 	},
 )
 
@@ -143,7 +144,7 @@ var createDeviceHandler = middlewares.InsertEndpoint(
 	func() interface{} { return &db.Device{} },
 	[]middleware.Middleware{middlewares.SetUserID},
 	[]middleware.Middleware{
-		middlewares.CreateUserEndObjects("userend_devices", func() db.UserEndObject { return &db.UserEndDevice{} }),
+		fmiddlewares.CreateUserEndObjects("userend_devices", func() db.UserEndObject { return &db.UserEndDevice{} }),
 	},
 )
 
@@ -152,7 +153,7 @@ var createFeedHandler = middlewares.InsertEndpoint(
 	func() interface{} { return &db.Feed{} },
 	[]middleware.Middleware{middlewares.SetUserID},
 	[]middleware.Middleware{
-		middlewares.CreateUserEndObjects("userend_feeds", func() db.UserEndObject { return &db.UserEndFeed{} }),
+		fmiddlewares.CreateUserEndObjects("userend_feeds", func() db.UserEndObject { return &db.UserEndFeed{} }),
 	},
 )
 
@@ -164,7 +165,7 @@ var createFeedEntryHandler = middlewares.InsertEndpoint(
 		middlewares.CheckAccessRight("feeds", "FeedID", false, func() db.UserObject { return &db.Feed{} }),
 	},
 	[]middleware.Middleware{
-		middlewares.CreateUserEndObjects("userend_feedentries", func() db.UserEndObject { return &db.UserEndFeedEntry{} }),
+		fmiddlewares.CreateUserEndObjects("userend_feedentries", func() db.UserEndObject { return &db.UserEndFeedEntry{} }),
 	},
 )
 
@@ -176,7 +177,7 @@ var createFeedMediaHandler = middlewares.InsertEndpoint(
 		middlewares.CheckAccessRight("feedentries", "FeedEntryID", false, func() db.UserObject { return &db.FeedEntry{} }),
 	},
 	[]middleware.Middleware{
-		middlewares.CreateUserEndObjects("userend_feedmedias", func() db.UserEndObject { return &db.UserEndFeedMedia{} }),
+		fmiddlewares.CreateUserEndObjects("userend_feedmedias", func() db.UserEndObject { return &db.UserEndFeedMedia{} }),
 	},
 )
 
