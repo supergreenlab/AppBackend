@@ -24,7 +24,7 @@ before update on products
 for each row
   execute procedure moddatetime(uat);
 
-create table if not exists suppliers {
+create table if not exists suppliers (
   id uuid primary key default uuid_generate_v4(),
   userid uuid not null,
   name varchar(256) not null,
@@ -37,7 +37,7 @@ create table if not exists suppliers {
   
   cat timestamptz default now(),
   uat timestamptz default now()
-};
+);
 
 CREATE INDEX suppliers_name ON suppliers USING GIN(name gin_trgm_ops);
 
