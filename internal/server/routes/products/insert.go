@@ -35,7 +35,7 @@ var createProductsHandler = middlewares.InsertEndpoint(
 
 var createSuppliersHandler = middlewares.InsertEndpoint(
 	"suppliers",
-	func() interface{} { return &db.Products{} },
+	func() interface{} { return &db.Suppliers{} },
 	[]middleware.Middleware{
 		middlewares.SetUserID,
 	},
@@ -44,7 +44,7 @@ var createSuppliersHandler = middlewares.InsertEndpoint(
 
 var createProductSuppliersHandler = middlewares.InsertEndpoint(
 	"productsuppliers",
-	func() interface{} { return &db.Products{} },
+	func() interface{} { return &db.ProductSuppliers{} },
 	[]middleware.Middleware{
 		middlewares.SetUserID,
 	},

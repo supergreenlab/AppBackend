@@ -32,9 +32,6 @@ type Products struct {
 	Name        string `db:"name" json:"name"`
 	Description string `db:"description" json:"description"`
 
-	FilePath      string `db:"filepath" json:"filePath"`
-	ThumbnailPath string `db:"thumbnailpath" json:"thumbnailPath"`
-
 	Categories string `db:"categories" json:"categories"`
 
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
@@ -66,9 +63,6 @@ type Suppliers struct {
 	Description string `db:"description" json:"description"`
 	Locals      string `db:"locals" json:"locals"`
 
-	FilePath      string `db:"filepath" json:"filePath"`
-	ThumbnailPath string `db:"thumbnailpath" json:"thumbnailPath"`
-
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
 }
@@ -93,7 +87,7 @@ type ProductSuppliers struct {
 	ID         uuid.NullUUID `db:"id,omitempty" json:"id"`
 	UserID     uuid.UUID     `db:"userid" json:"userID"`
 	ProductID  uuid.UUID     `db:"productid" json:"productID"`
-	SupplierID uuid.UUID     `db:"supplierid" json:"supplierID"`
+	SupplierID uuid.NullUUID `db:"supplierid" json:"supplierID"`
 
 	URL   string  `db:"url" json:"url"`
 	Price float64 `db:"price" json:"price"`

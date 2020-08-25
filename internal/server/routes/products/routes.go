@@ -27,7 +27,9 @@ import (
 func Init(router *httprouter.Router) {
 	auth := middlewares.AuthStack()
 
-	router.POST("/products", auth.Wrap(createProductsHandler))
-	router.POST("/suppliers", auth.Wrap(createSuppliersHandler))
-	router.POST("/productsuppliers", auth.Wrap(createProductSuppliersHandler))
+	router.POST("/product", auth.Wrap(createProductsHandler))
+	router.POST("/supplier", auth.Wrap(createSuppliersHandler))
+	router.POST("/productsupplier", auth.Wrap(createProductSuppliersHandler))
+
+	router.GET("/products/search", searchProducts)
 }

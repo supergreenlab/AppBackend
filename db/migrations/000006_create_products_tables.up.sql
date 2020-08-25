@@ -1,4 +1,4 @@
-create extension pg_trgm;
+create extension if not exists pg_trgm;
 
 create table if not exists products(
   id uuid primary key default uuid_generate_v4(),
@@ -6,10 +6,9 @@ create table if not exists products(
   name varchar(256) not null,
   description varchar(4000) not null default '',
 
-  filepath varchar not null,
-  thumbnailpath varchar not null,
-
   categories jsonb not null default '[]'::jsonb,
+
+  specs jsonb not null default '{}'::jsonb,
 
   cat timestamptz default now(),
   uat timestamptz default now()
@@ -32,9 +31,6 @@ create table if not exists suppliers (
   description varchar(4000) not null default '',
   locals jsonb not null default '[]'::jsonb,
 
-  filepath varchar not null,
-  thumbnailpath varchar not null,
-  
   cat timestamptz default now(),
   uat timestamptz default now()
 );
@@ -52,9 +48,9 @@ create table if not exists productsuppliers(
   id uuid primary key default uuid_generate_v4(),
   userid uuid not null,
   productid uuid not null,
-  supplierid uuid not null,
+  supplierid uuid,
   url varchar(256) not null,
-  price numeric not null,
+  price numeric,
 
   cat timestamptz default now(),
   uat timestamptz default now()
