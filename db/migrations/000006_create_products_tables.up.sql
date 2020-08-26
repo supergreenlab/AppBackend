@@ -27,7 +27,7 @@ create table if not exists suppliers (
   id uuid primary key default uuid_generate_v4(),
   userid uuid not null,
   name varchar(256) not null,
-  url varchar(256) not null,
+  url varchar(2048) not null,
   description varchar(4000) not null default '',
   locals jsonb not null default '[]'::jsonb,
 
@@ -49,7 +49,7 @@ create table if not exists productsuppliers(
   userid uuid not null,
   productid uuid not null,
   supplierid uuid,
-  url varchar(256) not null,
+  url varchar(2048) not null,
   price numeric,
 
   cat timestamptz default now(),

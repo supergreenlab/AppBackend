@@ -25,11 +25,12 @@ import (
 
 // Init -
 func Init(router *httprouter.Router) {
+	anon := middlewares.AnonStack()
 	auth := middlewares.AuthStack()
 
 	router.POST("/product", auth.Wrap(createProductsHandler))
 	router.POST("/supplier", auth.Wrap(createSuppliersHandler))
 	router.POST("/productsupplier", auth.Wrap(createProductSuppliersHandler))
 
-	router.GET("/products/search", searchProducts)
+	router.GET("/products/search", anon.Wrap(searchProducts))
 }
