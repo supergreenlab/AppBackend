@@ -92,6 +92,7 @@ func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Para
 	for _, plant := range plants {
 		fm, err := loadLastFeedMediaForPlant(sess, plant)
 		if err != nil {
+			results = append(results, publicListingPlantResult{ID: plant.ID.UUID.String(), Name: plant.Name})
 			logrus.Warningln(err)
 			continue
 		}

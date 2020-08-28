@@ -34,6 +34,8 @@ type Products struct {
 
 	Categories string `db:"categories" json:"categories"`
 
+	Specs string `db:"specs" json:"specs"`
+
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
 }
