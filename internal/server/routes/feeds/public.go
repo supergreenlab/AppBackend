@@ -127,7 +127,7 @@ func fetchPublicPlant(w http.ResponseWriter, r *http.Request, p httprouter.Param
 	fm, err := loadLastFeedMediaForPlant(sess, plant)
 	if err != nil {
 		logrus.Errorln(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		//http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	box := sgldb.Box{}
 	if err := sess.Select("*").From("boxes").And("id = ?", plant.BoxID).One(&box); err != nil {
