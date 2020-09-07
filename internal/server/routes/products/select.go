@@ -39,10 +39,14 @@ func searchProducts(w http.ResponseWriter, r *http.Request, p httprouter.Params)
 		http.Error(w, "missing 'terms' parameter", http.StatusInternalServerError)
 		return
 	}
+	category := r.URL.Query().Get("category")
 	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
 	selector := sess.Select("p.*")
 	selector = selector.From("products p")
 	selector = selector.Where("p.name % ?", terms)
+	if category != "" {
+		selector = selector.Where("jsonb_exists(p.categories, ?)", category)
+	}
 	products := []db.Products{}
 	if err := selector.All(&products); err != nil {
 		logrus.Error(err.Error())
