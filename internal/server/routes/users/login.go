@@ -21,6 +21,7 @@ package users
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/gofrs/uuid"
@@ -52,7 +53,7 @@ func loginHandler() httprouter.Handle {
 		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
 
 		u := db.User{}
-		err := sess.Select("id", "password").From("users").Where("nickname = ?", lp.Handle).One(&u)
+		err := sess.Select("id", "password").From("users").Where("lower(nickname) = ?", strings.ToLower(lp.Handle)).One(&u)
 		if err != nil {
 			logrus.Errorln(err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -99,7 +100,7 @@ var createUserHandler = middlewares.InsertEndpoint(
 			return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 				u := r.Context().Value(middlewares.ObjectContextKey{}).(*db.User)
 				sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
-				n, err := sess.Collection("users").Find().Where("nickname = ?", u.Nickname).Count() // TODO this is stupid
+				n, err := sess.Collection("users").Find().Where("lower(nickname) = ?", u.Nickname).Count() // TODO this is stupid
 				if err != nil {
 					logrus.Errorln(err.Error())
 					http.Error(w, err.Error(), http.StatusInternalServerError)
