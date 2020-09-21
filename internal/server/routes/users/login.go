@@ -19,6 +19,7 @@
 package users
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -126,3 +127,22 @@ var createUserHandler = middlewares.InsertEndpoint(
 	},
 	nil,
 )
+
+func meHandler(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+	uid := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
+
+	user := db.User{}
+	err := sess.Collection("users").Find().Where("id = ?", uid).One(&user)
+	if err != nil {
+		logrus.Errorln(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	user.Password = ""
+	if err := json.NewEncoder(w).Encode(user); err != nil {
+		logrus.Error(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}

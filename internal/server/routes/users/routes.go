@@ -19,23 +19,16 @@
 package users
 
 import (
-	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
+	cmiddlewares "github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/julienschmidt/httprouter"
-	"github.com/rileyr/middleware"
-	"github.com/rileyr/middleware/wares"
 )
-
-func anonStack() middleware.Stack {
-	anon := middleware.NewStack()
-	anon.Use(wares.Logging)
-	anon.Use(middlewares.CreateDBSession)
-	return anon
-}
 
 // Init -
 func Init(router *httprouter.Router) {
-	anon := anonStack()
+	anon := cmiddlewares.AnonStack()
+	auth := cmiddlewares.AuthStack()
 
 	router.POST("/login", anon.Wrap(loginHandler()))
 	router.POST("/user", anon.Wrap(createUserHandler))
+	router.GET("/users/me", auth.Wrap(meHandler))
 }
