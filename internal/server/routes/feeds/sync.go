@@ -113,17 +113,22 @@ func syncedHandler(collection, field string) httprouter.Handle {
 		sess := r.Context().Value(cmiddlewares.SessContextKey{}).(sqlbuilder.Database)
 		ueid := r.Context().Value(fmiddlewares.UserEndIDContextKey{}).(uuid.UUID)
 
-		var deleted struct {
-			Deleted bool `db:"deleted"`
+		var o struct {
+			Deleted  bool `db:"deleted"`
+			Archived bool `db:"archived"`
 		}
-		err := sess.Select("deleted").From(strings.Replace(collection, "userend_", "", 1)).Where("id", p.ByName("id")).One(&deleted)
+		fields := []interface{}{"deleted"}
+		if strings.Replace(collection, "userend_", "", 1) == "plants" {
+			fields = append(fields, "archived")
+		}
+		err := sess.Select(fields...).From(strings.Replace(collection, "userend_", "", 1)).Where("id", p.ByName("id")).One(&o)
 		if err != nil {
 			logrus.Errorln(err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		if deleted.Deleted == true {
+		if o.Deleted == true || o.Archived == true {
 			_, err := sess.DeleteFrom(collection).Where(fmt.Sprintf("%s = ?", field), p.ByName("id")).And("userendid = ?", ueid).Exec()
 			if err != nil {
 				logrus.Errorln(err)

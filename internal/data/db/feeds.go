@@ -77,7 +77,8 @@ type Plant struct {
 
 	Settings string `db:"settings" json:"settings"`
 
-	Deleted bool `db:"deleted" json:"deleted"`
+	Deleted  bool `db:"deleted" json:"deleted"`
+	Archived bool `db:"archived" json:"archived"`
 
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
@@ -113,10 +114,10 @@ type Timelapse struct {
 	ID           uuid.NullUUID `db:"id,omitempty" json:"id"`
 	UserID       uuid.UUID     `db:"userid" json:"userID"`
 	PlantID      uuid.UUID     `db:"plantid" json:"plantID"`
-	ControllerID string        `db:"controllerid" json:"controllerID"`
-	Rotate       string        `db:"rotate" json:"rotate"`
-	Name         string        `db:"name" json:"name"`
-	Strain       string        `db:"strain" json:"strain"`
+	ControllerID string        `db:"controllerid" json:"controllerID,omitempty"`
+	Rotate       string        `db:"rotate" json:"rotate,omitempty"`
+	Name         string        `db:"name" json:"name,omitempty"`
+	Strain       string        `db:"strain" json:"strain,omitempty"`
 	DropboxToken string        `db:"dropboxtoken" json:"dropboxToken"`
 	UploadName   string        `db:"uploadname" json:"uploadName"`
 

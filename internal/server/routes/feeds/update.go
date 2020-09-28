@@ -49,6 +49,7 @@ var updatePlantHandler = middlewares.UpdateEndpoint(
 		middlewares.CheckAccessRight("boxes", "BoxID", false, func() db.UserObject { return &db.Box{} }),
 	},
 	[]middleware.Middleware{
+		fmiddlewares.CheckPlantArchivedForPlant,
 		fmiddlewares.UpdateUserEndObjects("userend_plants", "plantid"),
 	},
 )
@@ -63,6 +64,7 @@ var updateTimelapseHandler = middlewares.UpdateEndpoint(
 		middlewares.CheckAccessRight("plants", "PlantID", false, func() db.UserObject { return &db.Plant{} }),
 	},
 	[]middleware.Middleware{
+		fmiddlewares.CheckPlantArchivedForTimelapse,
 		fmiddlewares.UpdateUserEndObjects("userend_timelapses", "timelapseid"),
 	},
 )
@@ -89,6 +91,7 @@ var updateFeedHandler = middlewares.UpdateEndpoint(
 		middlewares.CheckAccessRight("feeds", "ID", false, func() db.UserObject { return &db.Feed{} }),
 	},
 	[]middleware.Middleware{
+		fmiddlewares.CheckPlantArchivedForFeed,
 		fmiddlewares.UpdateUserEndObjects("userend_feeds", "feedid"),
 	},
 )
@@ -103,6 +106,7 @@ var updateFeedEntryHandler = middlewares.UpdateEndpoint(
 		middlewares.CheckAccessRight("feeds", "FeedID", false, func() db.UserObject { return &db.Feed{} }),
 	},
 	[]middleware.Middleware{
+		fmiddlewares.CheckPlantArchivedForFeedEntry,
 		fmiddlewares.UpdateUserEndObjects("userend_feedentries", "feedentryid"),
 	},
 )
@@ -117,6 +121,7 @@ var updateFeedMediaHandler = middlewares.UpdateEndpoint(
 		middlewares.CheckAccessRight("feedentries", "FeedEntryID", false, func() db.UserObject { return &db.FeedEntry{} }),
 	},
 	[]middleware.Middleware{
+		fmiddlewares.CheckPlantArchivedForFeedMedia,
 		fmiddlewares.UpdateUserEndObjects("userend_feedmedias", "feedmediaid"),
 	},
 )

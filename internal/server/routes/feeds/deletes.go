@@ -88,7 +88,7 @@ func createDeleteHandler() httprouter.Handle {
 			}
 
 			if uid != o.GetUserID() {
-				logrus.Warningf("Wrong userID %s %s", del.Type, del.ID)
+				logrus.Warningf("Object is owned by another user %s %s", del.Type, del.ID)
 				continue
 			}
 

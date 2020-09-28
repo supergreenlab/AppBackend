@@ -69,6 +69,8 @@ func Init(router *httprouter.Router) {
 	router.POST("/feedEntry/:id/sync", authWithUserEndID.Wrap(syncedFeedEntryHandler))
 	router.POST("/feedMedia/:id/sync", authWithUserEndID.Wrap(syncedFeedMediaHandler))
 
+	router.POST("/plant/:id/archive", authWithUserEndID.Wrap(archivePlantHandler))
+
 	router.GET("/public/plants", anon.Wrap(fetchPublicPlants))
 	router.GET("/public/plant/:id", anon.Wrap(fetchPublicPlant))
 	router.GET("/public/plant/:id/feedEntries", anon.Wrap(fetchPublicFeedEntries))
