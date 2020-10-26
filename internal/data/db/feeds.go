@@ -30,6 +30,7 @@ type Box struct {
 	UserID    uuid.UUID     `db:"userid" json:"userID"`
 	DeviceID  uuid.NullUUID `db:"deviceid" json:"deviceID"`
 	DeviceBox *uint         `db:"devicebox,omitempty" json:"deviceBox,omitempty"`
+	FeedID    uuid.NullUUID `db:"feedid" json:"feedID"`
 	Name      string        `db:"name" json:"name"`
 
 	Settings string `db:"settings" json:"settings"`

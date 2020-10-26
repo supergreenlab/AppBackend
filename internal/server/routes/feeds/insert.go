@@ -72,43 +72,78 @@ var createUserEndHandler = middlewares.InsertEndpoint(
 				w.Header().Set("x-sgl-token", tokenString)
 
 				boxes := []db.Box{}
-				sess.Select("*").From("boxes").Where("userid = ?", uid).And("deleted = ?", false).All(&boxes)
+				err = sess.Select("*").From("boxes").Where("userid = ?", uid).And("deleted = ?", false).All(&boxes)
+				if err != nil {
+					logrus.Errorln(err.Error())
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 				fillUserEnd(sess, id, "boxes", db.Boxes(boxes), func() db.UserEndObject { return &db.UserEndBox{} })
 
 				plants := []db.Plant{}
-				sess.Select("*").From("plants").Where("userid = ?", uid).And("deleted = ?", false).And("archived = ?", false).All(&plants)
+				err = sess.Select("*").From("plants").Where("userid = ?", uid).And("deleted = ?", false).And("archived = ?", false).All(&plants)
+				if err != nil {
+					logrus.Errorln(err.Error())
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 				fillUserEnd(sess, id, "plants", db.Plants(plants), func() db.UserEndObject { return &db.UserEndPlant{} })
 
 				timelapses := []db.Timelapse{}
-				sess.Select("*").From("timelapses").Where("userid = ?", uid).And("deleted = ?", false).And("(select archived from plants where plants.id = timelapses.plantid) = ?", false).All(&timelapses)
+				err = sess.Select("*").From("timelapses").Where("userid = ?", uid).And("deleted = ?", false).And("(select archived from plants where plants.id = timelapses.plantid) = ?", false).All(&timelapses)
+				if err != nil {
+					logrus.Errorln(err.Error())
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 				fillUserEnd(sess, id, "timelapses", db.Timelapses(timelapses), func() db.UserEndObject { return &db.UserEndTimelapse{} })
 
 				devices := []db.Device{}
-				sess.Select("*").From("devices").Where("userid = ?", uid).And("deleted = ?", false).All(&devices)
+				err = sess.Select("*").From("devices").Where("userid = ?", uid).And("deleted = ?", false).All(&devices)
+				if err != nil {
+					logrus.Errorln(err.Error())
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 				fillUserEnd(sess, id, "devices", db.Devices(devices), func() db.UserEndObject { return &db.UserEndDevice{} })
 
 				feeds := []db.Feed{}
-				sess.Select("*").From("feeds").Where("userid = ?", uid).And("deleted = ?", false).And(
+				err = sess.Select("*").From("feeds").Where("userid = ?", uid).And("deleted = ?", false).And(
 					udb.Or(
 						udb.Raw("not exists(select id from plants where plants.feedid = feeds.id)"),
 						udb.Raw("(select archived from plants where plants.feedid = feeds.id) = ?", false)),
 				).All(&feeds)
+				if err != nil {
+					logrus.Errorln(err.Error())
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 				fillUserEnd(sess, id, "feeds", db.Feeds(feeds), func() db.UserEndObject { return &db.UserEndFeed{} })
 
 				feedEntries := []db.FeedEntry{}
-				sess.Select("*").From("feedentries").Where("userid = ?", uid).And("deleted = ?", false).And(
+				err = sess.Select("*").From("feedentries").Where("userid = ?", uid).And("deleted = ?", false).And(
 					udb.Or(
 						udb.Raw("not exists(select id from plants where plants.feedid = feedentries.feedid)"),
 						udb.Raw("(select archived from plants where plants.feedid = feedentries.feedid) = ?", false)),
 				).All(&feedEntries)
+				if err != nil {
+					logrus.Errorln(err.Error())
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 				fillUserEnd(sess, id, "feedentries", db.FeedEntries(feedEntries), func() db.UserEndObject { return &db.UserEndFeedEntry{} })
 
 				feedMedias := []db.FeedMedia{}
-				sess.Select("*").From("feedmedias").Where("userid = ?", uid).And("deleted = ?", false).And(
+				err = sess.Select("*").From("feedmedias").Where("userid = ?", uid).And("deleted = ?", false).And(
 					udb.Or(
 						udb.Raw("not exists(select id from plants where plants.feedid = (select feedid from feedentries where feedmedias.feedentryid = feedentries.id))"),
 						udb.Raw("(select archived from plants where plants.feedid = (select feedid from feedentries where feedmedias.feedentryid = feedentries.id)) = ?", false)),
 				).All(&feedMedias)
+				if err != nil {
+					logrus.Errorln(err.Error())
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 				fillUserEnd(sess, id, "feedmedias", db.FeedMedias(feedMedias), func() db.UserEndObject { return &db.UserEndFeedMedia{} })
 
 				fn(w, r, p)

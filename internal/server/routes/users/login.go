@@ -20,7 +20,6 @@ package users
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -80,16 +79,6 @@ func loginHandler() httprouter.Handle {
 		w.Header().Set("x-sgl-token", tokenString)
 
 		w.WriteHeader(http.StatusOK)
-	})
-}
-
-func fillUserEnd(sess sqlbuilder.Database, ueid uuid.UUID, collection string, all db.Objects, factory func() db.UserEndObject) {
-	all.Each(func(a db.Object) {
-		ueo := factory()
-		ueo.SetUserEndID(ueid)
-		ueo.SetObjectID(a.GetID().UUID)
-		ueo.SetDirty(true)
-		sess.Collection(fmt.Sprintf("userend_%s", collection)).Insert(ueo)
 	})
 }
 
