@@ -28,4 +28,4 @@ type SelectPlantParams struct {
 	middlewares.SelectParams
 }
 
-var selectPlants = middlewares.SelectEndpoint("plants", func() interface{} { return &[]db.Plants{} }, func() interface{} { return SelectPlantParams{} }, []middleware.Middleware{}, []middleware.Middleware{})
+var selectPlants = middlewares.SelectEndpoint("plants", func() interface{} { return &[]db.Plant{} }, func() interface{} { return SelectPlantParams{} }, []middleware.Middleware{}, []middleware.Middleware{})
