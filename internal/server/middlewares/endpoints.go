@@ -40,6 +40,20 @@ func OutputObjectID(w http.ResponseWriter, r *http.Request, p httprouter.Params)
 	}
 }
 
+// OutputSelectResult - returns the list of data
+func OutputSelectResult(collection string) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		result := r.Context().Value(SelectResultContextKey{}).(uuid.UUID)
+		response := map[string]interface{}{}
+		response[collection] = result
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			logrus.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
 // OutputOK - returns the OK response
 func OutputOK(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	response := struct {

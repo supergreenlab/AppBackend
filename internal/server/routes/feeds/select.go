@@ -16,67 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package middlewares
+package feeds
 
 import (
+	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
 )
 
-// InsertEndpoint - insert an object
-func InsertEndpoint(
-	collection string,
-	factory func() interface{},
-	pre []middleware.Middleware,
-	post []middleware.Middleware,
-) httprouter.Handle {
-	s := middleware.NewStack()
-
-	s.Use(DecodeJSON(factory))
-	if pre != nil {
-		for _, m := range pre {
-			s.Use(m)
-		}
-	}
-	s.Use(InsertObject(collection))
-
-	if post != nil {
-		for _, m := range post {
-			s.Use(m)
-		}
-	}
-
-	return s.Wrap(OutputObjectID)
-}
-
-// UpdateEndpoint - updates and object
-func UpdateEndpoint(
-	collection string,
-	factory func() interface{},
-	pre []middleware.Middleware,
-	post []middleware.Middleware,
-) httprouter.Handle {
-	s := middleware.NewStack()
-
-	s.Use(DecodeJSON(factory))
-	if pre != nil {
-		for _, m := range pre {
-			s.Use(m)
-		}
-	}
-	s.Use(UpdateObject(collection))
-
-	if post != nil {
-		for _, m := range post {
-			s.Use(m)
-		}
-	}
-
-	return s.Wrap(OutputOK)
-}
-
-// SelectEndpoint - select objects
-func SelectEndpoint(
+func selectQuery(
 	collection string,
 	factory func() interface{},
 	paramFactory func() interface{},
@@ -85,13 +33,13 @@ func SelectEndpoint(
 ) httprouter.Handle {
 	s := middleware.NewStack()
 
-	s.Use(DecodeQuery(paramFactory))
+	s.Use(middlewares.DecodeQuery(paramFactory))
 	if pre != nil {
 		for _, m := range pre {
 			s.Use(m)
 		}
 	}
-	s.Use(SelectQuery(collection, factory))
+	s.Use(middlewares.SelectQuery(collection, factory))
 
 	if post != nil {
 		for _, m := range post {
@@ -99,5 +47,5 @@ func SelectEndpoint(
 		}
 	}
 
-	return s.Wrap(OutputSelectResult(collection))
+	return s.Wrap(middlewares.OutputSelectResult(collection))
 }
