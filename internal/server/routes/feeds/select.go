@@ -19,33 +19,13 @@
 package feeds
 
 import (
+	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
-	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
 )
 
-func selectQuery(
-	collection string,
-	factory func() interface{},
-	paramFactory func() interface{},
-	pre []middleware.Middleware,
-	post []middleware.Middleware,
-) httprouter.Handle {
-	s := middleware.NewStack()
-
-	s.Use(middlewares.DecodeQuery(paramFactory))
-	if pre != nil {
-		for _, m := range pre {
-			s.Use(m)
-		}
-	}
-	s.Use(middlewares.SelectQuery(collection, factory))
-
-	if post != nil {
-		for _, m := range post {
-			s.Use(m)
-		}
-	}
-
-	return s.Wrap(middlewares.OutputSelectResult(collection))
+type SelectPlantParams struct {
+	middlewares.SelectParams
 }
+
+var selectPlants = middlewares.SelectEndpoint("plants", func() interface{} { return &[]db.Plants{} }, func() interface{} { return SelectPlantParams{} }, []middleware.Middleware{}, []middleware.Middleware{})

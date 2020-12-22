@@ -100,12 +100,12 @@ func UpdateObject(collection string) func(fn httprouter.Handle) httprouter.Handl
 type SelectorContextKey struct{}
 type SelectResultContextKey struct{}
 
-func SelectQuery(collection string, factory func() interface{}) func(fn httprouter.Handle) httprouter.Handle {
+func SelectQuery(factory func() interface{}) func(fn httprouter.Handle) httprouter.Handle {
 	return func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			selector := r.Context().Value(SelectorContextKey{}).(sqlbuilder.Selector)
 			results := factory()
-			if err := selector.All(&results); err != nil {
+			if err := selector.All(results); err != nil {
 				logrus.Error(err.Error())
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return

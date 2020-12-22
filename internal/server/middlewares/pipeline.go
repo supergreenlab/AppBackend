@@ -19,8 +19,12 @@
 package middlewares
 
 import (
+	"context"
+	"net/http"
+
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
+	"upper.io/db.v3/lib/sqlbuilder"
 )
 
 // InsertEndpoint - insert an object
@@ -75,6 +79,11 @@ func UpdateEndpoint(
 	return s.Wrap(OutputOK)
 }
 
+type SelectParams struct {
+	Offset int
+	Limit  int
+}
+
 // SelectEndpoint - select objects
 func SelectEndpoint(
 	collection string,
@@ -85,13 +94,21 @@ func SelectEndpoint(
 ) httprouter.Handle {
 	s := middleware.NewStack()
 
+	s.Use(func(fn httprouter.Handle) httprouter.Handle {
+		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+			sess := r.Context().Value(SessContextKey{}).(sqlbuilder.Database)
+			ctx := context.WithValue(r.Context(), SelectorContextKey{}, sess.Select("*").From(collection))
+			fn(w, r.WithContext(ctx), p)
+		}
+	})
+
 	s.Use(DecodeQuery(paramFactory))
 	if pre != nil {
 		for _, m := range pre {
 			s.Use(m)
 		}
 	}
-	s.Use(SelectQuery(collection, factory))
+	s.Use(SelectQuery(factory))
 
 	if post != nil {
 		for _, m := range post {

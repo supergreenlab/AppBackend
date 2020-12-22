@@ -71,6 +71,8 @@ func Init(router *httprouter.Router) {
 
 	router.POST("/plant/:id/archive", authWithUserEndID.Wrap(archivePlantHandler))
 
+	router.GET("/plants", auth.Wrap(selectPlants))
+
 	router.GET("/public/plants", anon.Wrap(fetchPublicPlants))
 	router.GET("/public/plant/:id", anon.Wrap(fetchPublicPlant))
 	router.GET("/public/plant/:id/feedEntries", anon.Wrap(fetchPublicFeedEntries))
