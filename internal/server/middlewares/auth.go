@@ -104,7 +104,11 @@ func JwtToken(fn httprouter.Handle) httprouter.Handle {
 	hmacSampleSecret := []byte(viper.GetString("JWTSecret"))
 
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		authentication := r.Header.Get("Authentication")
+		authentication := r.Header.Get("Authentication") // Ooops.. mistyped:/ will remove it when the app uses the right header
+		authorization := r.Header.Get("Authorization")
+		if authorization != "" {
+			authentication = authorization
+		}
 		tokenString := strings.ReplaceAll(authentication, "Bearer ", "")
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
