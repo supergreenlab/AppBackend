@@ -19,13 +19,121 @@
 package feeds
 
 import (
+	"context"
+	"net/http"
+
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
+	"github.com/gofrs/uuid"
+	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
+	"upper.io/db.v3/lib/sqlbuilder"
 )
 
-type SelectPlantParams struct {
-	middlewares.SelectParams
+func filterUserID(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
+		uid := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
+		selector = selector.Where("t.userid = ?", uid)
+		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
+		fn(w, r.WithContext(ctx), p)
+	}
 }
 
-var selectPlants = middlewares.SelectEndpoint("plants", func() interface{} { return &[]db.Plant{} }, func() interface{} { return SelectPlantParams{} }, []middleware.Middleware{}, []middleware.Middleware{})
+type SelectPlantsParams struct {
+	middlewares.SelectParamsOffsetLimit
+}
+
+var selectPlants = middlewares.SelectEndpoint(
+	"plants",
+	func() interface{} { return &[]db.Plant{} },
+	func() interface{} { return &SelectPlantsParams{} },
+	[]middleware.Middleware{
+		filterUserID,
+	},
+	[]middleware.Middleware{},
+)
+
+type SelectFeedEntriesParams struct {
+	middlewares.SelectParamsOffsetLimit
+}
+
+var selectFeedEntries = middlewares.SelectEndpoint(
+	"feedentries",
+	func() interface{} { return &[]db.FeedEntry{} },
+	func() interface{} { return &SelectFeedEntriesParams{} },
+	[]middleware.Middleware{
+		filterUserID,
+	},
+	[]middleware.Middleware{},
+)
+
+type SelectFeedsParams struct {
+	middlewares.SelectParamsOffsetLimit
+}
+
+var selectFeeds = middlewares.SelectEndpoint(
+	"feeds",
+	func() interface{} { return &[]db.FeedEntry{} },
+	func() interface{} { return &SelectFeedsParams{} },
+	[]middleware.Middleware{
+		filterUserID,
+	},
+	[]middleware.Middleware{},
+)
+
+type SelectBoxesParams struct {
+	middlewares.SelectParamsOffsetLimit
+}
+
+var selectBoxes = middlewares.SelectEndpoint(
+	"boxes",
+	func() interface{} { return &[]db.FeedEntry{} },
+	func() interface{} { return &SelectBoxesParams{} },
+	[]middleware.Middleware{
+		filterUserID,
+	},
+	[]middleware.Middleware{},
+)
+
+type SelectDevicesParams struct {
+	middlewares.SelectParamsOffsetLimit
+}
+
+var selectDevices = middlewares.SelectEndpoint(
+	"devices",
+	func() interface{} { return &[]db.Device{} },
+	func() interface{} { return &SelectDevicesParams{} },
+	[]middleware.Middleware{
+		filterUserID,
+	},
+	[]middleware.Middleware{},
+)
+
+type SelectFeedMediasParams struct {
+	middlewares.SelectParamsOffsetLimit
+}
+
+var selectFeedMedias = middlewares.SelectEndpoint(
+	"feedmedias",
+	func() interface{} { return &[]db.FeedMedia{} },
+	func() interface{} { return &SelectFeedMediasParams{} },
+	[]middleware.Middleware{
+		filterUserID,
+	},
+	[]middleware.Middleware{},
+)
+
+type SelectTimelapsesParams struct {
+	middlewares.SelectParamsOffsetLimit
+}
+
+var selectTimelapses = middlewares.SelectEndpoint(
+	"timelapses",
+	func() interface{} { return &[]db.Timelapse{} },
+	func() interface{} { return &SelectTimelapsesParams{} },
+	[]middleware.Middleware{
+		filterUserID,
+	},
+	[]middleware.Middleware{},
+)

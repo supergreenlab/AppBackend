@@ -22,8 +22,12 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/gorilla/schema"
 	"github.com/julienschmidt/httprouter"
+	"github.com/sirupsen/logrus"
 )
+
+var decoder = schema.NewDecoder()
 
 // ObjectContextKey - context key which stores the decoced object
 type QueryObjectContextKey struct{}
@@ -33,6 +37,11 @@ func DecodeQuery(fnObject func() interface{}) func(fn httprouter.Handle) httprou
 	return func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			o := fnObject()
+			if err := decoder.Decode(o, r.URL.Query()); err != nil {
+				logrus.Error(err.Error())
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 			ctx := context.WithValue(r.Context(), QueryObjectContextKey{}, o)
 			fn(w, r.WithContext(ctx), p)
 		}

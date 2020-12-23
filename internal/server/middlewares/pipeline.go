@@ -79,9 +79,22 @@ func UpdateEndpoint(
 	return s.Wrap(OutputOK)
 }
 
-type SelectParams struct {
+type SelectParams interface {
+	GetOffset() int
+	GetLimit() int
+}
+
+type SelectParamsOffsetLimit struct {
 	Offset int
 	Limit  int
+}
+
+func (p *SelectParamsOffsetLimit) GetOffset() int {
+	return p.Offset
+}
+
+func (p *SelectParamsOffsetLimit) GetLimit() int {
+	return p.Limit
 }
 
 // SelectEndpoint - select objects
@@ -94,15 +107,19 @@ func SelectEndpoint(
 ) httprouter.Handle {
 	s := middleware.NewStack()
 
+	s.Use(DecodeQuery(paramFactory))
+
 	s.Use(func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			sess := r.Context().Value(SessContextKey{}).(sqlbuilder.Database)
-			ctx := context.WithValue(r.Context(), SelectorContextKey{}, sess.Select("*").From(collection))
+			params := r.Context().Value(QueryObjectContextKey{}).(SelectParams)
+			selector := sess.Select("*").From(collection + " t")
+			selector = selector.OrderBy("t.cat DESC").Offset(params.GetOffset()).Limit(params.GetLimit())
+			ctx := context.WithValue(r.Context(), SelectorContextKey{}, selector)
 			fn(w, r.WithContext(ctx), p)
 		}
 	})
 
-	s.Use(DecodeQuery(paramFactory))
 	if pre != nil {
 		for _, m := range pre {
 			s.Use(m)

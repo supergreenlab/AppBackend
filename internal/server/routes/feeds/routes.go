@@ -72,6 +72,12 @@ func Init(router *httprouter.Router) {
 	router.POST("/plant/:id/archive", authWithUserEndID.Wrap(archivePlantHandler))
 
 	router.GET("/plants", auth.Wrap(selectPlants))
+	router.GET("/feedEntries", auth.Wrap(selectFeedEntries))
+	router.GET("/feedMedias", auth.Wrap(selectFeedMedias))
+	router.GET("/feeds", auth.Wrap(selectFeeds))
+	router.GET("/boxes", auth.Wrap(selectBoxes))
+	router.GET("/devices", auth.Wrap(selectDevices))
+	router.GET("/timelapses", auth.Wrap(selectTimelapses))
 
 	router.GET("/public/plants", anon.Wrap(fetchPublicPlants))
 	router.GET("/public/plant/:id", anon.Wrap(fetchPublicPlant))
