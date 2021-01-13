@@ -243,3 +243,12 @@ var createPlantSharingHandler = middlewares.InsertEndpoint(
 	},
 	nil,
 )
+
+var createCommentHandler = middlewares.InsertEndpoint(
+	"comments",
+	func() interface{} { return &db.Comment{} },
+	[]middleware.Middleware{
+		middlewares.SetUserID,
+	},
+	nil,
+)

@@ -124,6 +124,30 @@ var selectFeedMedias = middlewares.SelectEndpoint(
 	[]middleware.Middleware{},
 )
 
+func filterFeedEntryID(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
+		feid := p.ByName("id")
+		selector = selector.Where("t.feedentryid = ?", feid)
+		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
+		fn(w, r.WithContext(ctx), p)
+	}
+}
+
+type SelectFeedEntryCommentsParams struct {
+	middlewares.SelectParamsOffsetLimit
+}
+
+var selectFeedEntryComments = middlewares.SelectEndpoint(
+	"comments",
+	func() interface{} { return &[]db.Comment{} },
+	func() interface{} { return &SelectFeedEntryCommentsParams{} },
+	[]middleware.Middleware{
+		filterFeedEntryID,
+	},
+	[]middleware.Middleware{},
+)
+
 type SelectTimelapsesParams struct {
 	middlewares.SelectParamsOffsetLimit
 }

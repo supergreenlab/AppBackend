@@ -325,6 +325,36 @@ type PlantSharing struct {
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
 }
 
+// Comment -
+type Comment struct {
+	ID          uuid.NullUUID `db:"id,omitempty" json:"id"`
+	FeedEntryID uuid.UUID     `db:"feedentryid" json:"feedEntryID"`
+	UserID      uuid.UUID     `db:"userid" json:"userID"`
+
+	ReplyTo uuid.NullUUID `db:"replyto,omitempty" json:"replyTo,omitempty"`
+	Text    string        `db:"text" json:"text"`
+	Type    string        `db:"ctype" json:"type"`
+	Params  string        `db:"params" json:"params"`
+
+	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
+	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
+}
+
+// GetID -
+func (c Comment) GetID() uuid.NullUUID {
+	return c.ID
+}
+
+// SetUserID -
+func (c *Comment) SetUserID(userID uuid.UUID) {
+	c.UserID = userID
+}
+
+// GetUserID -
+func (c Comment) GetUserID() uuid.UUID {
+	return c.UserID
+}
+
 // UserEnd -
 type UserEnd struct {
 	ID     uuid.NullUUID `db:"id,omitempty" json:"id"`
