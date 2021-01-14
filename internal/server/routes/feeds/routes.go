@@ -28,6 +28,7 @@ import (
 func Init(router *httprouter.Router) {
 	anon := cmiddlewares.AnonStack()
 	auth := cmiddlewares.AuthStack()
+	optionalAuth := cmiddlewares.OptionalAuthStack()
 	authWithUserEndID := fmiddlewares.AuthStackWithUserEnd()
 
 	router.POST("/userend", auth.Wrap(createUserEndHandler))
@@ -74,7 +75,7 @@ func Init(router *httprouter.Router) {
 
 	router.GET("/plants", auth.Wrap(selectPlants))
 	router.GET("/feedEntries", auth.Wrap(selectFeedEntries))
-	router.GET("/feedEntries/:id/comments", auth.Wrap(selectFeedEntryComments))
+	router.GET("/feedEntries/:id/comments", optionalAuth.Wrap(selectFeedEntryComments))
 	router.GET("/feedMedias", auth.Wrap(selectFeedMedias))
 	router.GET("/feeds", auth.Wrap(selectFeeds))
 	router.GET("/boxes", auth.Wrap(selectBoxes))

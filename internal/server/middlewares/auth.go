@@ -61,6 +61,15 @@ func AuthStack() middleware.Stack {
 	return auth
 }
 
+// OptionalAuthStack - Decodes JWT token, errors on failure
+func OptionalAuthStack() middleware.Stack {
+	auth := middleware.NewStack()
+	auth.Use(wares.Logging)
+	auth.Use(JwtToken)
+	auth.Use(CreateDBSession)
+	return auth
+}
+
 // SetUserID - sets the userID field for the object payload
 func SetUserID(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -110,6 +119,10 @@ func JwtToken(fn httprouter.Handle) httprouter.Handle {
 			authentication = authorization
 		}
 		tokenString := strings.ReplaceAll(authentication, "Bearer ", "")
+		if tokenString == "" {
+			fn(w, r, p)
+			return
+		}
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
