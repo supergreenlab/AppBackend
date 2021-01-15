@@ -27,6 +27,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
+	udb "upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
@@ -134,16 +135,31 @@ func filterFeedEntryID(fn httprouter.Handle) httprouter.Handle {
 	}
 }
 
+func joinUser(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
+		selector = selector.Columns(udb.Raw("u.nickname")).Join("users u").On("t.userid = u.id")
+		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
+		fn(w, r.WithContext(ctx), p)
+	}
+}
+
 type SelectFeedEntryCommentsParams struct {
 	middlewares.SelectParamsOffsetLimit
 }
 
+type Comment struct {
+	db.Comment
+	From string `db:"nickname" json:"from"`
+}
+
 var selectFeedEntryComments = middlewares.SelectEndpoint(
 	"comments",
-	func() interface{} { return &[]db.Comment{} },
+	func() interface{} { return &[]Comment{} },
 	func() interface{} { return &SelectFeedEntryCommentsParams{} },
 	[]middleware.Middleware{
 		filterFeedEntryID,
+		joinUser,
 	},
 	[]middleware.Middleware{},
 )

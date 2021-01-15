@@ -43,9 +43,9 @@ func OutputObjectID(w http.ResponseWriter, r *http.Request, p httprouter.Params)
 // OutputSelectResult - returns the list of data
 func OutputSelectResult(collection string) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		result := r.Context().Value(SelectResultContextKey{}).(interface{})
+		results := r.Context().Value(SelectResultContextKey{}).(interface{})
 		response := map[string]interface{}{}
-		response[collection] = result
+		response[collection] = results
 		if err := json.NewEncoder(w).Encode(response); err != nil {
 			logrus.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)

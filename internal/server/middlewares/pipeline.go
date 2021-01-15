@@ -114,7 +114,7 @@ func SelectEndpoint(
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			sess := r.Context().Value(SessContextKey{}).(sqlbuilder.Database)
 			params := r.Context().Value(QueryObjectContextKey{}).(SelectParams)
-			selector := sess.Select("*").From(collection + " t")
+			selector := sess.Select("t.id as objectid", db.Raw("t.*")).From(collection + " t")
 			selector = selector.OrderBy("t.cat DESC").Offset(params.GetOffset()).Limit(params.GetLimit())
 			ctx := context.WithValue(r.Context(), SelectorContextKey{}, selector)
 			fn(w, r.WithContext(ctx), p)
