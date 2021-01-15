@@ -115,3 +115,19 @@ func SelectQuery(factory func() interface{}) func(fn httprouter.Handle) httprout
 		}
 	}
 }
+
+func SelectOneQuery(factory func() interface{}) func(fn httprouter.Handle) httprouter.Handle {
+	return func(fn httprouter.Handle) httprouter.Handle {
+		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+			selector := r.Context().Value(SelectorContextKey{}).(sqlbuilder.Selector)
+			results := factory()
+			if err := selector.One(results); err != nil {
+				logrus.Error(err.Error())
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			ctx := context.WithValue(r.Context(), SelectResultContextKey{}, results)
+			fn(w, r.WithContext(ctx), p)
+		}
+	}
+}

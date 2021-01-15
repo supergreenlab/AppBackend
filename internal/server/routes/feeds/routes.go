@@ -75,7 +75,8 @@ func Init(router *httprouter.Router) {
 
 	router.GET("/plants", auth.Wrap(selectPlants))
 	router.GET("/feedEntries", auth.Wrap(selectFeedEntries))
-	router.GET("/feedEntries/:id/comments", optionalAuth.Wrap(selectFeedEntryComments))
+	router.GET("/feedEntry/:id/comments", optionalAuth.Wrap(selectFeedEntryComments))
+	router.GET("/feedEntry/:id/comments/count", optionalAuth.Wrap(countFeedEntryComments))
 	router.GET("/feedMedias", auth.Wrap(selectFeedMedias))
 	router.GET("/feeds", auth.Wrap(selectFeeds))
 	router.GET("/boxes", auth.Wrap(selectBoxes))

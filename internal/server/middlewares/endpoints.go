@@ -54,6 +54,18 @@ func OutputSelectResult(collection string) httprouter.Handle {
 	}
 }
 
+// OutputSelectOneResult - returns the data
+func OutputSelectOneResult(collection string) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		result := r.Context().Value(SelectResultContextKey{}).(interface{})
+		if err := json.NewEncoder(w).Encode(result); err != nil {
+			logrus.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
 // OutputOK - returns the OK response
 func OutputOK(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	response := struct {

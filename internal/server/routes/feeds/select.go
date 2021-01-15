@@ -148,6 +148,15 @@ var selectFeedEntryComments = middlewares.SelectEndpoint(
 	[]middleware.Middleware{},
 )
 
+var countFeedEntryComments = middlewares.CountEndpoint(
+	"comments",
+	func() interface{} { return &SelectFeedEntryCommentsParams{} },
+	[]middleware.Middleware{
+		filterFeedEntryID,
+	},
+	[]middleware.Middleware{},
+)
+
 type SelectTimelapsesParams struct {
 	middlewares.SelectParamsOffsetLimit
 }

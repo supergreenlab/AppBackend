@@ -24,6 +24,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
+	"upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
@@ -134,4 +135,44 @@ func SelectEndpoint(
 	}
 
 	return s.Wrap(OutputSelectResult(collection))
+}
+
+type Count struct {
+	N int `db:"n" json:"n"`
+}
+
+// CountEndpoint - select objects
+func CountEndpoint(
+	collection string,
+	paramFactory func() interface{},
+	pre []middleware.Middleware,
+	post []middleware.Middleware,
+) httprouter.Handle {
+	s := middleware.NewStack()
+
+	s.Use(DecodeQuery(paramFactory))
+
+	s.Use(func(fn httprouter.Handle) httprouter.Handle {
+		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+			sess := r.Context().Value(SessContextKey{}).(sqlbuilder.Database)
+			selector := sess.Select(db.Raw("COUNT(*) AS n")).From(collection + " t")
+			ctx := context.WithValue(r.Context(), SelectorContextKey{}, selector)
+			fn(w, r.WithContext(ctx), p)
+		}
+	})
+
+	if pre != nil {
+		for _, m := range pre {
+			s.Use(m)
+		}
+	}
+	s.Use(SelectOneQuery(func() interface{} { return &Count{} }))
+
+	if post != nil {
+		for _, m := range post {
+			s.Use(m)
+		}
+	}
+
+	return s.Wrap(OutputSelectOneResult(collection))
 }
