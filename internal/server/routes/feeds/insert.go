@@ -19,6 +19,7 @@
 package feeds
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -248,6 +249,41 @@ var createCommentHandler = middlewares.InsertEndpoint(
 	"comments",
 	func() interface{} { return &db.Comment{} },
 	[]middleware.Middleware{
+		middlewares.SetUserID,
+	},
+	nil,
+)
+
+func deleteIfExists(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+		uid := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
+		l := r.Context().Value(middlewares.ObjectContextKey{}).(*db.Like)
+
+		var like db.Like
+		err := sess.Collection("likes").Find().Where("userid = ?", uid).And(udb.Or(udb.Raw("commentid = ?", l.CommentID), udb.Raw("feedentryid = ?", l.FeedEntryID))).One(&like)
+		if err == nil {
+			err := sess.Collection("likes").Find().Where("id = ?", like.ID).Delete()
+			if err != nil {
+				logrus.Error(err.Error())
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			ctx := context.WithValue(r.Context(), middlewares.ObjectContextKey{}, like)
+			ctx = context.WithValue(ctx, middlewares.InsertedIDContextKey{}, like.ID.UUID)
+			middlewares.OutputObjectID(w, r.WithContext(ctx), p)
+		} else {
+			logrus.Println(err)
+			fn(w, r, p)
+		}
+	}
+}
+
+var createLikeHandler = middlewares.InsertEndpoint(
+	"likes",
+	func() interface{} { return &db.Like{} },
+	[]middleware.Middleware{
+		deleteIfExists,
 		middlewares.SetUserID,
 	},
 	nil,

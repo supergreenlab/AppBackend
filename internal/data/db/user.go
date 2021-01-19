@@ -31,7 +31,8 @@ type User struct {
 	Nickname string        `db:"nickname" json:"nickname"`
 	Password string        `db:"password,omitempty" json:"password"`
 
-	Pic null.String `db:"pic,omitempty" json:"pic,omitempty"`
+	Pic   null.String `db:"pic,omitempty" json:"pic,omitempty"`
+	Liked bool        `db:"liked,omitempty" json:"liked,omitempty"`
 
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`

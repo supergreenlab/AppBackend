@@ -42,6 +42,7 @@ func Init(router *httprouter.Router) {
 	router.POST("/feedEntry", authWithUserEndID.Wrap(createFeedEntryHandler))
 	router.POST("/feedMedia", authWithUserEndID.Wrap(createFeedMediaHandler))
 	router.POST("/comment", auth.Wrap(createCommentHandler))
+	router.POST("/like", auth.Wrap(createLikeHandler))
 
 	router.PUT("/box", authWithUserEndID.Wrap(updateBoxHandler))
 	router.PUT("/plant", authWithUserEndID.Wrap(updatePlantHandler))

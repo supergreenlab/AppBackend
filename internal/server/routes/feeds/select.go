@@ -21,12 +21,16 @@ package feeds
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
+	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/guregu/null.v3"
 	udb "upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
@@ -138,9 +142,29 @@ func filterFeedEntryID(fn httprouter.Handle) httprouter.Handle {
 func joinUser(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
-		selector = selector.Columns(udb.Raw("u.nickname")).Join("users u").On("t.userid = u.id")
+		selector = selector.Columns(udb.Raw("u.nickname"), udb.Raw("u.pic"), udb.Raw("exists(select * from likes l where l.userid = u.id and l.commentid = t.id) as liked")).Join("users u").On("t.userid = u.id")
 		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
 		fn(w, r.WithContext(ctx), p)
+	}
+}
+
+func picMediaURL(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		result := r.Context().Value(middlewares.SelectResultContextKey{}).(*[]Comment)
+
+		for i, c := range *result {
+			minioClient := storage.CreateMinioClient()
+			expiry := time.Second * 60 * 60
+			url1, err := minioClient.PresignedGetObject("users", c.Pic.String, expiry, nil)
+			if err != nil {
+				c.Pic = null.NewString("", false)
+				logrus.Errorln(err.Error())
+			} else {
+				c.Pic = null.NewString(url1.RequestURI(), true)
+			}
+			(*result)[i] = c
+		}
+		fn(w, r, p)
 	}
 }
 
@@ -150,7 +174,9 @@ type SelectFeedEntryCommentsParams struct {
 
 type Comment struct {
 	db.Comment
-	From string `db:"nickname" json:"from"`
+	From  string      `db:"nickname" json:"from"`
+	Pic   null.String `db:"pic" json:"pic"`
+	Liked bool        `db:"liked" json:"liked"`
 }
 
 var selectFeedEntryComments = middlewares.SelectEndpoint(
@@ -161,7 +187,9 @@ var selectFeedEntryComments = middlewares.SelectEndpoint(
 		filterFeedEntryID,
 		joinUser,
 	},
-	[]middleware.Middleware{},
+	[]middleware.Middleware{
+		picMediaURL,
+	},
 )
 
 var countFeedEntryComments = middlewares.CountEndpoint(

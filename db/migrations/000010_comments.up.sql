@@ -13,6 +13,8 @@ create table if not exists comments(
 );
 
 create index c_feid on comments (feedentryid);
+create index c_rtid on comments (replyto);
+create index c_uid on comments (userid);
 
 drop trigger if exists uat_comments on comments;
 

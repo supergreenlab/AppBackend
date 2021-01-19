@@ -162,14 +162,15 @@ func meHandler(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	user.Password = "" // TODO split model private/public fields?
 
 	if user.Pic.Valid {
-		expiry := time.Second * 60
 		minioClient := storage.CreateMinioClient()
+		expiry := time.Second * 60 * 60
 		url1, err := minioClient.PresignedGetObject("users", user.Pic.String, expiry, nil)
 		if err != nil {
+			user.Pic = null.NewString("", false)
 			logrus.Errorln(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		} else {
+			user.Pic = null.NewString(url1.RequestURI(), true)
 		}
-		user.Pic = null.NewString(url1.RequestURI(), true)
 	}
 
 	if err := json.NewEncoder(w).Encode(user); err != nil {
