@@ -37,6 +37,7 @@ import (
 func Start() {
 	db.InitDB()
 	storage.SetupBucket("feedmedias")
+	storage.SetupBucket("users")
 
 	router := httprouter.New()
 

@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	"gopkg.in/guregu/null.v3"
 )
 
 // User -
@@ -30,6 +31,12 @@ type User struct {
 	Nickname string        `db:"nickname" json:"nickname"`
 	Password string        `db:"password,omitempty" json:"password"`
 
+	Pic null.String `db:"pic,omitempty" json:"pic,omitempty"`
+
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
+}
+
+func (u *User) GetID() uuid.NullUUID {
+	return u.ID
 }

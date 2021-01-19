@@ -56,7 +56,7 @@ func feedMediaUploadURLHandler(w http.ResponseWriter, r *http.Request, p httprou
 	path := ""
 	if strings.HasSuffix(fmup.FileName, ".mp4") {
 		path = fmt.Sprintf("videos-%s.mp4", uuid.Must(uuid.NewV4()).String())
-	} else if strings.HasSuffix(fmup.FileName, ".jpg") {
+	} else if strings.HasSuffix(fmup.FileName, ".jpg") || strings.HasSuffix(fmup.FileName, ".jpeg") {
 		path = fmt.Sprintf("pictures-%s.jpg", uuid.Must(uuid.NewV4()).String())
 	} else {
 		logrus.Errorf("Unknown file type %s", fmup.FileName)
@@ -66,7 +66,7 @@ func feedMediaUploadURLHandler(w http.ResponseWriter, r *http.Request, p httprou
 
 	res := feedMediaUploadURLResult{}
 	minioClient := storage.CreateMinioClient()
-	expiry := time.Second * 60 * 60
+	expiry := time.Second * 60
 
 	url1, err := minioClient.PresignedPutObject("feedmedias", path, expiry)
 	if err != nil {

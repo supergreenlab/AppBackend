@@ -30,5 +30,10 @@ func Init(router *httprouter.Router) {
 
 	router.POST("/login", anon.Wrap(loginHandler()))
 	router.POST("/user", anon.Wrap(createUserHandler))
-	router.GET("/users/me", auth.Wrap(meHandler))
+
+	router.PUT("/user", auth.Wrap(updateUserHandler))
+	router.GET("/users/me", auth.Wrap(meHandler)) // TODO remove this one:/
+	router.GET("/user/me", auth.Wrap(meHandler))
+
+	router.POST("/profilePicUploadURL", auth.Wrap(profilePicUploadURLHandler))
 }
