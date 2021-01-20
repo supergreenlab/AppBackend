@@ -132,17 +132,27 @@ var selectFeedMedias = middlewares.SelectEndpoint(
 func filterFeedEntryID(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
+		params := r.Context().Value(middlewares.QueryObjectContextKey{}).(*SelectFeedEntryCommentsParams)
 		feid := p.ByName("id")
 		selector = selector.Where("t.feedentryid = ?", feid)
+		if params.ReplyTo != nil {
+			selector = selector.Where("t.replyto = ?", *(params.ReplyTo))
+		} else if !params.AllComments {
+			selector = selector.Where("t.replyto is null")
+		}
 		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
 		fn(w, r.WithContext(ctx), p)
 	}
 }
 
+func joinUserSelector(selector sqlbuilder.Selector) sqlbuilder.Selector {
+	return selector.Columns(udb.Raw("u.nickname"), udb.Raw("u.pic"), udb.Raw("exists(select * from likes l where l.userid = u.id and l.commentid = t.id) as liked")).Join("users u").On("t.userid = u.id")
+}
+
 func joinUser(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
-		selector = selector.Columns(udb.Raw("u.nickname"), udb.Raw("u.pic"), udb.Raw("exists(select * from likes l where l.userid = u.id and l.commentid = t.id) as liked")).Join("users u").On("t.userid = u.id")
+		selector = joinUserSelector(selector)
 		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
 		fn(w, r.WithContext(ctx), p)
 	}
@@ -168,8 +178,43 @@ func picMediaURL(fn httprouter.Handle) httprouter.Handle {
 	}
 }
 
+func selectReplies(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		params := r.Context().Value(middlewares.QueryObjectContextKey{}).(*SelectFeedEntryCommentsParams)
+
+		if params.AllComments || params.RootCommentsOnly || params.ReplyTo != nil {
+			fn(w, r, p)
+			return
+		}
+
+		result := r.Context().Value(middlewares.SelectResultContextKey{}).(*[]Comment)
+		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+
+		ids := []uuid.UUID{}
+		for _, c := range *result {
+			if c.ReplyTo.Valid == false {
+				ids = append(ids, c.ID.UUID)
+			}
+		}
+
+		replies := &[]Comment{}
+		selector := joinUserSelector(sess.Select("t.*").From("comments t").Where("replyto in ?", ids))
+		if err := selector.All(replies); err != nil {
+			logrus.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		*result = append(*result, *replies...)
+		ctx := context.WithValue(r.Context(), middlewares.SelectResultContextKey{}, result)
+		fn(w, r.WithContext(ctx), p)
+	}
+}
+
 type SelectFeedEntryCommentsParams struct {
 	middlewares.SelectParamsOffsetLimit
+	ReplyTo          *string `json:"replyTo"`
+	RootCommentsOnly bool    `json:"rootCommentsOnly"`
+	AllComments      bool    `json:"allComments"`
 }
 
 type Comment struct {
@@ -188,6 +233,7 @@ var selectFeedEntryComments = middlewares.SelectEndpoint(
 		joinUser,
 	},
 	[]middleware.Middleware{
+		selectReplies,
 		picMediaURL,
 	},
 )
