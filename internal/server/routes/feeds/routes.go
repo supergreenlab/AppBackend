@@ -26,7 +26,7 @@ import (
 
 // Init -
 func Init(router *httprouter.Router) {
-	anon := cmiddlewares.AnonStack()
+	//anon := cmiddlewares.AnonStack()
 	auth := cmiddlewares.AuthStack()
 	optionalAuth := cmiddlewares.OptionalAuthStack()
 	authWithUserEndID := fmiddlewares.AuthStackWithUserEnd()
@@ -84,9 +84,9 @@ func Init(router *httprouter.Router) {
 	router.GET("/devices", auth.Wrap(selectDevices))
 	router.GET("/timelapses", auth.Wrap(selectTimelapses))
 
-	router.GET("/public/plants", anon.Wrap(fetchPublicPlants))
-	router.GET("/public/plant/:id", anon.Wrap(fetchPublicPlant))
-	router.GET("/public/plant/:id/feedEntries", anon.Wrap(fetchPublicFeedEntries))
-	router.GET("/public/feedEntry/:id/feedMedias", anon.Wrap(fetchPublicFeedMedias))
-	router.GET("/public/feedMedia/:id", anon.Wrap(fetchPublicFeedMedia))
+	router.GET("/public/plants", optionalAuth.Wrap(fetchPublicPlants))
+	router.GET("/public/plant/:id", optionalAuth.Wrap(fetchPublicPlant))
+	router.GET("/public/plant/:id/feedEntries", optionalAuth.Wrap(fetchPublicFeedEntries))
+	router.GET("/public/feedEntry/:id/feedMedias", optionalAuth.Wrap(fetchPublicFeedMedias))
+	router.GET("/public/feedMedia/:id", optionalAuth.Wrap(fetchPublicFeedMedia))
 }

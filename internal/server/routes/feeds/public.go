@@ -25,9 +25,11 @@ import (
 
 	sgldb "github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
+	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
 	db "upper.io/db.v3"
+	udb "upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
@@ -72,10 +74,15 @@ func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Para
 	}
 
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
-	if err != nil || limit == 0 || limit > 50 {
+	if err != nil {
 		logrus.Error(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+	if limit < 0 {
+		limit = 0
+	} else if limit > 50 {
+		limit = 50
 	}
 
 	plants := []sgldb.Plant{}
@@ -143,12 +150,21 @@ func fetchPublicPlant(w http.ResponseWriter, r *http.Request, p httprouter.Param
 	}
 }
 
+type publicFeedEntry struct {
+	sgldb.FeedEntry
+
+	Liked     bool `db:"liked" json:"liked"`
+	NComments int  `db:"ncomments" json:"nComments"`
+	NLikes    int  `db:"nlikes" json:"nLikes"`
+}
+
 type publicFeedEntriesResult struct {
-	Entries []sgldb.FeedEntry `json:"entries"`
+	Entries []publicFeedEntry `json:"entries"`
 }
 
 func fetchPublicFeedEntries(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+	uid, userIDExists := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
 
 	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
 	if err != nil {
@@ -158,14 +174,24 @@ func fetchPublicFeedEntries(w http.ResponseWriter, r *http.Request, p httprouter
 	}
 
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
-	if err != nil || limit == 0 || limit > 50 {
+	if err != nil {
 		logrus.Error(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	if limit < 0 {
+		limit = 0
+	} else if limit > 50 {
+		limit = 50
+	}
 
-	feedEntries := []sgldb.FeedEntry{}
+	feedEntries := []publicFeedEntry{}
 	selector := sess.Select("fe.*").From("feedentries fe")
+	if userIDExists {
+		selector = selector.Columns(udb.Raw("exists(select * from likes l where l.userid = ? and l.feedentryid = fe.id) as liked", uid))
+	}
+	selector = selector.Columns(udb.Raw("(select count(*) from likes l where l.feedentryid = fe.id) as nlikes"))
+	selector = selector.Columns(udb.Raw("(select count(*) from comments c where c.feedentryid = fe.id) as nreplies"))
 	selector = selector.Join("feeds f").On("fe.feedid = f.id")
 	selector = selector.Join("plants p").On("p.feedid = f.id")
 	selector = selector.Where("p.is_public = ?", true).And("p.id = ?", p.ByName("id")).And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')").And("fe.deleted = ?", false).And("p.deleted = ?", false)
