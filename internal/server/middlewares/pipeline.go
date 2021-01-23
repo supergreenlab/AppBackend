@@ -137,6 +137,34 @@ func SelectEndpoint(
 	return s.Wrap(OutputSelectResult(collection))
 }
 
+// SelectEndpoint - select objects
+func SelectOneEndpoint(
+	collection string,
+	factory func() interface{},
+	paramFactory func() interface{},
+	pre []middleware.Middleware,
+	post []middleware.Middleware,
+) httprouter.Handle {
+	s := middleware.NewStack()
+
+	s.Use(DecodeQuery(paramFactory))
+
+	if pre != nil {
+		for _, m := range pre {
+			s.Use(m)
+		}
+	}
+	s.Use(SelectOneQuery(factory))
+
+	if post != nil {
+		for _, m := range post {
+			s.Use(m)
+		}
+	}
+
+	return s.Wrap(OutputSelectOneResult(collection))
+}
+
 type Count struct {
 	N int `db:"n" json:"n"`
 }

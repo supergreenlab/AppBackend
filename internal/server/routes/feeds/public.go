@@ -191,7 +191,7 @@ func fetchPublicFeedEntries(w http.ResponseWriter, r *http.Request, p httprouter
 		selector = selector.Columns(udb.Raw("exists(select * from likes l where l.userid = ? and l.feedentryid = fe.id) as liked", uid))
 	}
 	selector = selector.Columns(udb.Raw("(select count(*) from likes l where l.feedentryid = fe.id) as nlikes"))
-	selector = selector.Columns(udb.Raw("(select count(*) from comments c where c.feedentryid = fe.id) as nreplies"))
+	selector = selector.Columns(udb.Raw("(select count(*) from comments c where c.feedentryid = fe.id) as ncomments"))
 	selector = selector.Join("feeds f").On("fe.feedid = f.id")
 	selector = selector.Join("plants p").On("p.feedid = f.id")
 	selector = selector.Where("p.is_public = ?", true).And("p.id = ?", p.ByName("id")).And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')").And("fe.deleted = ?", false).And("p.deleted = ?", false)

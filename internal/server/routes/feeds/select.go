@@ -258,6 +258,44 @@ var countFeedEntryComments = middlewares.CountEndpoint(
 	[]middleware.Middleware{},
 )
 
+type SelectFeedEntrySocialParams struct{}
+
+type FeedEntrySocial struct {
+	Liked     bool `db:"liked" json:"liked"`
+	NLikes    int  `db:"nlikes" json:"nLikes"`
+	NComments int  `db:"ncomments" json:"nComments"`
+}
+
+func feedEntrySocialSelect(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		feid := p.ByName("id")
+		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+
+		uid, userIDExists := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
+
+		selector := sess.Select()
+
+		if userIDExists {
+			selector = selector.Columns(udb.Raw("exists(select * from likes l where l.userid = ? and l.feedentryid = ?) as liked", uid, feid))
+		}
+		selector = selector.Columns(udb.Raw("(select count(*) from likes l where l.feedentryid = ?) as nlikes", feid))
+		selector = selector.Columns(udb.Raw("(select count(*) from comments c where c.feedentryid = ?) as ncomments", feid))
+
+		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
+		fn(w, r.WithContext(ctx), p)
+	}
+}
+
+var selectFeedEntrySocial = middlewares.SelectOneEndpoint(
+	"comments",
+	func() interface{} { return &FeedEntrySocial{} },
+	func() interface{} { return &SelectFeedEntrySocialParams{} },
+	[]middleware.Middleware{
+		feedEntrySocialSelect,
+	},
+	[]middleware.Middleware{},
+)
+
 type SelectTimelapsesParams struct {
 	middlewares.SelectParamsOffsetLimit
 }
