@@ -35,6 +35,8 @@ import (
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
+// TODO add deleted filtering
+
 func filterUserID(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
@@ -292,6 +294,20 @@ var selectFeedEntrySocial = middlewares.SelectOneEndpoint(
 	func() interface{} { return &SelectFeedEntrySocialParams{} },
 	[]middleware.Middleware{
 		feedEntrySocialSelect,
+	},
+	[]middleware.Middleware{},
+)
+
+type SelectBookmarksParams struct {
+	middlewares.SelectParamsOffsetLimit
+}
+
+var selectBookmarks = middlewares.SelectEndpoint(
+	"bookmarks",
+	func() interface{} { return &[]db.Bookmark{} },
+	func() interface{} { return &SelectBookmarksParams{} },
+	[]middleware.Middleware{
+		filterUserID,
 	},
 	[]middleware.Middleware{},
 )

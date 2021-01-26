@@ -43,6 +43,7 @@ func Init(router *httprouter.Router) {
 	router.POST("/feedMedia", authWithUserEndID.Wrap(createFeedMediaHandler))
 	router.POST("/comment", auth.Wrap(createCommentHandler))
 	router.POST("/like", auth.Wrap(createLikeHandler))
+	router.POST("/bookmark", auth.Wrap(createBookmarkHandler))
 
 	router.PUT("/box", authWithUserEndID.Wrap(updateBoxHandler))
 	router.PUT("/plant", authWithUserEndID.Wrap(updatePlantHandler))
@@ -83,11 +84,13 @@ func Init(router *httprouter.Router) {
 	router.GET("/feeds", auth.Wrap(selectFeeds))
 	router.GET("/boxes", auth.Wrap(selectBoxes))
 	router.GET("/devices", auth.Wrap(selectDevices))
+	router.GET("/bookmarks", auth.Wrap(selectBookmarks))
 	router.GET("/timelapses", auth.Wrap(selectTimelapses))
 
 	router.GET("/public/plants", optionalAuth.Wrap(fetchPublicPlants))
 	router.GET("/public/plant/:id", optionalAuth.Wrap(fetchPublicPlant))
 	router.GET("/public/plant/:id/feedEntries", optionalAuth.Wrap(fetchPublicFeedEntries))
+	router.GET("/public/feedEntry/:id", optionalAuth.Wrap(fetchPublicFeedEntry))
 	router.GET("/public/feedEntry/:id/feedMedias", optionalAuth.Wrap(fetchPublicFeedMedias))
 	router.GET("/public/feedMedia/:id", optionalAuth.Wrap(fetchPublicFeedMedia))
 }

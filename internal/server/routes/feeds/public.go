@@ -33,6 +33,8 @@ import (
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
+// TODO use select* middlewares
+
 func loadLastFeedMediaForPlant(sess sqlbuilder.Database, p sgldb.Plant) (sgldb.FeedMedia, error) {
 	var err error
 	selector := sess.Select("fm.*")
@@ -202,6 +204,36 @@ func fetchPublicFeedEntries(w http.ResponseWriter, r *http.Request, p httprouter
 		return
 	}
 	if err := json.NewEncoder(w).Encode(publicFeedEntriesResult{feedEntries}); err != nil {
+		logrus.Error(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+type publicFeedEntryResult struct {
+	Entry publicFeedEntry `json:"entry"`
+}
+
+func fetchPublicFeedEntry(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+	uid, userIDExists := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
+
+	feedEntry := publicFeedEntry{}
+	selector := sess.Select("fe.*").From("feedentries fe")
+	if userIDExists {
+		selector = selector.Columns(udb.Raw("exists(select * from likes l where l.userid = ? and l.feedentryid = fe.id) as liked", uid))
+	}
+	selector = selector.Columns(udb.Raw("(select count(*) from likes l where l.feedentryid = fe.id) as nlikes"))
+	selector = selector.Columns(udb.Raw("(select count(*) from comments c where c.feedentryid = fe.id) as ncomments"))
+	selector = selector.Join("feeds f").On("fe.feedid = f.id")
+	selector = selector.Join("plants p").On("p.feedid = f.id")
+	selector = selector.Where("p.is_public = ?", true).And("fe.id = ?", p.ByName("id")).And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')").And("fe.deleted = ?", false).And("p.deleted = ?", false)
+	if err := selector.One(&feedEntry); err != nil {
+		logrus.Error(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if err := json.NewEncoder(w).Encode(publicFeedEntryResult{feedEntry}); err != nil {
 		logrus.Error(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -254,7 +254,7 @@ var createCommentHandler = middlewares.InsertEndpoint(
 	nil,
 )
 
-func deleteIfExists(fn httprouter.Handle) httprouter.Handle {
+func deleteLikeIfExists(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
 		uid := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
@@ -283,7 +283,42 @@ var createLikeHandler = middlewares.InsertEndpoint(
 	"likes",
 	func() interface{} { return &db.Like{} },
 	[]middleware.Middleware{
-		deleteIfExists,
+		deleteLikeIfExists,
+		middlewares.SetUserID,
+	},
+	nil,
+)
+
+func deleteBookmarkIfExists(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+		uid := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
+		b := r.Context().Value(middlewares.ObjectContextKey{}).(*db.Bookmark)
+
+		var bookmark db.Bookmark
+		err := sess.Collection("bookmarks").Find().Where("userid = ?", uid).And("feedentryid = ?", b.FeedEntryID).One(&bookmark)
+		if err == nil {
+			err := sess.Collection("bookmarks").Find().Where("id = ?", bookmark.ID).Delete()
+			if err != nil {
+				logrus.Error(err.Error())
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			ctx := context.WithValue(r.Context(), middlewares.ObjectContextKey{}, bookmark)
+			ctx = context.WithValue(ctx, middlewares.InsertedIDContextKey{}, bookmark.ID.UUID)
+			middlewares.OutputObjectID(w, r.WithContext(ctx), p)
+		} else {
+			logrus.Println(err)
+			fn(w, r, p)
+		}
+	}
+}
+
+var createBookmarkHandler = middlewares.InsertEndpoint(
+	"bookmarks",
+	func() interface{} { return &db.Bookmark{} },
+	[]middleware.Middleware{
+		deleteBookmarkIfExists,
 		middlewares.SetUserID,
 	},
 	nil,
