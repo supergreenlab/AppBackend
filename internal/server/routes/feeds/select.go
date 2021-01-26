@@ -263,9 +263,10 @@ var countFeedEntryComments = middlewares.CountEndpoint(
 type SelectFeedEntrySocialParams struct{}
 
 type FeedEntrySocial struct {
-	Liked     bool `db:"liked" json:"liked"`
-	NLikes    int  `db:"nlikes" json:"nLikes"`
-	NComments int  `db:"ncomments" json:"nComments"`
+	Liked      bool `db:"liked" json:"liked"`
+	Bookmarked bool `db:"bookmarked" json:"bookmarked"`
+	NLikes     int  `db:"nlikes" json:"nLikes"`
+	NComments  int  `db:"ncomments" json:"nComments"`
 }
 
 func feedEntrySocialSelect(fn httprouter.Handle) httprouter.Handle {
@@ -279,6 +280,7 @@ func feedEntrySocialSelect(fn httprouter.Handle) httprouter.Handle {
 
 		if userIDExists {
 			selector = selector.Columns(udb.Raw("exists(select * from likes l where l.userid = ? and l.feedentryid = ?) as liked", uid, feid))
+			selector = selector.Columns(udb.Raw("exists(select * from bookmarks b where b.userid = ? and b.feedentryid = ?) as bookmarked", uid, feid))
 		}
 		selector = selector.Columns(udb.Raw("(select count(*) from likes l where l.feedentryid = ?) as nlikes", feid))
 		selector = selector.Columns(udb.Raw("(select count(*) from comments c where c.feedentryid = ?) as ncomments", feid))

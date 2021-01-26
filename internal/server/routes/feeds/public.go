@@ -155,9 +155,10 @@ func fetchPublicPlant(w http.ResponseWriter, r *http.Request, p httprouter.Param
 type publicFeedEntry struct {
 	sgldb.FeedEntry
 
-	Liked     bool `db:"liked" json:"liked"`
-	NComments int  `db:"ncomments" json:"nComments"`
-	NLikes    int  `db:"nlikes" json:"nLikes"`
+	Liked      bool `db:"liked" json:"liked"`
+	Bookmarked bool `db:"bookmarked" json:"bookmarked"`
+	NComments  int  `db:"ncomments" json:"nComments"`
+	NLikes     int  `db:"nlikes" json:"nLikes"`
 }
 
 type publicFeedEntriesResult struct {
@@ -191,6 +192,7 @@ func fetchPublicFeedEntries(w http.ResponseWriter, r *http.Request, p httprouter
 	selector := sess.Select("fe.*").From("feedentries fe")
 	if userIDExists {
 		selector = selector.Columns(udb.Raw("exists(select * from likes l where l.userid = ? and l.feedentryid = fe.id) as liked", uid))
+		selector = selector.Columns(udb.Raw("exists(select * from bookmarks b where b.userid = ? and b.feedentryid = fe.id) as bookmarked", uid))
 	}
 	selector = selector.Columns(udb.Raw("(select count(*) from likes l where l.feedentryid = fe.id) as nlikes"))
 	selector = selector.Columns(udb.Raw("(select count(*) from comments c where c.feedentryid = fe.id) as ncomments"))
