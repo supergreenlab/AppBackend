@@ -119,7 +119,7 @@ func JwtToken(fn httprouter.Handle) httprouter.Handle {
 			authentication = authorization
 		}
 		tokenString := strings.ReplaceAll(authentication, "Bearer ", "")
-		if tokenString == "" {
+		if tokenString == "" || tokenString == "null" {
 			fn(w, r, p)
 			return
 		}
