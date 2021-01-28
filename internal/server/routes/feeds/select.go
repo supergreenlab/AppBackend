@@ -190,6 +190,9 @@ func picMediaURL(fn httprouter.Handle) httprouter.Handle {
 		result := r.Context().Value(middlewares.SelectResultContextKey{}).(*[]Comment)
 
 		for i, c := range *result {
+			if c.Pic.Valid == false {
+				continue
+			}
 			minioClient := storage.CreateMinioClient()
 			expiry := time.Second * 60 * 60
 			url1, err := minioClient.PresignedGetObject("users", c.Pic.String, expiry, nil)

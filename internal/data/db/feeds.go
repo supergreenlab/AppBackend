@@ -411,6 +411,8 @@ type UserEnd struct {
 	ID     uuid.NullUUID `db:"id,omitempty" json:"id"`
 	UserID uuid.UUID     `db:"userid" json:"userID"`
 
+	NotificationToken string `db:"notification_token" json:"notificationToken"`
+
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
 }

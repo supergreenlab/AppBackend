@@ -19,9 +19,14 @@
 package feeds
 
 import (
+	"context"
+	"net/http"
+
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	fmiddlewares "github.com/SuperGreenLab/AppBackend/internal/server/routes/feeds/middlewares"
+	"github.com/gofrs/uuid"
+	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
 )
 
@@ -124,4 +129,27 @@ var updateFeedMediaHandler = middlewares.UpdateEndpoint(
 		fmiddlewares.CheckPlantArchivedForFeedMedia,
 		fmiddlewares.UpdateUserEndObjects("userend_feedmedias", "feedmediaid"),
 	},
+)
+
+func setUserEndID(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		ueid := r.Context().Value(fmiddlewares.UserEndIDContextKey{}).(uuid.UUID)
+		ue := r.Context().Value(middlewares.ObjectContextKey{}).(*db.UserEnd)
+
+		ue.ID = uuid.NullUUID{UUID: ueid, Valid: true}
+
+		ctx := context.WithValue(r.Context(), middlewares.ObjectContextKey{}, ue)
+		fn(w, r.WithContext(ctx), p)
+	}
+}
+
+var updateUserEndHandler = middlewares.UpdateEndpoint(
+	"userends",
+	func() interface{} { return &db.UserEnd{} },
+	[]middleware.Middleware{
+		middlewares.SetUserID,
+		setUserEndID,
+		middlewares.CheckAccessRight("userends", "ID", false, func() db.UserObject { return &db.UserEnd{} }),
+	},
+	[]middleware.Middleware{},
 )
