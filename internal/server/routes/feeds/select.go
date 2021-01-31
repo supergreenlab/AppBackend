@@ -307,12 +307,40 @@ type SelectBookmarksParams struct {
 	middlewares.SelectParamsOffsetLimit
 }
 
+func joinFeedEntry(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
+		uid, userIDExists := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
+
+		selector = selector.Columns("fe.*").Join("feedentries fe").On("t.feedentryid = fe.id").Where("is_public = ?", true)
+		selector = selector.Columns("p.id as plantid").Join("plants p").On("p.feedid = fe.feedid").Where("p.deleted = ?", false)
+
+		if userIDExists {
+			selector = selector.Columns(udb.Raw("exists(select * from likes l where l.userid = ? and l.feedentryid = fe.id) as liked", uid))
+			selector = selector.Columns(udb.Raw("exists(select * from bookmarks b where b.userid = ? and b.feedentryid = fe.id) as bookmarked", uid))
+		}
+		selector = selector.Columns(udb.Raw("(select count(*) from likes l where l.feedentryid = fe.id) as nlikes"))
+		selector = selector.Columns(udb.Raw("(select count(*) from comments c where c.feedentryid = fe.id) as ncomments"))
+		selector = selector.OrderBy("fe.createdat DESC")
+
+		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
+		fn(w, r.WithContext(ctx), p)
+	}
+}
+
+type publicFeedEntryBookmarks struct {
+	publicFeedEntry
+
+	PlantID string `db:"plantid" json:"plantID"`
+}
+
 var selectBookmarks = middlewares.SelectEndpoint(
 	"bookmarks",
-	func() interface{} { return &[]db.Bookmark{} },
+	func() interface{} { return &[]publicFeedEntryBookmarks{} },
 	func() interface{} { return &SelectBookmarksParams{} },
 	[]middleware.Middleware{
 		filterUserID,
+		joinFeedEntry,
 	},
 	[]middleware.Middleware{},
 )
