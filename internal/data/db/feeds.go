@@ -355,6 +355,36 @@ func (c Comment) GetUserID() uuid.UUID {
 	return c.UserID
 }
 
+// Report -
+type Report struct {
+	ID     uuid.NullUUID `db:"id,omitempty" json:"id"`
+	UserID uuid.UUID     `db:"userid" json:"userID"`
+
+	FeedEntryID uuid.NullUUID `db:"feedentryid" json:"feedEntryID"`
+	CommentID   uuid.NullUUID `db:"commentid" json:"commentID"`
+	PlantID     uuid.NullUUID `db:"plantid" json:"plantID"`
+
+	Type string `db:"rtype" json:"type"`
+
+	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
+	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
+}
+
+// GetID -
+func (c Report) GetID() uuid.NullUUID {
+	return c.ID
+}
+
+// SetUserID -
+func (c *Report) SetUserID(userID uuid.UUID) {
+	c.UserID = userID
+}
+
+// GetUserID -
+func (c Report) GetUserID() uuid.UUID {
+	return c.UserID
+}
+
 // Like -
 type Like struct {
 	ID          uuid.NullUUID `db:"id,omitempty" json:"id"`

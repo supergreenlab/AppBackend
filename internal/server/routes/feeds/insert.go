@@ -289,6 +289,35 @@ var createLikeHandler = middlewares.InsertEndpoint(
 	nil,
 )
 
+func ignoreReportIfExists(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+		uid := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
+		re := r.Context().Value(middlewares.ObjectContextKey{}).(*db.Report)
+
+		var report db.Report
+		err := sess.Collection("reports").Find().Where("userid = ?", uid).And(udb.Or(udb.Raw("plantid = ?", re.PlantID), udb.Raw("commentid = ?", re.CommentID), udb.Raw("feedentryid = ?", re.FeedEntryID))).One(&report)
+		if err == nil {
+			ctx := context.WithValue(r.Context(), middlewares.ObjectContextKey{}, report)
+			ctx = context.WithValue(ctx, middlewares.InsertedIDContextKey{}, report.ID.UUID)
+			middlewares.OutputObjectID(w, r.WithContext(ctx), p)
+		} else {
+			logrus.Println(err)
+			fn(w, r, p)
+		}
+	}
+}
+
+var createReportHandler = middlewares.InsertEndpoint(
+	"reports",
+	func() interface{} { return &db.Report{} },
+	[]middleware.Middleware{
+		ignoreReportIfExists,
+		middlewares.SetUserID,
+	},
+	nil,
+)
+
 func deleteBookmarkIfExists(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
