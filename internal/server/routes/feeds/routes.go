@@ -81,6 +81,7 @@ func Init(router *httprouter.Router) {
 	router.GET("/feedEntry/:id/comments", optionalAuth.Wrap(selectFeedEntryComments))
 	router.GET("/feedEntry/:id/comments/count", optionalAuth.Wrap(countFeedEntryComments))
 	router.GET("/feedEntry/:id/social", optionalAuth.Wrap(selectFeedEntrySocial))
+	router.GET("/comment/:id", optionalAuth.Wrap(selectComment))
 	router.GET("/feedMedias", auth.Wrap(selectFeedMedias))
 	router.GET("/feeds", auth.Wrap(selectFeeds))
 	router.GET("/boxes", auth.Wrap(selectBoxes))

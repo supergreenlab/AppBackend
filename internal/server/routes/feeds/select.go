@@ -208,7 +208,7 @@ func picMediaURL(fn httprouter.Handle) httprouter.Handle {
 	}
 }
 
-func selectReplies(fn httprouter.Handle) httprouter.Handle {
+func selectRepliesForComments(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		params := r.Context().Value(middlewares.QueryObjectContextKey{}).(*SelectFeedEntryCommentsParams)
 
@@ -249,7 +249,31 @@ var selectFeedEntryComments = middlewares.SelectEndpoint(
 		joinSocial,
 	},
 	[]middleware.Middleware{
-		selectReplies,
+		selectRepliesForComments,
+		picMediaURL,
+	},
+)
+
+func filterCommentID(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
+		cid := p.ByName("id")
+		selector = selector.Where("t.id = ?", cid)
+		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
+		fn(w, r.WithContext(ctx), p)
+	}
+}
+
+var selectComment = middlewares.SelectEndpoint(
+	"comments",
+	func() interface{} { return &[]Comment{} },
+	func() interface{} { return &SelectFeedEntryCommentsParams{} },
+	[]middleware.Middleware{
+		filterCommentID,
+		joinSocial,
+	},
+	[]middleware.Middleware{
+		selectRepliesForComments,
 		picMediaURL,
 	},
 )
