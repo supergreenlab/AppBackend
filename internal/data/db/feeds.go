@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	"gopkg.in/guregu/null.v3"
 )
 
 // Box -
@@ -441,7 +442,7 @@ type UserEnd struct {
 	ID     uuid.NullUUID `db:"id,omitempty" json:"id"`
 	UserID uuid.UUID     `db:"userid" json:"userID"`
 
-	NotificationToken string `db:"notification_token" json:"notificationToken"`
+	NotificationToken null.String `db:"notification_token" json:"notificationToken"`
 
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
