@@ -50,6 +50,7 @@ func InsertEndpoint(
 			s.Use(m)
 		}
 	}
+	s.Use(PublishInsert(collection))
 
 	return s.Wrap(OutputObjectID)
 }

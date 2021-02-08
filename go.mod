@@ -8,11 +8,13 @@ require (
 	github.com/SuperGreenLab/WebBackend v0.0.0-20191105152239-1a7c2c8088bd // indirect
 	github.com/aws/aws-sdk-go v1.29.31 // indirect
 	github.com/cockroachdb/cockroach-go v0.0.0-20200312223839-f565e4789405 // indirect
+	github.com/cskr/pubsub v1.0.2
 	github.com/denisenkom/go-mssqldb v0.0.0-20200206145737-bbfc9a55622e // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
 	github.com/go-ini/ini v1.57.0 // indirect
+	github.com/go-redis/redis v6.15.6+incompatible
 	github.com/gocql/gocql v0.0.0-20200324094621-6d895e38b0a5 // indirect
 	github.com/gofrs/uuid v3.2.0+incompatible
 	github.com/golang-migrate/migrate v3.5.4+incompatible
