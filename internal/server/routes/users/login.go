@@ -99,8 +99,9 @@ var createUserHandler = middlewares.InsertEndpoint(
 				sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
 				u.Nickname = strings.Trim(u.Nickname, " ")
 				if len(u.Nickname) < 5 || len(u.Nickname) > 21 {
-					logrus.Errorln("Nickname length should be between 5 and 21 caracters")
-					http.Error(w, "Nickname length should be between 5 and 21 caracters", http.StatusBadRequest)
+					errorMsg := "Nickname length should be between 5 and 21 caracters"
+					logrus.Errorln(errorMsg)
+					http.Error(w, errorMsg, http.StatusBadRequest)
 					return
 				}
 
@@ -113,8 +114,9 @@ var createUserHandler = middlewares.InsertEndpoint(
 				}
 
 				if n > 0 {
-					logrus.Errorln("User already exists")
-					http.Error(w, "User already exists", http.StatusBadRequest)
+					errorMsg := "User already exists"
+					logrus.Errorln(errorMsg)
+					http.Error(w, errorMsg, http.StatusBadRequest)
 					return
 				}
 
