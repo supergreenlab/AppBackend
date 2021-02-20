@@ -57,10 +57,10 @@ func loginHandler() httprouter.Handle {
 		lp := r.Context().Value(middlewares.ObjectContextKey{}).(*loginParams)
 		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
 
-		lp.Handle = strings.ToLower(strings.Trim(lp.Handle, " "))
+		lp.Handle = strings.ToLower(strings.Replace(lp.Handle, " ", "", -1))
 
 		u := db.User{}
-		err := sess.Select("id", "password").From("users").Where("lower(nickname) = ?", lp.Handle).One(&u)
+		err := sess.Select("id", "password").From("users").Where("lower(replace(nickname, ' ', '')) = ?", lp.Handle).One(&u)
 		if err != nil {
 			logrus.Errorln(err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -98,7 +98,14 @@ var createUserHandler = middlewares.InsertEndpoint(
 				u := r.Context().Value(middlewares.ObjectContextKey{}).(*db.User)
 				sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
 				u.Nickname = strings.Trim(u.Nickname, " ")
-				n, err := sess.Collection("users").Find().Where("lower(nickname) = ?", strings.ToLower(u.Nickname)).Count() // TODO this is stupid
+				if len(u.Nickname) < 5 || len(u.Nickname) > 21 {
+					logrus.Errorln("Nickname length should be between 5 and 21 caracters")
+					http.Error(w, "Nickname length should be between 5 and 21 caracters", http.StatusBadRequest)
+					return
+				}
+
+				nickname := strings.ToLower(strings.Replace(u.Nickname, " ", "", -1))
+				n, err := sess.Collection("users").Find().Where("lower(replace(nickname, ' ', '')) = ?", nickname).Count() // TODO this is stupid
 				if err != nil {
 					logrus.Errorln(err.Error())
 					http.Error(w, err.Error(), http.StatusInternalServerError)
