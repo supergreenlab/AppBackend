@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	cloud.google.com/go/spanner v1.4.0 // indirect
+	firebase.google.com/go/v4 v4.2.0
 	github.com/ClickHouse/clickhouse-go v1.3.14 // indirect
 	github.com/SuperGreenLab/WebBackend v0.0.0-20191105152239-1a7c2c8088bd // indirect
 	github.com/aws/aws-sdk-go v1.29.31 // indirect
@@ -44,6 +45,7 @@ require (
 	golang.org/x/exp v0.0.0-20200320212757-167ffe94c325 // indirect
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e // indirect
 	golang.org/x/tools v0.0.0-20200325010219-a49f79bcc224
+	google.golang.org/api v0.20.0
 	google.golang.org/genproto v0.0.0-20200324203455-a04cca1dde73 // indirect
 	gopkg.in/guregu/null.v3 v3.5.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect

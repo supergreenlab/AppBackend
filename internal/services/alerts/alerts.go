@@ -19,4 +19,5 @@
 package alerts
 
 func Init() {
+	initTemperature()
 }

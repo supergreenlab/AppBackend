@@ -18,6 +18,41 @@
 
 package notifications
 
+import (
+	"context"
+	"log"
+
+	firebase "firebase.google.com/go/v4"
+	"firebase.google.com/go/v4/messaging"
+	"github.com/SuperGreenLab/AppBackend/internal/data/db"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
+	"google.golang.org/api/option"
+)
+
+var (
+	client        *firebase.App
+	ch            chan NotificationObject
+	fcmConfigPath = pflag.String("fcmconfigpath", "/etc/appbackend/fcmconfig.json", "Url to the redis instance")
+)
+
+type NotificationObject struct {
+	user         db.User
+	data         map[string]string
+	notification *messaging.Notification
+}
+
+func SendNotificationToUser(user db.User, data map[string]string, notification *messaging.Notification) {
+	logrus.Infof("Sending notification %s", user.Nickname)
+}
+
 func Init() {
-	InitComments()
+	var err error
+	ctx := context.Background()
+	config := &firebase.Config{ProjectID: "supergreenlab-6cd05"}
+	opt := option.WithCredentialsFile(*fcmConfigPath)
+	client, err = firebase.NewApp(ctx, config, opt)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 )
@@ -40,18 +41,26 @@ func SubscribeOject(topic string) chan interface{} {
 	return ps.Sub(topic)
 }
 
-func SubscribeMetric(topic string) chan int {
-	ch := make(chan int)
-	rps := r.Subscribe(topic)
+type ControllerIntMetric struct {
+	ControllerID string
+	Key          string
+	Value        float64
+}
+
+func SubscribeControllerIntMetric(topic string) chan ControllerIntMetric {
+	ch := make(chan ControllerIntMetric, 100)
+	rps := r.PSubscribe(topic)
 	go func() {
 		for msg := range rps.Channel() {
-			v, err := strconv.Atoi(msg.Payload)
+			v, err := strconv.ParseFloat(msg.Payload, 64)
 			if err != nil {
 				logrus.Error(err.Error())
 				continue
 			}
 
-			ch <- v
+			keyParts := strings.Split(msg.Channel, ".")
+
+			ch <- ControllerIntMetric{ControllerID: keyParts[1], Key: keyParts[3], Value: v}
 		}
 		close(ch)
 	}()

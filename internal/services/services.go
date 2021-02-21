@@ -21,9 +21,11 @@ package services
 import (
 	"github.com/SuperGreenLab/AppBackend/internal/services/alerts"
 	"github.com/SuperGreenLab/AppBackend/internal/services/notifications"
+	"github.com/SuperGreenLab/AppBackend/internal/services/social"
 )
 
 func Init() {
 	notifications.Init()
+	social.Init()
 	alerts.Init()
 }

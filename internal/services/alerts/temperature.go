@@ -18,8 +18,18 @@
 
 package alerts
 
-import "fmt"
+import (
+	"github.com/SuperGreenLab/AppBackend/internal/services/pubsub"
+	"github.com/sirupsen/logrus"
+)
 
-func init() {
-	fmt.Println("vim-go")
+func listenTemperatureMetrics() {
+	ch := pubsub.SubscribeControllerIntMetric("*.BOX_*_TEMP")
+	for metric := range ch {
+		logrus.Infof("%s{id=%s}=%f", metric.Key, metric.ControllerID, metric.Value)
+	}
+}
+
+func initTemperature() {
+	go listenTemperatureMetrics()
 }
