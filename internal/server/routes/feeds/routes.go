@@ -53,6 +53,7 @@ func Init(router *httprouter.Router) {
 	router.PUT("/feed", authWithUserEndID.Wrap(updateFeedHandler))
 	router.PUT("/feedEntry", authWithUserEndID.Wrap(updateFeedEntryHandler))
 	router.PUT("/feedMedia", authWithUserEndID.Wrap(updateFeedMediaHandler))
+	router.PUT("/userend", auth.Wrap(updateUserEndHandler))
 
 	router.POST("/deletes", authWithUserEndID.Wrap(deletesHandler))
 
