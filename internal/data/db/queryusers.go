@@ -27,7 +27,6 @@ import (
 func GetUser(userID uuid.UUID) (User, error) {
 	user := User{}
 
-	var err error
 	sess, err := postgresql.Open(Settings)
 	if err != nil {
 		logrus.Errorf("db.Open(): %q\n", err)
@@ -36,7 +35,7 @@ func GetUser(userID uuid.UUID) (User, error) {
 	defer sess.Close()
 
 	selector := sess.Select("*").From("users")
-	if err = selector.One(&user); err != nil {
+	if err := selector.One(&user); err != nil {
 		logrus.Error(err.Error())
 		return user, err
 	}

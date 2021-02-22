@@ -31,12 +31,24 @@ func listenCommentsAdded() {
 	ch := pubsub.SubscribeOject("insert.comments")
 	for c := range ch {
 		com := c.(middlewares.InsertMessage).Object.(*db.Comment)
-		user, err := db.GetUser(com.UserID)
-		if err != nil {
-			logrus.Error(err.Error())
+		if feedEntry, err := db.GetFeedEntry(com.FeedEntryID); err == nil {
+			if com.UserID != feedEntry.UserID {
+				notifications.SendNotificationToUser(feedEntry.UserID, NotificationDataPlantComment{}, &messaging.Notification{})
+			}
+		} else {
+			logrus.Errorf("listenCommentsAdded: %q\n", err)
 			continue
 		}
-		notifications.SendNotificationToUser(user, map[string]string{}, &messaging.Notification{})
+
+		if com.ReplyTo.Valid {
+			if comReplied, err := db.GetComment(com.ReplyTo.UUID); err == nil {
+				if com.UserID != comReplied.UserID {
+					notifications.SendNotificationToUser(comReplied.UserID, NotificationDataPlantComment{}, &messaging.Notification{})
+				}
+			} else {
+				logrus.Errorf("listenCommentsAdded: %q\n", err)
+			}
+		}
 	}
 }
 

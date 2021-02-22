@@ -25,6 +25,7 @@ import (
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/messaging"
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
+	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"google.golang.org/api/option"
@@ -36,14 +37,52 @@ var (
 	fcmConfigPath = pflag.String("fcmconfigpath", "/etc/appbackend/fcmconfig.json", "Url to the redis instance")
 )
 
+type NotificationData interface {
+	ToMap() map[string]string
+}
+
+type NotificationBaseData struct {
+	Type  string `json:"type"`
+	Title string `json:"title"`
+	Body  string `json:"body"`
+}
+
+func (n NotificationBaseData) ToMap() map[string]string {
+	return map[string]string{
+		"type":  n.Type,
+		"title": n.Title,
+		"body":  n.Body,
+	}
+}
+
 type NotificationObject struct {
 	user         db.User
-	data         map[string]string
+	data         NotificationData
 	notification *messaging.Notification
 }
 
-func SendNotificationToUser(user db.User, data map[string]string, notification *messaging.Notification) {
-	logrus.Infof("Sending notification %s", user.Nickname)
+func SendNotificationToUser(userID uuid.UUID, data NotificationData, notification *messaging.Notification) {
+	userends, err := db.GetUserEndsForUserID(userID)
+	if err != nil {
+		logrus.Errorf("SendNotificationToUser: %q\n", err)
+		return
+	}
+	cli, err := client.Messaging(context.Background())
+	if err != nil {
+		logrus.Errorf("SendNotificationToUser: %q\n", err)
+		return
+	}
+	for _, userend := range userends {
+		if userend.NotificationToken.Valid && userend.NotificationToken.String != "" {
+			logrus.Infof("Sending notification to %s\n", userend.NotificationToken.String)
+			msg := &messaging.Message{Data: data.ToMap(), Notification: notification, Token: userend.NotificationToken.String}
+			if str, err := cli.Send(context.Background(), msg); err != nil {
+				logrus.Errorf("cli.Send: %q\n", err)
+			} else {
+				logrus.Info(str)
+			}
+		}
+	}
 }
 
 func Init() {
