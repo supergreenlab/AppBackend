@@ -22,6 +22,7 @@ import (
 	"net/http"
 
 	"github.com/SuperGreenLab/AppBackend/internal/server/routes/products"
+	"github.com/SuperGreenLab/AppBackend/internal/services/prometheus"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
 
@@ -46,5 +47,7 @@ func Start() {
 	feeds.Init(router)
 	products.Init(router)
 
-	go func() { log.Fatal(http.ListenAndServe(":8080", router)) }()
+	go func() {
+		log.Fatal(http.ListenAndServe(":8080", prometheus.NewHTTPTiming(router)))
+	}()
 }
