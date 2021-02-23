@@ -28,4 +28,8 @@ var (
 		Name: "appbackend_http_duration_seconds",
 		Help: "Duration of HTTP requests.",
 	}, []string{"path"})
+	notificationsCount = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "appbackend_notifications",
+		Help: "Number of notifications",
+	}, []string{"type"})
 )

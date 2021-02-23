@@ -21,10 +21,15 @@ package prometheus
 import (
 	"log"
 	"net/http"
+	"regexp"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+)
+
+var (
+	UUIDFilter = regexp.MustCompile(`[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}`)
 )
 
 type HTTPTiming struct {
@@ -32,7 +37,7 @@ type HTTPTiming struct {
 }
 
 func (ht *HTTPTiming) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	path := r.URL.Path
+	path := UUIDFilter.ReplaceAllString(r.URL.Path, "[UUID]")
 	timer := prometheus.NewTimer(httpDuration.WithLabelValues(path))
 	ht.router.ServeHTTP(w, r)
 	timer.ObserveDuration()
@@ -40,6 +45,10 @@ func (ht *HTTPTiming) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func NewHTTPTiming(router *httprouter.Router) *HTTPTiming {
 	return &HTTPTiming{router}
+}
+
+func NotificationSent(notificationType string) {
+	notificationsCount.WithLabelValues(notificationType).Inc()
 }
 
 func Init() {

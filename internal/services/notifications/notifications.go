@@ -25,6 +25,7 @@ import (
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/messaging"
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
+	"github.com/SuperGreenLab/AppBackend/internal/services/prometheus"
 	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -39,12 +40,17 @@ var (
 
 type NotificationData interface {
 	ToMap() map[string]string
+	GetType() string
 }
 
 type NotificationBaseData struct {
 	Type  string `json:"type"`
 	Title string `json:"title"`
 	Body  string `json:"body"`
+}
+
+func (n NotificationBaseData) GetType() string {
+	return n.Type
 }
 
 func (n NotificationBaseData) ToMap() map[string]string {
@@ -86,6 +92,7 @@ func handleUserNotifications() {
 		if len(tokens) > 0 {
 			logrus.Infof("Sending notification to %q\n", tokens)
 			msg := &messaging.MulticastMessage{Data: un.data.ToMap(), Notification: un.notification, Tokens: tokens}
+			prometheus.NotificationSent(un.data.GetType())
 			if _, err := cli.SendMulticast(context.Background(), msg); err != nil {
 				logrus.Errorf("cli.Send: %q\n", err)
 			}
