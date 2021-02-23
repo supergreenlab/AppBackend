@@ -19,7 +19,8 @@
 package social
 
 import (
-	"firebase.google.com/go/v4/messaging"
+	"fmt"
+
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/SuperGreenLab/AppBackend/internal/services/notifications"
@@ -31,23 +32,36 @@ func listenCommentsAdded() {
 	ch := pubsub.SubscribeOject("insert.comments")
 	for c := range ch {
 		com := c.(middlewares.InsertMessage).Object.(*db.Comment)
-		if feedEntry, err := db.GetFeedEntry(com.FeedEntryID); err == nil {
-			if com.UserID != feedEntry.UserID {
-				notifications.SendNotificationToUser(feedEntry.UserID, NotificationDataPlantComment{}, &messaging.Notification{})
-			}
-		} else {
-			logrus.Errorf("listenCommentsAdded: %q\n", err)
+		feedEntry, err := db.GetFeedEntry(com.FeedEntryID)
+		if err != nil {
+			logrus.Errorf("listenCommentsAdded db.GetFeedEntry: %q\n", err)
+			continue
+		}
+		plant, err := db.GetPlantForFeedEntryID(com.FeedEntryID)
+		if err != nil {
+			logrus.Errorf("listenCommentsAdded db.GetPlantForFeedEntryID: %q\n", err)
+			continue
+		}
+		user, err := db.GetUser(com.UserID)
+		if err != nil {
+			logrus.Errorf("listenCommentsAdded db.GetUser: %q\n", err)
 			continue
 		}
 
 		if com.ReplyTo.Valid {
-			if comReplied, err := db.GetComment(com.ReplyTo.UUID); err == nil {
-				if com.UserID != comReplied.UserID {
-					notifications.SendNotificationToUser(comReplied.UserID, NotificationDataPlantComment{}, &messaging.Notification{})
-				}
-			} else {
-				logrus.Errorf("listenCommentsAdded: %q\n", err)
+			comReplied, err := db.GetComment(com.ReplyTo.UUID)
+			if err != nil {
+				logrus.Errorf("listenCommentsAdded db.GetComment: %q\n", err)
 			}
+			if com.UserID != comReplied.UserID {
+				title := fmt.Sprintf("%s replied to your comment on the diary %s!", user.Nickname, plant.Name)
+				data, notif := NewNotificationDataPlantCommentReply(title, com.Text, "", plant.ID.UUID, feedEntry.ID.UUID, comReplied.ID.UUID)
+				notifications.SendNotificationToUser(comReplied.UserID, data, &notif)
+			}
+		} else if com.UserID != feedEntry.UserID {
+			title := fmt.Sprintf("%s posted a message on your diary %s!", user.Nickname, plant.Name)
+			data, notif := NewNotificationDataPlantComment(title, com.Text, "", plant.ID.UUID, feedEntry.ID.UUID, com.Type)
+			notifications.SendNotificationToUser(feedEntry.UserID, data, &notif)
 		}
 	}
 }

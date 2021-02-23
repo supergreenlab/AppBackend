@@ -33,7 +33,7 @@ import (
 
 var (
 	client        *firebase.App
-	ch            chan NotificationObject
+	ch            chan UserNotification
 	fcmConfigPath = pflag.String("fcmconfigpath", "/etc/appbackend/fcmconfig.json", "Url to the redis instance")
 )
 
@@ -55,34 +55,46 @@ func (n NotificationBaseData) ToMap() map[string]string {
 	}
 }
 
-type NotificationObject struct {
-	user         db.User
+type UserNotification struct {
+	userID       uuid.UUID
 	data         NotificationData
 	notification *messaging.Notification
 }
 
-func SendNotificationToUser(userID uuid.UUID, data NotificationData, notification *messaging.Notification) {
-	userends, err := db.GetUserEndsForUserID(userID)
-	if err != nil {
-		logrus.Errorf("SendNotificationToUser: %q\n", err)
-		return
-	}
-	cli, err := client.Messaging(context.Background())
-	if err != nil {
-		logrus.Errorf("SendNotificationToUser: %q\n", err)
-		return
-	}
-	for _, userend := range userends {
-		if userend.NotificationToken.Valid && userend.NotificationToken.String != "" {
-			logrus.Infof("Sending notification to %s\n", userend.NotificationToken.String)
-			msg := &messaging.Message{Data: data.ToMap(), Notification: notification, Token: userend.NotificationToken.String}
-			if str, err := cli.Send(context.Background(), msg); err != nil {
+func handleUserNotifications() {
+	for un := range ch {
+		userends, err := db.GetUserEndsForUserID(un.userID)
+		if err != nil {
+			logrus.Errorf("SendNotificationToUser: %q\n", err)
+			return
+		}
+		cli, err := client.Messaging(context.Background())
+		if err != nil {
+			logrus.Errorf("SendNotificationToUser: %q\n", err)
+			return
+		}
+		tokensMap := map[string]bool{}
+		for _, userend := range userends {
+			if userend.NotificationToken.Valid && userend.NotificationToken.String != "" {
+				tokensMap[userend.NotificationToken.String] = true
+			}
+		}
+		tokens := []string{}
+		for k := range tokensMap {
+			tokens = append(tokens, k)
+		}
+		if len(tokens) > 0 {
+			logrus.Infof("Sending notification to %q\n", tokens)
+			msg := &messaging.MulticastMessage{Data: un.data.ToMap(), Notification: un.notification, Tokens: tokens}
+			if _, err := cli.SendMulticast(context.Background(), msg); err != nil {
 				logrus.Errorf("cli.Send: %q\n", err)
-			} else {
-				logrus.Info(str)
 			}
 		}
 	}
+}
+
+func SendNotificationToUser(userID uuid.UUID, data NotificationData, notification *messaging.Notification) {
+	ch <- UserNotification{userID, data, notification}
 }
 
 func Init() {
@@ -94,4 +106,7 @@ func Init() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	ch = make(chan UserNotification, 100)
+	go handleUserNotifications()
 }

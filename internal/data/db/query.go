@@ -17,3 +17,44 @@
  */
 
 package db
+
+import (
+	"fmt"
+
+	"github.com/gofrs/uuid"
+	"upper.io/db.v3/postgresql"
+)
+
+func GetObjectsWithField(field string, value interface{}, collection string, obj interface{}) error {
+	sess, err := postgresql.Open(Settings)
+	if err != nil {
+		return err
+	}
+	defer sess.Close()
+
+	selector := sess.Select("*").From(collection).Where(fmt.Sprintf("%s = ?", field), value)
+	if err := selector.All(obj); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetObjectWithField(field string, value interface{}, collection string, obj interface{}) error {
+	sess, err := postgresql.Open(Settings)
+	if err != nil {
+		return err
+	}
+	defer sess.Close()
+
+	selector := sess.Select("*").From(collection).Where(fmt.Sprintf("%s = ?", field), value)
+	if err := selector.One(obj); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetObjectWithID(id uuid.UUID, collection string, obj interface{}) error {
+	return GetObjectWithField("id", id, collection, obj)
+}

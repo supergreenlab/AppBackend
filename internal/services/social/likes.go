@@ -19,18 +19,70 @@
 package social
 
 import (
-	"firebase.google.com/go/v4/messaging"
+	"fmt"
+
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/SuperGreenLab/AppBackend/internal/services/notifications"
 	"github.com/SuperGreenLab/AppBackend/internal/services/pubsub"
+	"github.com/sirupsen/logrus"
 )
 
 func listenLikesAdded() {
 	ch := pubsub.SubscribeOject("insert.likes")
 	for c := range ch {
 		like := c.(middlewares.InsertMessage).Object.(*db.Like)
-		notifications.SendNotificationToUser(like.UserID, NotificationDataLikePlantComment{}, &messaging.Notification{})
+		if like.CommentID.Valid {
+			com, err := db.GetComment(like.CommentID.UUID)
+			if err != nil {
+				logrus.Errorf("listenLikesAdded db.GetComment: %q\n", err)
+				continue
+			}
+
+			if com.UserID == like.UserID {
+				continue
+			}
+
+			plant, err := db.GetPlantForFeedEntryID(com.FeedEntryID)
+			if err != nil {
+				logrus.Errorf("listenLikesAdded db.GetPlantForFeedEntryID: %q\n", err)
+				continue
+			}
+
+			user, err := db.GetUser(like.UserID)
+			if err != nil {
+				logrus.Errorf("listenLikesAdded db.GetUser: %q\n", err)
+				continue
+			}
+
+			title := fmt.Sprintf("%s liked your comment on the diary %s!", user.Nickname, plant.Name)
+			data, notif := NewNotificationDataLikePlantComment(title, "Tap to view comment", "", plant.ID.UUID, com.FeedEntryID, like.CommentID.UUID, com.ReplyTo)
+			notifications.SendNotificationToUser(com.UserID, data, &notif)
+		} else if like.FeedEntryID.Valid {
+			/*feedEntry, err := db.GetFeedEntry(like.FeedEntryID.UUID)
+			if err != nil {
+				logrus.Errorf("listenLikesAdded db.GetFeedEntry: %q\n", err)
+				continue
+			}*/
+			plant, err := db.GetPlantForFeedEntryID(like.FeedEntryID.UUID)
+			if err != nil {
+				logrus.Errorf("listenLikesAdded db.GetPlantForFeedEntryID: %q\n", err)
+				continue
+			}
+
+			if plant.UserID == like.UserID {
+				continue
+			}
+
+			user, err := db.GetUser(like.UserID)
+			if err != nil {
+				logrus.Errorf("listenLikesAdded db.GetUser: %q\n", err)
+				continue
+			}
+			title := fmt.Sprintf("%s liked your growlog on the diary %s!", user.Nickname, plant.Name)
+			data, notif := NewNotificationDataLikePlantFeedEntry(title, "Tap to view growlog", "", plant.ID.UUID, like.FeedEntryID.UUID)
+			notifications.SendNotificationToUser(plant.UserID, data, &notif)
+		}
 	}
 }
 

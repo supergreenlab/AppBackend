@@ -20,25 +20,10 @@ package db
 
 import (
 	"github.com/gofrs/uuid"
-	"github.com/sirupsen/logrus"
-	"upper.io/db.v3/postgresql"
 )
 
 func GetUser(userID uuid.UUID) (User, error) {
 	user := User{}
-
-	sess, err := postgresql.Open(Settings)
-	if err != nil {
-		logrus.Errorf("db.Open(): %q\n", err)
-		return user, err
-	}
-	defer sess.Close()
-
-	selector := sess.Select("*").From("users")
-	if err := selector.One(&user); err != nil {
-		logrus.Error(err.Error())
-		return user, err
-	}
-
-	return user, nil
+	err := GetObjectWithID(userID, "users", &user)
+	return user, err
 }

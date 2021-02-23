@@ -20,56 +20,48 @@ package db
 
 import (
 	"github.com/gofrs/uuid"
+	"github.com/sirupsen/logrus"
 	"upper.io/db.v3/postgresql"
 )
 
 func GetFeedEntry(feedEntryID uuid.UUID) (FeedEntry, error) {
 	feedEntry := FeedEntry{}
-
-	sess, err := postgresql.Open(Settings)
-	if err != nil {
-		return feedEntry, err
-	}
-	defer sess.Close()
-
-	selector := sess.Select("*").From("feedentries").Where("id = ?", feedEntryID)
-	if err := selector.One(&feedEntry); err != nil {
-		return feedEntry, err
-	}
-
-	return feedEntry, nil
+	err := GetObjectWithID(feedEntryID, "feedentries", &feedEntry)
+	return feedEntry, err
 }
 
 func GetComment(commentID uuid.UUID) (Comment, error) {
 	comment := Comment{}
-
-	sess, err := postgresql.Open(Settings)
-	if err != nil {
-		return comment, err
-	}
-	defer sess.Close()
-
-	selector := sess.Select("*").From("comments").Where("id = ?", commentID)
-	if err := selector.One(&comment); err != nil {
-		return comment, err
-	}
-
-	return comment, nil
+	err := GetObjectWithID(commentID, "comments", &comment)
+	return comment, err
 }
 
 func GetUserEndsForUserID(userID uuid.UUID) ([]UserEnd, error) {
 	userends := []UserEnd{}
 
+	err := GetObjectsWithField("userid", userID, "userends", &userends)
+	return userends, err
+}
+
+func GetPlantForFeedID(feedID uuid.UUID) (Plant, error) {
+	plant := Plant{}
+	logrus.Info(feedID)
+	err := GetObjectWithField("feedid", feedID, "plants", &plant)
+	return plant, err
+}
+
+func GetPlantForFeedEntryID(feedEntryID uuid.UUID) (Plant, error) {
+	plant := Plant{}
 	sess, err := postgresql.Open(Settings)
 	if err != nil {
-		return userends, err
+		return plant, err
 	}
 	defer sess.Close()
 
-	selector := sess.Select("*").From("userends").Where("userid = ?", userID)
-	if err := selector.All(&userends); err != nil {
-		return userends, err
+	selector := sess.Select("plants.*").From("plants").Join("feedentries").On("plants.feedid = feedentries.feedid").Where("feedentries.id = ?", feedEntryID)
+	if err := selector.One(&plant); err != nil {
+		return plant, err
 	}
 
-	return userends, nil
+	return plant, err
 }
