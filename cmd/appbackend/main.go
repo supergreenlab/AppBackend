@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/SuperGreenLab/AppBackend/internal/server"
+	"github.com/SuperGreenLab/AppBackend/internal/services"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -69,6 +70,8 @@ func main() {
 	initDB()
 
 	server.Start()
+
+	services.Init()
 
 	log.Info("AppBackend started")
 
