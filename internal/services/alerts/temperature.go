@@ -19,14 +19,84 @@
 package alerts
 
 import (
+	"strconv"
+	"strings"
+
+	"github.com/SuperGreenLab/AppBackend/internal/data/kv"
 	"github.com/SuperGreenLab/AppBackend/internal/services/pubsub"
 	"github.com/sirupsen/logrus"
 )
 
+func boxIDNumFromMetric(name string) (int, error) {
+	parts := strings.Split(name, "_")
+	return strconv.Atoi(parts[1])
+}
+
 func listenTemperatureMetrics() {
 	ch := pubsub.SubscribeControllerIntMetric("*.BOX_*_TEMP")
 	for metric := range ch {
-		logrus.Infof("%s{id=%s}=%f", metric.Key, metric.ControllerID, metric.Value)
+		boxID, err := boxIDNumFromMetric(metric.Key)
+		if err != nil {
+			logrus.Errorf("%q\n", err)
+			continue
+		}
+		if enabled, err := kv.GetBoxEnabled(metric.ControllerID, boxID); !enabled || err != nil {
+			if err != nil {
+				logrus.Errorf("%q\n", err)
+			}
+			continue
+		}
+		if sht21Present, err := kv.GetSHT21PresentForBox(metric.ControllerID, boxID); !sht21Present || err != nil {
+			if err != nil {
+				logrus.Errorf("%q\n", err)
+			}
+			continue
+		}
+		timerPower, err := kv.GetTimerPower(metric.ControllerID, boxID)
+		if err != nil {
+			logrus.Errorf("%q\n", err)
+			continue
+		}
+		var minTemp, maxTemp float64
+		if timerPower == 0 {
+			minTemp = 15
+			maxTemp = 25
+		} else if timerPower != 0 {
+			minTemp = 21
+			maxTemp = 30
+		}
+
+		alertStatus, err := kv.GetTemperatureAlertStatus(metric.ControllerID, boxID)
+		if err != nil {
+			logrus.Errorf("%q\n", err)
+			continue
+		}
+
+		tooLow := metric.Value <= minTemp
+		tooHigh := metric.Value >= maxTemp
+		if tooLow || tooHigh {
+			if alertStatus {
+				continue
+			}
+			err = kv.SetTemperatureAlertStatus(metric.ControllerID, boxID, true)
+			if err != nil {
+				logrus.Errorf("%q\n", err)
+				continue
+			}
+
+			logrus.Infof("Temp alert: %s{id=%s}=%f\n", metric.Key, metric.ControllerID, metric.Value)
+		} else {
+			if !alertStatus {
+				continue
+			}
+
+			err = kv.SetTemperatureAlertStatus(metric.ControllerID, boxID, true)
+			if err != nil {
+				logrus.Errorf("%q\n", err)
+				continue
+			}
+			logrus.Infof("End temp alert: %s{id=%s}=%f\n", metric.Key, metric.ControllerID, metric.Value)
+		}
 	}
 }
 

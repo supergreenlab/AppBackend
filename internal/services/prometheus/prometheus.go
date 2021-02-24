@@ -51,6 +51,10 @@ func NotificationSent(notificationType string) {
 	notificationsCount.WithLabelValues(notificationType).Inc()
 }
 
+func NotificationError(notificationType string) {
+	notificationErrors.WithLabelValues(notificationType).Inc()
+}
+
 func Init() {
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())

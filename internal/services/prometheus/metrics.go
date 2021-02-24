@@ -32,4 +32,8 @@ var (
 		Name: "appbackend_notifications",
 		Help: "Number of notifications",
 	}, []string{"type"})
+	notificationErrors = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "appbackend_notification_errors",
+		Help: "Number of notification errors",
+	}, []string{"type"})
 )

@@ -94,6 +94,7 @@ func handleUserNotifications() {
 			msg := &messaging.MulticastMessage{Data: un.data.ToMap(), Notification: un.notification, Tokens: tokens}
 			prometheus.NotificationSent(un.data.GetType())
 			if _, err := cli.SendMulticast(context.Background(), msg); err != nil {
+				prometheus.NotificationError(un.data.GetType())
 				logrus.Errorf("cli.Send: %q\n", err)
 			}
 		}
