@@ -64,6 +64,16 @@ func SetTemperatureAlertStatus(controllerID string, box int, value bool) error {
 	return SetBool(key, value, time.Duration(30)*time.Minute)
 }
 
+func GetTemperatureAlertType(controllerID string, box int) (string, error) {
+	key := fmt.Sprintf("%s.ALERT.BOX_%d_TEMP_TYPE", controllerID, box)
+	return GetString(key)
+}
+
+func SetTemperatureAlertType(controllerID string, box int, atype string) error {
+	key := fmt.Sprintf("%s.ALERT.BOX_%d_TEMP_TYPE", controllerID, box)
+	return SetString(key, atype)
+}
+
 func GetBoxEnabled(controllerID string, box int) (bool, error) {
 	key := fmt.Sprintf("%s.KV.BOX_%d_ENABLED", controllerID, box)
 	return GetBool(key)

@@ -37,7 +37,7 @@ var (
 		Help: "Number of notification errors",
 	}, []string{"type"})
 	requestsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "appbackend_request_count",
+		Name: "appbackend_requests",
 		Help: "Number of http requests",
 	}, []string{"path"})
 	alertsCount = promauto.NewCounterVec(prometheus.CounterOpts{

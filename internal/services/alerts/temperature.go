@@ -19,12 +19,14 @@
 package alerts
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/kv"
 	"github.com/SuperGreenLab/AppBackend/internal/services/prometheus"
 	"github.com/SuperGreenLab/AppBackend/internal/services/pubsub"
+	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 )
 
@@ -93,12 +95,30 @@ func listenTemperatureMetrics() {
 			}
 			logrus.Infof("Temp alert %s: %s{id=%s}=%f\n", alertType, metric.Key, metric.ControllerID, metric.Value)
 			prometheus.AlertTriggered("TEMP", alertType, metric.ControllerID, strconv.Itoa(boxID))
+			err = kv.SetTemperatureAlertType(metric.ControllerID, boxID, alertType)
+			if err != nil {
+				logrus.Errorf("%q\n", err)
+				continue
+			}
 		} else {
 			if !alertStatus {
 				continue
 			}
 
-			err = kv.SetTemperatureAlertStatus(metric.ControllerID, boxID, true)
+			alertType, err := kv.GetTemperatureAlertType(metric.ControllerID, boxID)
+			if err != nil && !errors.Is(err, redis.Nil) {
+				logrus.Errorf("%q\n", err)
+				continue
+			}
+
+			if alertType == "TOO_LOW" && metric.Value < minTemp+2 {
+				continue
+			}
+			if alertType == "TOO_HIGH" && metric.Value > maxTemp-2 {
+				continue
+			}
+
+			err = kv.SetTemperatureAlertStatus(metric.ControllerID, boxID, false)
 			if err != nil {
 				logrus.Errorf("%q\n", err)
 				continue
