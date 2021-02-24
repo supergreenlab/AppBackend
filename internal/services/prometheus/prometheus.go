@@ -41,6 +41,7 @@ func (ht *HTTPTiming) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	timer := prometheus.NewTimer(httpDuration.WithLabelValues(path))
 	ht.router.ServeHTTP(w, r)
 	timer.ObserveDuration()
+	requestsCount.WithLabelValues(path).Inc()
 }
 
 func NewHTTPTiming(router *httprouter.Router) *HTTPTiming {
@@ -53,6 +54,10 @@ func NotificationSent(notificationType string) {
 
 func NotificationError(notificationType string) {
 	notificationErrors.WithLabelValues(notificationType).Inc()
+}
+
+func AlertTriggered(metric, atype, controllerID, boxID string) {
+	alertsCount.WithLabelValues(metric, atype, controllerID, boxID).Inc()
 }
 
 func Init() {

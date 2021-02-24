@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/kv"
+	"github.com/SuperGreenLab/AppBackend/internal/services/prometheus"
 	"github.com/SuperGreenLab/AppBackend/internal/services/pubsub"
 	"github.com/sirupsen/logrus"
 )
@@ -84,7 +85,14 @@ func listenTemperatureMetrics() {
 				continue
 			}
 
-			logrus.Infof("Temp alert: %s{id=%s}=%f\n", metric.Key, metric.ControllerID, metric.Value)
+			alertType := ""
+			if tooLow {
+				alertType = "TOO_LOW"
+			} else if tooHigh {
+				alertType = "TOO_HIGH"
+			}
+			logrus.Infof("Temp alert %s: %s{id=%s}=%f\n", alertType, metric.Key, metric.ControllerID, metric.Value)
+			prometheus.AlertTriggered("TEMP", alertType, metric.ControllerID, strconv.Itoa(boxID))
 		} else {
 			if !alertStatus {
 				continue
