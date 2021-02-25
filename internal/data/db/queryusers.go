@@ -27,3 +27,9 @@ func GetUser(userID uuid.UUID) (User, error) {
 	err := GetObjectWithID(userID, "users", &user)
 	return user, err
 }
+
+func GetUserForNickname(nickname string) (User, error) {
+	user := User{}
+	err := GetObjectWithField("nickname", nickname, "users", &user)
+	return user, err
+}

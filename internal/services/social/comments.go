@@ -20,18 +20,25 @@ package social
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/SuperGreenLab/AppBackend/internal/services/notifications"
 	"github.com/SuperGreenLab/AppBackend/internal/services/pubsub"
+	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
+)
+
+var (
+	mentionRegexp = regexp.MustCompile(`@([a-zA-Z0-9_-]*)`)
 )
 
 func listenCommentsAdded() {
 	ch := pubsub.SubscribeOject("insert.comments")
 	for c := range ch {
 		com := c.(middlewares.InsertMessage).Object.(*db.Comment)
+		id := c.(middlewares.InsertMessage).ID
 		feedEntry, err := db.GetFeedEntry(com.FeedEntryID)
 		if err != nil {
 			logrus.Errorf("listenCommentsAdded db.GetFeedEntry: %q\n", err)
@@ -48,6 +55,7 @@ func listenCommentsAdded() {
 			continue
 		}
 
+		var userIDNotif uuid.UUID
 		if com.ReplyTo.Valid {
 			comReplied, err := db.GetComment(com.ReplyTo.UUID)
 			if err != nil {
@@ -57,11 +65,32 @@ func listenCommentsAdded() {
 				title := fmt.Sprintf("%s replied to your comment on the diary %s!", user.Nickname, plant.Name)
 				data, notif := NewNotificationDataPlantCommentReply(title, com.Text, "", plant.ID.UUID, feedEntry.ID.UUID, comReplied.ID.UUID)
 				notifications.SendNotificationToUser(comReplied.UserID, data, &notif)
+				userIDNotif = comReplied.UserID
 			}
 		} else if com.UserID != feedEntry.UserID {
 			title := fmt.Sprintf("%s posted a message on your diary %s!", user.Nickname, plant.Name)
 			data, notif := NewNotificationDataPlantComment(title, com.Text, "", plant.ID.UUID, feedEntry.ID.UUID, com.Type)
 			notifications.SendNotificationToUser(feedEntry.UserID, data, &notif)
+			userIDNotif = feedEntry.UserID
+		}
+
+		mentions := mentionRegexp.FindAllStringSubmatch(com.Text, -1)
+		for _, m := range mentions {
+			userMentionned, err := db.GetUserForNickname(m[1])
+			if err != nil {
+				logrus.Errorf("%q", err)
+				continue
+			}
+			if userMentionned.ID.UUID == userIDNotif {
+				continue
+			}
+			title := fmt.Sprintf("%s mentionned you in a comment on the diary %s!", user.Nickname, plant.Name)
+			comID := id
+			if com.ReplyTo.Valid {
+				comID = com.ReplyTo.UUID
+			}
+			data, notif := NewNotificationDataPlantCommentReply(title, com.Text, "", plant.ID.UUID, feedEntry.ID.UUID, comID)
+			notifications.SendNotificationToUser(userMentionned.ID.UUID, data, &notif)
 		}
 	}
 }

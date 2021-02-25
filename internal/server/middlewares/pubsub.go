@@ -30,7 +30,7 @@ import (
 )
 
 type InsertMessage struct {
-	Id     uuid.UUID   `json:"id"`
+	ID     uuid.UUID   `json:"id"`
 	Object interface{} `json:"object"`
 }
 
