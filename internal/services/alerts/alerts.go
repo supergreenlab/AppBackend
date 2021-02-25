@@ -37,34 +37,34 @@ func boxIDNumFromMetric(name string) (int, error) {
 
 type getMinMaxFunc func(timerPower float64) (float64, float64)
 
-func checkMetric(alertName string, metric pubsub.ControllerIntMetric, getMinMax getMinMaxFunc, getSensorPresentForBox kv.GetSensorPresentForBoxFunc, getAlertStatus kv.GetAlertStatusFunc, setAlertStatus kv.SetAlertStatusFunc, getAlertType kv.GetAlertTypeFunc, setAlertType kv.SetAlertTypeFunc) {
+func checkMetric(metricName string, metric pubsub.ControllerIntMetric, getMinMax getMinMaxFunc, getSensorPresentForBox kv.GetSensorPresentForBoxFunc, getAlertStatus kv.GetAlertStatusFunc, setAlertStatus kv.SetAlertStatusFunc, getAlertType kv.GetAlertTypeFunc, setAlertType kv.SetAlertTypeFunc) {
 	boxID, err := boxIDNumFromMetric(metric.Key)
 	if err != nil {
-		logrus.Errorf("%q\n", err)
+		logrus.Errorf("%q", err)
 		return
 	}
 	if enabled, err := kv.GetBoxEnabled(metric.ControllerID, boxID); !enabled || err != nil {
 		if err != nil {
-			logrus.Errorf("%q\n", err)
+			logrus.Errorf("%q", err)
 		}
 		return
 	}
 	if sht21Present, err := getSensorPresentForBox(metric.ControllerID, boxID); !sht21Present || err != nil {
 		if err != nil {
-			logrus.Errorf("%q\n", err)
+			logrus.Errorf("%q", err)
 		}
 		return
 	}
 	timerPower, err := kv.GetTimerPower(metric.ControllerID, boxID)
 	if err != nil {
-		logrus.Errorf("%q\n", err)
+		logrus.Errorf("%q", err)
 		return
 	}
 	minValue, maxValue := getMinMax(timerPower)
 
 	alertStatus, err := getAlertStatus(metric.ControllerID, boxID)
 	if err != nil {
-		logrus.Errorf("%q\n", err)
+		logrus.Errorf("%q", err)
 		return
 	}
 
@@ -76,7 +76,7 @@ func checkMetric(alertName string, metric pubsub.ControllerIntMetric, getMinMax 
 		}
 		err = setAlertStatus(metric.ControllerID, boxID, true)
 		if err != nil {
-			logrus.Errorf("%q\n", err)
+			logrus.Errorf("%q", err)
 			return
 		}
 
@@ -86,13 +86,13 @@ func checkMetric(alertName string, metric pubsub.ControllerIntMetric, getMinMax 
 		} else if tooHigh {
 			alertType = "TOO_HIGH"
 		}
-		logrus.Infof("%s alert %s: %s{id=%s}=%f\n", alertName, alertType, metric.Key, metric.ControllerID, metric.Value)
-		prometheus.AlertTriggered(alertName, alertType, metric.ControllerID, strconv.Itoa(boxID))
+		prometheus.AlertTriggered(metricName, alertType, metric.ControllerID, strconv.Itoa(boxID))
 		err = setAlertType(metric.ControllerID, boxID, alertType)
 		if err != nil {
-			logrus.Errorf("%q\n", err)
+			logrus.Errorf("%q", err)
 			return
 		}
+		logrus.Infof("%s alert %s: %s{id=%s}=%f (timerPower: %f)", metricName, alertType, metric.Key, metric.ControllerID, metric.Value, timerPower)
 	} else {
 		if !alertStatus {
 			return
@@ -100,7 +100,7 @@ func checkMetric(alertName string, metric pubsub.ControllerIntMetric, getMinMax 
 
 		alertType, err := getAlertType(metric.ControllerID, boxID)
 		if err != nil && !errors.Is(err, redis.Nil) {
-			logrus.Errorf("%q\n", err)
+			logrus.Errorf("%q", err)
 			return
 		}
 
@@ -113,10 +113,10 @@ func checkMetric(alertName string, metric pubsub.ControllerIntMetric, getMinMax 
 
 		err = setAlertStatus(metric.ControllerID, boxID, false)
 		if err != nil {
-			logrus.Errorf("%q\n", err)
+			logrus.Errorf("%q", err)
 			return
 		}
-		logrus.Infof("End %s alert: %s{id=%s}=%f\n", alertName, metric.Key, metric.ControllerID, metric.Value)
+		logrus.Infof("End %s alert: %s{id=%s}=%f", metricName, metric.Key, metric.ControllerID, metric.Value)
 	}
 }
 

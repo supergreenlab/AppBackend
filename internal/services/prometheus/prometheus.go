@@ -58,6 +58,7 @@ func NotificationError(notificationType string) {
 
 func AlertTriggered(metric, atype, controllerID, boxID string) {
 	alertsCount.WithLabelValues(metric, atype, controllerID, boxID).Inc()
+	//logrus.Infof("prometheus.AlertTriggered %s, %s, %s, %s", metric, atype, controllerID, boxID)
 }
 
 func Init() {

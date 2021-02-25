@@ -32,7 +32,7 @@ func getTemperatureMinMax(timerPower float64) (float64, float64) {
 func listenTemperatureMetrics() {
 	ch := pubsub.SubscribeControllerIntMetric("*.BOX_*_TEMP")
 	for metric := range ch {
-		checkMetric("TEMP", metric, getTemperatureMinMax, kv.GetSHT21PresentForBox, kv.GetTemperatureAlertStatus, kv.SetTemperatureAlertStatus, kv.GetTemperatureAlertType, kv.SetTemperatureAlertType)
+		go checkMetric("TEMP", metric, getTemperatureMinMax, kv.GetSHT21PresentForBox, kv.GetTemperatureAlertStatus, kv.SetTemperatureAlertStatus, kv.GetTemperatureAlertType, kv.SetTemperatureAlertType)
 	}
 }
 

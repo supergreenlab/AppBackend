@@ -24,15 +24,15 @@ import (
 )
 
 func getHumidityMinMax(timerPower float64) (float64, float64) {
-	var minNight, maxNight float64 = 50, 80
-	var minDay, maxDay float64 = 40, 70
+	var minNight, maxNight float64 = 45, 80
+	var minDay, maxDay float64 = 35, 70
 	return minNight + (minDay-minNight)*timerPower/100, maxNight + (maxDay-maxNight)*timerPower/100
 }
 
 func listenHumidityMetrics() {
 	ch := pubsub.SubscribeControllerIntMetric("*.BOX_*_HUMI")
 	for metric := range ch {
-		checkMetric("HUMI", metric, getHumidityMinMax, kv.GetSHT21PresentForBox, kv.GetHumidityAlertStatus, kv.SetHumidityAlertStatus, kv.GetHumidityAlertType, kv.SetHumidityAlertType)
+		go checkMetric("HUMI", metric, getHumidityMinMax, kv.GetSHT21PresentForBox, kv.GetHumidityAlertStatus, kv.SetHumidityAlertStatus, kv.GetHumidityAlertType, kv.SetHumidityAlertType)
 	}
 }
 
