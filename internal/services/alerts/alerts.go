@@ -86,7 +86,7 @@ func checkMetric(metricName string, metric pubsub.ControllerIntMetric, getMinMax
 		} else if tooHigh {
 			alertType = "TOO_HIGH"
 		}
-		prometheus.AlertTriggered(metricName, alertType, metric.ControllerID, strconv.Itoa(boxID))
+		prometheus.AlertTriggered(metricName, alertType)
 		err = setAlertType(metric.ControllerID, boxID, alertType)
 		if err != nil {
 			logrus.Errorf("%q", err)

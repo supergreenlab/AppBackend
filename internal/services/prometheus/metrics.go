@@ -43,5 +43,5 @@ var (
 	alertsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "appbackend_alerts",
 		Help: "Number of alerts",
-	}, []string{"metric", "type", "controllerID", "boxID"})
+	}, []string{"metric", "type"})
 )

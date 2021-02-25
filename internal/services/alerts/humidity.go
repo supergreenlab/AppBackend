@@ -20,6 +20,7 @@ package alerts
 
 import (
 	"github.com/SuperGreenLab/AppBackend/internal/data/kv"
+	"github.com/SuperGreenLab/AppBackend/internal/services/prometheus"
 	"github.com/SuperGreenLab/AppBackend/internal/services/pubsub"
 )
 
@@ -30,6 +31,8 @@ func getHumidityMinMax(timerPower float64) (float64, float64) {
 }
 
 func listenHumidityMetrics() {
+	prometheus.InitAlertTriggered("HUMI", "TOO_LOW")
+	prometheus.InitAlertTriggered("HUMI", "TOO_HIGH")
 	ch := pubsub.SubscribeControllerIntMetric("*.BOX_*_HUMI")
 	for metric := range ch {
 		go checkMetric("HUMI", metric, getHumidityMinMax, kv.GetSHT21PresentForBox, kv.GetHumidityAlertStatus, kv.SetHumidityAlertStatus, kv.GetHumidityAlertType, kv.SetHumidityAlertType)

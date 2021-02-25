@@ -20,6 +20,7 @@ package alerts
 
 import (
 	"github.com/SuperGreenLab/AppBackend/internal/data/kv"
+	"github.com/SuperGreenLab/AppBackend/internal/services/prometheus"
 	"github.com/SuperGreenLab/AppBackend/internal/services/pubsub"
 )
 
@@ -30,6 +31,8 @@ func getTemperatureMinMax(timerPower float64) (float64, float64) {
 }
 
 func listenTemperatureMetrics() {
+	prometheus.InitAlertTriggered("TEMP", "TOO_LOW")
+	prometheus.InitAlertTriggered("TEMP", "TOO_HIGH")
 	ch := pubsub.SubscribeControllerIntMetric("*.BOX_*_TEMP")
 	for metric := range ch {
 		go checkMetric("TEMP", metric, getTemperatureMinMax, kv.GetSHT21PresentForBox, kv.GetTemperatureAlertStatus, kv.SetTemperatureAlertStatus, kv.GetTemperatureAlertType, kv.SetTemperatureAlertType)
