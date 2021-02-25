@@ -33,10 +33,14 @@ func GetBoxTempSource(controllerID string, box int) (int, error) {
 	return GetInt(key)
 }
 
+type GetSensorPresentFunc func(controllerID string, sht21 int) (bool, error)
+
 func GetSHT21Present(controllerID string, sht21 int) (bool, error) {
 	key := fmt.Sprintf("%s.KV.SHT21_%d_PRESENT", controllerID, sht21)
 	return GetBool(key)
 }
+
+type GetSensorPresentForBoxFunc func(controllerID string, box int) (bool, error)
 
 func GetSHT21PresentForBox(controllerID string, box int) (bool, error) {
 	tempSource, err := GetBoxTempSource(controllerID, box)
@@ -54,23 +58,51 @@ func GetTimerPower(controllerID string, box int) (float64, error) {
 	return GetNum(key)
 }
 
+type GetAlertStatusFunc func(controllerID string, box int) (bool, error)
+
 func GetTemperatureAlertStatus(controllerID string, box int) (bool, error) {
 	key := fmt.Sprintf("%s.ALERT.BOX_%d_TEMP", controllerID, box)
 	return GetBool(key)
 }
+
+func GetHumidityAlertStatus(controllerID string, box int) (bool, error) {
+	key := fmt.Sprintf("%s.ALERT.BOX_%d_HUMI", controllerID, box)
+	return GetBool(key)
+}
+
+type SetAlertStatusFunc func(controllerID string, box int, value bool) error
 
 func SetTemperatureAlertStatus(controllerID string, box int, value bool) error {
 	key := fmt.Sprintf("%s.ALERT.BOX_%d_TEMP", controllerID, box)
 	return SetBool(key, value, time.Duration(30)*time.Minute)
 }
 
+func SetHumidityAlertStatus(controllerID string, box int, value bool) error {
+	key := fmt.Sprintf("%s.ALERT.BOX_%d_HUMI", controllerID, box)
+	return SetBool(key, value, time.Duration(30)*time.Minute)
+}
+
+type GetAlertTypeFunc func(controllerID string, box int) (string, error)
+
 func GetTemperatureAlertType(controllerID string, box int) (string, error) {
 	key := fmt.Sprintf("%s.ALERT.BOX_%d_TEMP_TYPE", controllerID, box)
 	return GetString(key)
 }
 
+func GetHumidityAlertType(controllerID string, box int) (string, error) {
+	key := fmt.Sprintf("%s.ALERT.BOX_%d_HUMI_TYPE", controllerID, box)
+	return GetString(key)
+}
+
+type SetAlertTypeFunc func(controllerID string, box int, atype string) error
+
 func SetTemperatureAlertType(controllerID string, box int, atype string) error {
 	key := fmt.Sprintf("%s.ALERT.BOX_%d_TEMP_TYPE", controllerID, box)
+	return SetString(key, atype)
+}
+
+func SetHumidityAlertType(controllerID string, box int, atype string) error {
+	key := fmt.Sprintf("%s.ALERT.BOX_%d_HUMI_TYPE", controllerID, box)
 	return SetString(key, atype)
 }
 

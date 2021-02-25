@@ -23,19 +23,19 @@ import (
 	"github.com/SuperGreenLab/AppBackend/internal/services/pubsub"
 )
 
-func getTemperatureMinMax(timerPower float64) (float64, float64) {
-	var minNight, maxNight float64 = 15, 25
-	var minDay, maxDay float64 = 18, 32
+func getHumidityMinMax(timerPower float64) (float64, float64) {
+	var minNight, maxNight float64 = 50, 80
+	var minDay, maxDay float64 = 40, 70
 	return minNight + (minDay-minNight)*timerPower/100, maxNight + (maxDay-maxNight)*timerPower/100
 }
 
-func listenTemperatureMetrics() {
-	ch := pubsub.SubscribeControllerIntMetric("*.BOX_*_TEMP")
+func listenHumidityMetrics() {
+	ch := pubsub.SubscribeControllerIntMetric("*.BOX_*_HUMI")
 	for metric := range ch {
-		checkMetric("TEMP", metric, getTemperatureMinMax, kv.GetSHT21PresentForBox, kv.GetTemperatureAlertStatus, kv.SetTemperatureAlertStatus, kv.GetTemperatureAlertType, kv.SetTemperatureAlertType)
+		checkMetric("HUMI", metric, getHumidityMinMax, kv.GetSHT21PresentForBox, kv.GetHumidityAlertStatus, kv.SetHumidityAlertStatus, kv.GetHumidityAlertType, kv.SetHumidityAlertType)
 	}
 }
 
-func initTemperature() {
-	go listenTemperatureMetrics()
+func initHumidity() {
+	go listenHumidityMetrics()
 }
