@@ -25,6 +25,7 @@ import (
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/SuperGreenLab/AppBackend/internal/services/notifications"
 	"github.com/SuperGreenLab/AppBackend/internal/services/pubsub"
+	"github.com/SuperGreenLab/AppBackend/internal/services/slack"
 	"github.com/sirupsen/logrus"
 )
 
@@ -58,6 +59,7 @@ func listenLikesAdded() {
 			title := fmt.Sprintf("%s liked your comment on the diary %s!", user.Nickname, plant.Name)
 			data, notif := NewNotificationDataLikePlantComment(title, "Tap to view comment", "", plant.ID.UUID, com.FeedEntryID, like.CommentID.UUID, com.ReplyTo)
 			notifications.SendNotificationToUser(com.UserID, data, &notif)
+			slack.CommentLikeAdded(*like, com, plant, user)
 		} else if like.FeedEntryID.Valid {
 			/*feedEntry, err := db.GetFeedEntry(like.FeedEntryID.UUID)
 			if err != nil {
@@ -82,6 +84,7 @@ func listenLikesAdded() {
 			title := fmt.Sprintf("%s liked your growlog on the diary %s!", user.Nickname, plant.Name)
 			data, notif := NewNotificationDataLikePlantFeedEntry(title, "Tap to view growlog", "", plant.ID.UUID, like.FeedEntryID.UUID)
 			notifications.SendNotificationToUser(plant.UserID, data, &notif)
+			slack.PostLikeAdded(*like, plant, user)
 		}
 	}
 }

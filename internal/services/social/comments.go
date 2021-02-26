@@ -26,6 +26,7 @@ import (
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/SuperGreenLab/AppBackend/internal/services/notifications"
 	"github.com/SuperGreenLab/AppBackend/internal/services/pubsub"
+	"github.com/SuperGreenLab/AppBackend/internal/services/slack"
 	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -92,6 +93,7 @@ func listenCommentsAdded() {
 			data, notif := NewNotificationDataPlantCommentReply(title, com.Text, "", plant.ID.UUID, feedEntry.ID.UUID, comID)
 			notifications.SendNotificationToUser(userMentionned.ID.UUID, data, &notif)
 		}
+		slack.CommentPosted(*com, plant, user)
 	}
 }
 

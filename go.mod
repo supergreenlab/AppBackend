@@ -38,6 +38,7 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/shopspring/decimal v0.0.0-20200227202807-02e2044944cc // indirect
 	github.com/sirupsen/logrus v1.4.2
+	github.com/slack-go/slack v0.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.5.0
 	github.com/xanzy/go-gitlab v0.29.0 // indirect
