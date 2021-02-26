@@ -25,8 +25,8 @@ import (
 )
 
 func getHumidityMinMax(timerPower float64) (float64, float64) {
-	var minNight, maxNight float64 = 45, 80
-	var minDay, maxDay float64 = 35, 70
+	var minNight, maxNight float64 = 35, 85
+	var minDay, maxDay float64 = 25, 75
 	return minNight + (minDay-minNight)*timerPower/100, maxNight + (maxDay-maxNight)*timerPower/100
 }
 

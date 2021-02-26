@@ -20,6 +20,7 @@ package kv
 
 import (
 	"fmt"
+	"math/rand"
 	"time"
 )
 
@@ -74,12 +75,12 @@ type SetAlertStatusFunc func(controllerID string, box int, value bool) error
 
 func SetTemperatureAlertStatus(controllerID string, box int, value bool) error {
 	key := fmt.Sprintf("%s.ALERT.BOX_%d_TEMP", controllerID, box)
-	return SetBool(key, value, time.Duration(30)*time.Minute)
+	return SetBool(key, value, time.Duration(30+rand.Int()%15)*time.Minute)
 }
 
 func SetHumidityAlertStatus(controllerID string, box int, value bool) error {
 	key := fmt.Sprintf("%s.ALERT.BOX_%d_HUMI", controllerID, box)
-	return SetBool(key, value, time.Duration(30)*time.Minute)
+	return SetBool(key, value, time.Duration(30+rand.Int()%15)*time.Minute)
 }
 
 type GetAlertTypeFunc func(controllerID string, box int) (string, error)
