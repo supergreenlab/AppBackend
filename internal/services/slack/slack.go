@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
+	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/slack-go/slack"
 	"github.com/spf13/pflag"
@@ -35,15 +36,15 @@ var (
 	slackWebhook = pflag.String("slackwebhook", "", "Webhook url for the slack notifications")
 )
 
-func CommentPosted(com db.Comment, p db.Plant, u db.User) {
+func CommentPosted(id uuid.UUID, com db.Comment, p db.Plant, u db.User) {
 	attachment := slack.Attachment{
 		Color:         "good",
-		Fallback:      fmt.Sprintf("Comment posted on the plant %s", p.Name),
+		Fallback:      fmt.Sprintf("Comment posted by %s on the plant %s", u.Nickname, p.Name),
 		AuthorName:    "SuperGreenApp",
 		AuthorSubname: "supergreenlab.com/app",
 		AuthorLink:    "https://www.supergreenlab.com",
 		AuthorIcon:    "https://www.supergreenlab.com/_nuxt/img/icon_sgl_basics.709180a.png",
-		Text:          fmt.Sprintf("<!channel> %s\n(id: %s)\n<https://supergreenlab.com/public/plant?id=%s&feid=%s>", com.Text, com.ID.UUID, p.ID.UUID, com.FeedEntryID),
+		Text:          fmt.Sprintf("<!channel> Comment posted by %s on the plant %s:\n%s\n(id: %s)\n<https://supergreenlab.com/public/plant?id=%s&feid=%s>", u.Nickname, p.Name, com.Text, id, p.ID.UUID, com.FeedEntryID),
 		Footer:        fmt.Sprintf("by %s", u.Nickname),
 		FooterIcon:    "https://www.supergreenlab.com/_nuxt/img/icon_sgl_basics.709180a.png",
 		Ts:            json.Number(strconv.FormatInt(time.Now().Unix(), 10)),
@@ -52,6 +53,7 @@ func CommentPosted(com db.Comment, p db.Plant, u db.User) {
 		Attachments: []slack.Attachment{attachment},
 	}
 
+	logrus.Info(viper.GetString("SlackWebhook"))
 	err := slack.PostWebhook(viper.GetString("SlackWebhook"), &msg)
 	if err != nil {
 		logrus.Errorf("%q", err)
@@ -61,12 +63,12 @@ func CommentPosted(com db.Comment, p db.Plant, u db.User) {
 func CommentLikeAdded(l db.Like, com db.Comment, p db.Plant, u db.User) {
 	attachment := slack.Attachment{
 		Color:         "good",
-		Fallback:      fmt.Sprintf("Liked a comment on the plant %s", p.Name),
+		Fallback:      fmt.Sprintf("%s liked a comment on the plant %s", u.Nickname, p.Name),
 		AuthorName:    "SuperGreenApp",
 		AuthorSubname: "supergreenlab.com/app",
 		AuthorLink:    "https://www.supergreenlab.com",
 		AuthorIcon:    "https://www.supergreenlab.com/_nuxt/img/icon_sgl_basics.709180a.png",
-		Text:          fmt.Sprintf("<!channel> %s\n<https://supergreenlab.com/public/plant?id=%s&feid=%s>", com.Text, p.ID.UUID, com.FeedEntryID),
+		Text:          fmt.Sprintf("<!channel> %s liked a comment on the plant %s\n%s\n<https://supergreenlab.com/public/plant?id=%s&feid=%s>", u.Nickname, p.Name, com.Text, p.ID.UUID, com.FeedEntryID),
 		Footer:        fmt.Sprintf("by %s", u.Nickname),
 		FooterIcon:    "https://www.supergreenlab.com/_nuxt/img/icon_sgl_basics.709180a.png",
 		Ts:            json.Number(strconv.FormatInt(time.Now().Unix(), 10)),
@@ -84,12 +86,12 @@ func CommentLikeAdded(l db.Like, com db.Comment, p db.Plant, u db.User) {
 func PostLikeAdded(l db.Like, p db.Plant, u db.User) {
 	attachment := slack.Attachment{
 		Color:         "good",
-		Fallback:      fmt.Sprintf("Liked a diary entry on the plant %s", p.Name),
+		Fallback:      fmt.Sprintf("%s liked a diary entry on the plant %s", u.Nickname, p.Name),
 		AuthorName:    "SuperGreenApp",
 		AuthorSubname: "supergreenlab.com/app",
 		AuthorLink:    "https://www.supergreenlab.com",
 		AuthorIcon:    "https://www.supergreenlab.com/_nuxt/img/icon_sgl_basics.709180a.png",
-		Text:          fmt.Sprintf("<!channel><https://supergreenlab.com/public/plant?id=%s&feid=%s>", p.ID.UUID, l.FeedEntryID.UUID),
+		Text:          fmt.Sprintf("<!channel>%s liked a diary entry on the plant %s\n<https://supergreenlab.com/public/plant?id=%s&feid=%s>", u.Nickname, p.Name, p.ID.UUID, l.FeedEntryID.UUID),
 		Footer:        fmt.Sprintf("by %s", u.Nickname),
 		FooterIcon:    "https://www.supergreenlab.com/_nuxt/img/icon_sgl_basics.709180a.png",
 		Ts:            json.Number(strconv.FormatInt(time.Now().Unix(), 10)),

@@ -93,7 +93,7 @@ func listenCommentsAdded() {
 			data, notif := NewNotificationDataPlantCommentReply(title, com.Text, "", plant.ID.UUID, feedEntry.ID.UUID, comID)
 			notifications.SendNotificationToUser(userMentionned.ID.UUID, data, &notif)
 		}
-		slack.CommentPosted(*com, plant, user)
+		slack.CommentPosted(id, *com, plant, user)
 	}
 }
 
