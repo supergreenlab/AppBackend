@@ -86,6 +86,10 @@ func checkMetric(metricName string, metric pubsub.ControllerIntMetric, getMinMax
 		} else if tooHigh {
 			alertType = "TOO_HIGH"
 		}
+		//box, err := GetBox(box)
+		/*title := fmt.Sprintf("You lab %s is too hot!", user.Nickname, plant.Name)
+		data, notif := NewNotificationDataAlert(title, com.Text, "", plant.ID.UUID)
+		notifications.SendNotificationToUser(userMentionned.ID.UUID, data, &notif)*/
 		prometheus.AlertTriggered(metricName, alertType)
 		err = setAlertType(metric.ControllerID, boxID, alertType)
 		if err != nil {

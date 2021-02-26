@@ -33,13 +33,6 @@ var (
 	NotificationTypeLikePlantFeedEntry = "LIKE_PLANT_FEEDENTRY"
 )
 
-func merge(a map[string]string, b map[string]string) map[string]string {
-	for k, v := range b {
-		a[k] = v
-	}
-	return a
-}
-
 type NotificationDataPlantComment struct {
 	notifications.NotificationBaseData
 
@@ -50,7 +43,7 @@ type NotificationDataPlantComment struct {
 
 func (n NotificationDataPlantComment) ToMap() map[string]string {
 	m := n.NotificationBaseData.ToMap()
-	return merge(m, map[string]string{
+	return n.Merge(m, map[string]string{
 		"plantID":     n.PlantID.String(),
 		"feedEntryID": n.FeedEntryID.String(),
 		"commentType": n.CommentType,
@@ -85,7 +78,7 @@ type NotificationDataPlantCommentReply struct {
 
 func (n NotificationDataPlantCommentReply) ToMap() map[string]string {
 	m := n.NotificationBaseData.ToMap()
-	return merge(m, map[string]string{
+	return n.Merge(m, map[string]string{
 		"plantID":     n.PlantID.String(),
 		"feedEntryID": n.FeedEntryID.String(),
 		"commentID":   n.CommentID.String(),
@@ -118,20 +111,7 @@ type NotificationDataReminder struct {
 
 func (n NotificationDataReminder) ToMap() map[string]string {
 	m := n.NotificationBaseData.ToMap()
-	return merge(m, map[string]string{
-		"plantID": n.PlantID.String(),
-	})
-}
-
-type NotificationDataAlert struct {
-	notifications.NotificationBaseData
-
-	PlantID uuid.UUID `json:"plantID"`
-}
-
-func (n NotificationDataAlert) ToMap() map[string]string {
-	m := n.NotificationBaseData.ToMap()
-	return merge(m, map[string]string{
+	return n.Merge(m, map[string]string{
 		"plantID": n.PlantID.String(),
 	})
 }
@@ -155,7 +135,7 @@ func (n NotificationDataLikePlantComment) ToMap() map[string]string {
 	if n.ReplyTo.Valid {
 		m2["replyTo"] = n.ReplyTo.UUID.String()
 	}
-	return merge(m, m2)
+	return n.Merge(m, m2)
 }
 
 func NewNotificationDataLikePlantComment(title, body, imageUrl string, plantID, feedEntryID uuid.UUID, commentID uuid.UUID, replyTo uuid.NullUUID) (NotificationDataLikePlantComment, messaging.Notification) {
@@ -186,7 +166,7 @@ type NotificationDataLikePlantFeedEntry struct {
 
 func (n NotificationDataLikePlantFeedEntry) ToMap() map[string]string {
 	m := n.NotificationBaseData.ToMap()
-	return merge(m, map[string]string{
+	return n.Merge(m, map[string]string{
 		"plantID":     n.PlantID.String(),
 		"feedEntryID": n.FeedEntryID.String(),
 	})

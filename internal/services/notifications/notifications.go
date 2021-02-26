@@ -50,6 +50,13 @@ type NotificationBaseData struct {
 	Body  string `json:"body"`
 }
 
+func (n NotificationBaseData) Merge(a map[string]string, b map[string]string) map[string]string {
+	for k, v := range b {
+		a[k] = v
+	}
+	return a
+}
+
 func (n NotificationBaseData) GetType() string {
 	return n.Type
 }

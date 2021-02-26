@@ -34,6 +34,14 @@ func GetComment(commentID uuid.UUID) (Comment, error) {
 	return comment, err
 }
 
+func GetBox(boxID uuid.UUID) (Box, error) {
+	box := Box{}
+	err := GetObjectWithID(boxID, "boxes", &box)
+	return box, err
+}
+
+func GetBoxFromControllerIdentifier()
+
 func GetUserEndsForUserID(userID uuid.UUID) ([]UserEnd, error) {
 	userends := []UserEnd{}
 
