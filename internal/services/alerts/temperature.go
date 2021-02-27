@@ -35,7 +35,7 @@ func listenTemperatureMetrics() {
 	prometheus.InitAlertTriggered("TEMP", "TOO_HIGH")
 	ch := pubsub.SubscribeControllerIntMetric("*.BOX_*_TEMP")
 	for metric := range ch {
-		go checkMetric("TEMP", metric, getTemperatureMinMax, kv.GetSHT21PresentForBox, kv.GetTemperatureAlertStatus, kv.SetTemperatureAlertStatus, kv.GetTemperatureAlertType, kv.SetTemperatureAlertType)
+		checkMetric("TEMP", metric, getTemperatureMinMax, kv.GetSHT21PresentForBox, kv.GetTemperatureAlertStatus, kv.SetTemperatureAlertStatus, kv.GetTemperatureAlertType, kv.SetTemperatureAlertType)
 	}
 }
 

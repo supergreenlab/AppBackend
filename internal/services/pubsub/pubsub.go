@@ -19,8 +19,6 @@
 package pubsub
 
 import (
-	"encoding/json"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -28,11 +26,11 @@ import (
 )
 
 func PublishObject(topic string, obj interface{}) error {
-	b, err := json.Marshal(obj)
+	/*b, err := json.Marshal(obj)
 	if err != nil {
 		return err
 	}
-	r.Publish(fmt.Sprintf("pub.%s", topic), string(b))
+	r.Publish(fmt.Sprintf("pub.%s", topic), string(b))*/
 	ps.Pub(obj, topic)
 	return nil
 }

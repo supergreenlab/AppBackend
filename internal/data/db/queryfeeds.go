@@ -20,8 +20,6 @@ package db
 
 import (
 	"github.com/gofrs/uuid"
-	"github.com/sirupsen/logrus"
-	"upper.io/db.v3/postgresql"
 )
 
 func GetFeedEntry(feedEntryID uuid.UUID) (FeedEntry, error) {
@@ -45,23 +43,16 @@ func GetUserEndsForUserID(userID uuid.UUID) ([]UserEnd, error) {
 
 func GetPlantForFeedID(feedID uuid.UUID) (Plant, error) {
 	plant := Plant{}
-	logrus.Info(feedID)
 	err := GetObjectWithField("feedid", feedID, "plants", &plant)
 	return plant, err
 }
 
 func GetPlantForFeedEntryID(feedEntryID uuid.UUID) (Plant, error) {
 	plant := Plant{}
-	sess, err := postgresql.Open(Settings)
-	if err != nil {
-		return plant, err
-	}
-	defer sess.Close()
-
-	selector := sess.Select("plants.*").From("plants").Join("feedentries").On("plants.feedid = feedentries.feedid").Where("feedentries.id = ?", feedEntryID)
+	selector := Sess.Select("plants.*").From("plants").Join("feedentries").On("plants.feedid = feedentries.feedid").Where("feedentries.id = ?", feedEntryID)
 	if err := selector.One(&plant); err != nil {
 		return plant, err
 	}
 
-	return plant, err
+	return plant, nil
 }

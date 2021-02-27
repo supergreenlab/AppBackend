@@ -19,12 +19,17 @@
 package db
 
 import (
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"upper.io/db.v3/lib/sqlbuilder"
 	"upper.io/db.v3/postgresql"
 )
 
 // Settings - db connection settings
-var Settings postgresql.ConnectionURL
+var (
+	Settings postgresql.ConnectionURL
+	Sess     sqlbuilder.Database
+)
 
 // InitDB - initializes the Settings variable from config params
 func InitDB() {
@@ -33,5 +38,12 @@ func InitDB() {
 		Database: "sglapp",
 		User:     "postgres",
 		Password: viper.GetString("PGPassword"),
+	}
+	var err error
+	Sess, err = postgresql.Open(Settings)
+	if err != nil {
+		logrus.Errorf("db.Open(): %q\n", err)
+		logrus.Errorf("%q", err)
+		return
 	}
 }

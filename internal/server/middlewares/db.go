@@ -22,8 +22,6 @@ import (
 	"context"
 	"net/http"
 
-	"upper.io/db.v3/postgresql"
-
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 
 	"github.com/gofrs/uuid"
@@ -39,16 +37,15 @@ type SessContextKey struct{}
 // CreateDBSession - Creates a DB session and stores it in the context
 func CreateDBSession(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		var err error
-		sess, err := postgresql.Open(db.Settings)
+		/*sess, err := postgresql.Open(db.Settings)
 		if err != nil {
 			logrus.Errorf("db.Open(): %q\n", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		defer sess.Close()
+		defer sess.Close()*/
 
-		ctx := context.WithValue(r.Context(), SessContextKey{}, sess)
+		ctx := context.WithValue(r.Context(), SessContextKey{}, db.Sess)
 		fn(w, r.WithContext(ctx), p)
 	}
 }

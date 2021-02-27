@@ -35,7 +35,7 @@ func listenHumidityMetrics() {
 	prometheus.InitAlertTriggered("HUMI", "TOO_HIGH")
 	ch := pubsub.SubscribeControllerIntMetric("*.BOX_*_HUMI")
 	for metric := range ch {
-		go checkMetric("HUMI", metric, getHumidityMinMax, kv.GetSHT21PresentForBox, kv.GetHumidityAlertStatus, kv.SetHumidityAlertStatus, kv.GetHumidityAlertType, kv.SetHumidityAlertType)
+		checkMetric("HUMI", metric, getHumidityMinMax, kv.GetSHT21PresentForBox, kv.GetHumidityAlertStatus, kv.SetHumidityAlertStatus, kv.GetHumidityAlertType, kv.SetHumidityAlertType)
 	}
 }
 
