@@ -34,7 +34,7 @@ func OutputObjectID(w http.ResponseWriter, r *http.Request, p httprouter.Params)
 		ID string `json:"id"`
 	}{id.String()}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		logrus.Error(err.Error())
+		logrus.Errorf("json.NewEncoder in OutputObjectID %q - %+v", err, response)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -47,7 +47,7 @@ func OutputSelectResult(collection string) httprouter.Handle {
 		response := map[string]interface{}{}
 		response[collection] = results
 		if err := json.NewEncoder(w).Encode(response); err != nil {
-			logrus.Error(err.Error())
+			logrus.Errorf("json.NewEncoder in OutputSelectResult %q - %+v", err, response)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -59,7 +59,7 @@ func OutputSelectOneResult(collection string) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		result := r.Context().Value(SelectResultContextKey{}).(interface{})
 		if err := json.NewEncoder(w).Encode(result); err != nil {
-			logrus.Error(err.Error())
+			logrus.Errorf("json.NewEncoder in OutputSelectOneResult %q - %+v", err, result)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -72,7 +72,7 @@ func OutputOK(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		Status string `json:"status"`
 	}{"OK"}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		logrus.Error(err.Error())
+		logrus.Errorf("json.NewEncoder in OutputOK %q - %+v", err, response)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

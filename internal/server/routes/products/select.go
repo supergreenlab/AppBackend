@@ -49,12 +49,12 @@ func searchProducts(w http.ResponseWriter, r *http.Request, p httprouter.Params)
 	}
 	products := []db.Products{}
 	if err := selector.All(&products); err != nil {
-		logrus.Error(err.Error())
+		logrus.Errorf("selector.All in searchProducts %q", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if err := json.NewEncoder(w).Encode(searchProductsResult{products}); err != nil {
-		logrus.Error(err.Error())
+		logrus.Errorf("json.NewEncoder in searchProducts %q - %+v", err, products)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

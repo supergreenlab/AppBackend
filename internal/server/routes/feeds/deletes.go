@@ -76,36 +76,36 @@ func createDeleteHandler() httprouter.Handle {
 		for _, del := range deletes.Deletes {
 			factory, ok := factories[del.Type]
 			if ok == false {
-				logrus.Warningf("Unknown type %s", del.Type)
+				logrus.Warningf("Unknown type %s by %s", del.Type, uid)
 				continue
 			}
 			o := factory()
 			err := sess.Collection(del.Type).Find("id", del.ID).One(o)
 			if err != nil {
-				logrus.Errorln(err.Error())
+				logrus.Errorf("sess.Collection.Find in createDeleteHandler %q - %+v by %s", err, del, uid)
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 
 			if uid != o.GetUserID() {
-				logrus.Warningf("Object is owned by another user %s %s", del.Type, del.ID)
+				logrus.Warningf("Object is owned by another user - %+v", del)
 				continue
 			}
 
 			if _, err := sess.Update(del.Type).Set("deleted", true).Where("id = ?", o.GetID()).Exec(); err != nil {
-				logrus.Warning(err.Error())
+				logrus.Warningf("sess.Update(del.Type) in createDeleteHandler %q - %+v %+v by %s", err, del, o, uid)
 				continue
 			}
 
 			collection := fmt.Sprintf("userend_%s", del.Type)
 			field := idFields[del.Type]
 			if _, err := sess.Update(collection).Set("dirty", true).Where(field, del.ID).And("userendid != ?", ueid).And("userendid in (select id from userends where userid = ?)", uid).Exec(); err != nil {
-				logrus.Warning(err.Error())
+				logrus.Warningf("sess.Update(collection) in createDeleteHandler %q - %+v by %s", err, del, uid)
 				continue
 			}
 
 			if _, err := sess.DeleteFrom(collection).Where(fmt.Sprintf("%s = ?", field), del.ID).And("userendid = ?", ueid).Exec(); err != nil {
-				logrus.Errorln(err)
+				logrus.Warningf("sess.DeleteFrom(collection) in createDeleteHandler %q - %+v by %s", err, del, uid)
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}

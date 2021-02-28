@@ -53,7 +53,7 @@ func syncCollection(collection, id string, factory func() interface{}, customSel
 				selector = customSelect(selector)
 			}
 			if err := selector.OrderBy("cat ASC").All(res); err != nil {
-				logrus.Error(err.Error())
+				logrus.Errorf("selector.OrderBy in syncCollection %q - collection: %s id: %s ueid: %s", err, collection, id, ueid)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -71,7 +71,7 @@ func syncCollection(collection, id string, factory func() interface{}, customSel
 	return s.Wrap(func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		o := r.Context().Value(middlewares.ObjectContextKey{})
 		if err := json.NewEncoder(w).Encode(syncResponse{o}); err != nil {
-			logrus.Error(err.Error())
+			logrus.Errorf("json.NewEncoder in syncCollection %q - collection: %s id: %s o: %+v", err, collection, id, o)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -97,7 +97,7 @@ var syncFeedMediasHandler = syncCollection("feedmedias", "feedmediaid", func() i
 			for i, fm := range *feedMedias {
 				fm, err = loadFeedMediaPublicURLs(fm)
 				if err != nil {
-					logrus.Errorln(err)
+					logrus.Errorf("loadFeedMediaPublicURLs in syncFeedMediasHandler %q - fm: %+v", err, fm)
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
@@ -124,7 +124,7 @@ func syncedHandler(collection, field string) httprouter.Handle {
 		}
 		err := sess.Select(fields...).From(strings.Replace(collection, "userend_", "", 1)).Where("id", p.ByName("id")).One(&o)
 		if err != nil {
-			logrus.Errorln(err.Error())
+			logrus.Errorf("sess.Select in syncedHandler %q - collection: %s field: %s id: %s o: %+v ueid: %s", err, collection, field, p.ByName("id"), o, ueid)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -132,14 +132,14 @@ func syncedHandler(collection, field string) httprouter.Handle {
 		if o.Deleted == true || o.Archived == true {
 			_, err := sess.DeleteFrom(collection).Where(fmt.Sprintf("%s = ?", field), p.ByName("id")).And("userendid = ?", ueid).Exec()
 			if err != nil {
-				logrus.Errorln(err)
+				logrus.Errorf("sess.DeleteFrom in syncedHandler %q - collection: %s field: %s id: %s o: %+v ueid: %s", err, collection, field, p.ByName("id"), o, ueid)
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 		} else {
 			_, err := sess.Update(collection).Set("sent", true, "dirty", false).Where(fmt.Sprintf("%s = ?", field), p.ByName("id")).And("userendid = ?", ueid).Exec()
 			if err != nil {
-				logrus.Errorln(err)
+				logrus.Errorf("sess.Update in syncedHandler %q - collection: %s field: %s id: %s o: %+v ueid: %s", err, collection, field, p.ByName("id"), o, ueid)
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}

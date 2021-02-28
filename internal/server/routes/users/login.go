@@ -62,13 +62,13 @@ func loginHandler() httprouter.Handle {
 		u := db.User{}
 		err := sess.Select("id", "password").From("users").Where("lower(replace(nickname, ' ', '')) = ?", lp.Handle).One(&u)
 		if err != nil {
-			logrus.Errorln(err)
+			logrus.Errorf("sess.Select in loginHandler %q - %+v", err, lp)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(lp.Password))
 		if err != nil {
-			logrus.Errorln(err)
+			logrus.Errorf("bcrypt.CompareHashAndPassword in loginHandler %q - %+v", err, lp)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -78,7 +78,7 @@ func loginHandler() httprouter.Handle {
 		})
 		tokenString, err := token.SignedString(hmacSampleSecret)
 		if err != nil {
-			logrus.Errorln(err)
+			logrus.Errorf("token.SignedString in loginHandler %q - %+v", err, lp)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -100,7 +100,7 @@ var createUserHandler = middlewares.InsertEndpoint(
 				u.Nickname = strings.Trim(u.Nickname, " ")
 				if len(u.Nickname) < 5 || len(u.Nickname) > 21 {
 					errorMsg := "Nickname length should be between 5 and 21 caracters"
-					logrus.Errorln(errorMsg)
+					logrus.Errorf("%q - %+v", errorMsg, u)
 					http.Error(w, errorMsg, http.StatusBadRequest)
 					return
 				}
@@ -108,14 +108,14 @@ var createUserHandler = middlewares.InsertEndpoint(
 				nickname := strings.ToLower(strings.Replace(u.Nickname, " ", "", -1))
 				n, err := sess.Collection("users").Find().Where("lower(replace(nickname, ' ', '')) = ?", nickname).Count() // TODO this is stupid
 				if err != nil {
-					logrus.Errorln(err.Error())
+					logrus.Errorf("%q - %+v", err, u)
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
 
 				if n > 0 {
 					errorMsg := "User already exists"
-					logrus.Errorln(errorMsg)
+					logrus.Errorf("%q - %+v", errorMsg, u)
 					http.Error(w, errorMsg, http.StatusBadRequest)
 					return
 				}
@@ -123,7 +123,7 @@ var createUserHandler = middlewares.InsertEndpoint(
 				bc, err := bcrypt.GenerateFromPassword([]byte(u.Password), 8)
 				u.Password = string(bc)
 				if err != nil {
-					logrus.Errorln(err.Error())
+					logrus.Errorf("bcrypt.GenerateFromPassword in createUserHandler %q - %+v", err, u)
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
@@ -146,7 +146,7 @@ var updateUserHandler = middlewares.UpdateEndpoint(
 
 				user := &db.User{}
 				if err := sess.Select("*").From("users").Where("id = ?", uid).One(user); err != nil {
-					logrus.Error(err.Error())
+					logrus.Errorf("sess.Select in updateUserHandler %q - %+v", err, u)
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
@@ -186,7 +186,7 @@ func meHandler(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	}
 
 	if err := json.NewEncoder(w).Encode(user); err != nil {
-		logrus.Error(err.Error())
+		logrus.Errorf("json.NewEncoder in meHandler %q - %+v", err, user)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

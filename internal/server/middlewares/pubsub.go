@@ -42,7 +42,7 @@ func PublishInsert(collection string) middleware.Middleware {
 
 			msg := InsertMessage{id, o}
 			if err := pubsub.PublishObject(fmt.Sprintf("insert.%s", collection), msg); err != nil {
-				logrus.Error(err.Error())
+				logrus.Errorf("PublishObject in PublishInsert %q", err)
 			}
 			fn(w, r, p)
 		}

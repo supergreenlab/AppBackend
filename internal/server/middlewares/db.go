@@ -62,7 +62,7 @@ func InsertObject(collection string) middleware.Middleware {
 			col := sess.Collection(collection)
 			id, err := col.Insert(o)
 			if err != nil {
-				logrus.Errorln(err.Error())
+				logrus.Errorf("Insert in InsertObject %q - %s %+v", err, collection, o)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -84,7 +84,7 @@ func UpdateObject(collection string) func(fn httprouter.Handle) httprouter.Handl
 			col := sess.Collection(collection)
 			err := col.Find(o.GetID()).Update(o)
 			if err != nil {
-				logrus.Errorln(err.Error())
+				logrus.Errorf("Find in UpdateObject %q - %s %+v", err, collection, o)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -103,7 +103,7 @@ func SelectQuery(factory func() interface{}) func(fn httprouter.Handle) httprout
 			selector := r.Context().Value(SelectorContextKey{}).(sqlbuilder.Selector)
 			results := factory()
 			if err := selector.All(results); err != nil {
-				logrus.Error(err.Error())
+				logrus.Errorf("All in SelectQuery %q", err)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -119,7 +119,7 @@ func SelectOneQuery(factory func() interface{}) func(fn httprouter.Handle) httpr
 			selector := r.Context().Value(SelectorContextKey{}).(sqlbuilder.Selector)
 			results := factory()
 			if err := selector.One(results); err != nil {
-				logrus.Error(err.Error())
+				logrus.Errorf("One in SelectOneQuery %q", err)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}

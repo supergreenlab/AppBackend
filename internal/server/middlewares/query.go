@@ -38,7 +38,7 @@ func DecodeQuery(fnObject func() interface{}) func(fn httprouter.Handle) httprou
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			o := fnObject()
 			if err := decoder.Decode(o, r.URL.Query()); err != nil {
-				logrus.Error(err.Error())
+				logrus.Errorf("DecodeQuery %q for %s", err.Error(), r.URL.Query())
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}

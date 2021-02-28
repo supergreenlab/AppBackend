@@ -29,13 +29,14 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"google.golang.org/api/option"
 )
 
 var (
-	client        *firebase.App
-	ch            chan UserNotification
-	fcmConfigPath = pflag.String("fcmconfigpath", "/etc/appbackend/fcmconfig.json", "Url to the redis instance")
+	client *firebase.App
+	ch     chan UserNotification
+	_      = pflag.String("fcmconfigpath", "/etc/appbackend/fcmconfig.json", "Url to the redis instance")
 )
 
 type NotificationData interface {
@@ -71,12 +72,12 @@ func handleUserNotifications() {
 	for un := range ch {
 		userends, err := db.GetUserEndsForUserID(un.userID)
 		if err != nil {
-			logrus.Errorf("SendNotificationToUser: %q\n", err)
+			logrus.Errorf("db.GetUserEndsForUserID in handleUserNotifications %q - %+v", err, un)
 			return
 		}
 		cli, err := client.Messaging(context.Background())
 		if err != nil {
-			logrus.Errorf("SendNotificationToUser: %q\n", err)
+			logrus.Errorf("client.Messaging in handleUserNotifications %q", err)
 			return
 		}
 		tokensMap := map[string]bool{}
@@ -95,7 +96,7 @@ func handleUserNotifications() {
 			prometheus.NotificationSent(un.data.GetType())
 			if _, err := cli.SendMulticast(context.Background(), msg); err != nil {
 				prometheus.NotificationError(un.data.GetType())
-				logrus.Errorf("cli.Send: %q\n", err)
+				logrus.Errorf("cli.SendMulticast in handleUserNotifications %q - %+v", err, un)
 			}
 		}
 	}
@@ -109,10 +110,10 @@ func Init() {
 	var err error
 	ctx := context.Background()
 	config := &firebase.Config{ProjectID: "supergreenlab-6cd05"}
-	opt := option.WithCredentialsFile(*fcmConfigPath)
+	opt := option.WithCredentialsFile(viper.GetString("FCMConfigPath"))
 	client, err = firebase.NewApp(ctx, config, opt)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("firebase.NewApp in Init %q", err)
 	}
 
 	ch = make(chan UserNotification, 100)

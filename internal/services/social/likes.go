@@ -36,7 +36,7 @@ func listenLikesAdded() {
 		if like.CommentID.Valid {
 			com, err := db.GetComment(like.CommentID.UUID)
 			if err != nil {
-				logrus.Errorf("listenLikesAdded db.GetComment: %q\n", err)
+				logrus.Errorf("db.GetComment in listenLikesAdded %q - %+v", err, like)
 				continue
 			}
 
@@ -46,13 +46,13 @@ func listenLikesAdded() {
 
 			plant, err := db.GetPlantForFeedEntryID(com.FeedEntryID)
 			if err != nil {
-				logrus.Errorf("listenLikesAdded db.GetPlantForFeedEntryID: %q\n", err)
+				logrus.Errorf("db.GetPlantForFeedEntryID in listenLikesAdded %q - %+v", err, com)
 				continue
 			}
 
 			user, err := db.GetUser(like.UserID)
 			if err != nil {
-				logrus.Errorf("listenLikesAdded db.GetUser: %q\n", err)
+				logrus.Errorf("db.GetUser listenLikesAdded %q - %+v", err, like)
 				continue
 			}
 
@@ -68,7 +68,7 @@ func listenLikesAdded() {
 			}*/
 			plant, err := db.GetPlantForFeedEntryID(like.FeedEntryID.UUID)
 			if err != nil {
-				logrus.Errorf("listenLikesAdded db.GetPlantForFeedEntryID: %q\n", err)
+				logrus.Errorf("db.GetPlantForFeedEntryID in listenLikesAdded %q - %+v", err, like)
 				continue
 			}
 
@@ -78,7 +78,7 @@ func listenLikesAdded() {
 
 			user, err := db.GetUser(like.UserID)
 			if err != nil {
-				logrus.Errorf("listenLikesAdded db.GetUser: %q\n", err)
+				logrus.Errorf("db.GetUser in listenLikesAdded %q - %+v", err, like)
 				continue
 			}
 			title := fmt.Sprintf("%s liked your growlog on the diary %s!", user.Nickname, plant.Name)

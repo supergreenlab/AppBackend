@@ -25,8 +25,8 @@ import (
 )
 
 var (
-	r        *redis.Client
-	redisURL = pflag.String("redisurl", "redis:6379", "Url to the redis instance")
+	r *redis.Client
+	_ = pflag.String("redisurl", "redis:6379", "Url to the redis instance")
 )
 
 func init() {

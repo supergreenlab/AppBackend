@@ -31,7 +31,7 @@ func ObjectIDRequired(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		o := r.Context().Value(ObjectContextKey{}).(db.Object)
 		if o.GetID().Valid == false {
-			logrus.Errorln("Missing object's ID")
+			logrus.Errorf("Missing object's ID - %+v", o)
 			http.Error(w, "Missing object's ID", http.StatusBadRequest)
 			return
 		}

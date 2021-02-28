@@ -198,7 +198,7 @@ func picMediaURL(fn httprouter.Handle) httprouter.Handle {
 			url1, err := minioClient.PresignedGetObject("users", c.Pic.String, expiry, nil)
 			if err != nil {
 				c.Pic = null.NewString("", false)
-				logrus.Errorln(err.Error())
+				logrus.Errorf("minioClient.PresignedGetObject in picMediaURL %q - %+v", err, c)
 			} else {
 				c.Pic = null.NewString(url1.RequestURI(), true)
 			}
@@ -230,7 +230,7 @@ func selectRepliesForComments(fn httprouter.Handle) httprouter.Handle {
 		replies := &[]Comment{}
 		selector := joinSocialSelector(r.Context(), sess.Select("t.*").From("comments t").Where("replyto in ?", ids))
 		if err := selector.All(replies); err != nil {
-			logrus.Error(err.Error())
+			logrus.Errorf("selector.All in selectRepliesForComments %q - %+v", err, ids)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

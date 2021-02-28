@@ -70,14 +70,14 @@ func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Para
 
 	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
 	if err != nil {
-		logrus.Error(err.Error())
+		logrus.Errorf("strconv.Atoi in fetchPublicPlants %q - offset: %s url: %s", err, r.URL.Query().Get("offset"), r.URL.String())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
 	if err != nil {
-		logrus.Error(err.Error())
+		logrus.Errorf("strconv.Atoi in fetchPublicPlants %q - limit: %s url: %s", err, r.URL.Query().Get("limit"), r.URL.String())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -93,7 +93,7 @@ func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Para
 	selector = selector.Where("is_public = ?", true).And("plants.deleted = ?", false)
 	selector = selector.OrderBy("lastfe desc").Offset(offset).Limit(limit)
 	if err := selector.All(&plants); err != nil {
-		logrus.Error(err.Error())
+		logrus.Errorf("selector.All in fetchPublicPlants %q", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -102,14 +102,14 @@ func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Para
 		fm, err := loadLastFeedMediaForPlant(sess, plant)
 		if err != nil {
 			results = append(results, publicListingPlantResult{ID: plant.ID.UUID.String(), Name: plant.Name})
-			logrus.Warningln(err)
+			logrus.Warningf("loadLastFeedMediaForPlant in fetchPublicPlants %q - plant: %+v", err, plant)
 			continue
 		}
 
 		results = append(results, publicListingPlantResult{plant.ID.UUID.String(), plant.Name, fm.FilePath, fm.ThumbnailPath})
 	}
 	if err := json.NewEncoder(w).Encode(publicPlantsResult{results}); err != nil {
-		logrus.Error(err.Error())
+		logrus.Errorf("json.NewEncoder in fetchPublicPlants %q - results: %+v", err, results)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -129,24 +129,25 @@ func fetchPublicPlant(w http.ResponseWriter, r *http.Request, p httprouter.Param
 
 	plant := sgldb.Plant{}
 	if err := sess.Select("*").From("plants").Where("is_public = ?", true).And("deleted = ?", false).And("id = ?", p.ByName("id")).One(&plant); err != nil {
-		logrus.Error(err.Error())
+		logrus.Errorf("sess.Select('plants') in fetchPublicPlant %q - id: %s", err, p.ByName("id"))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	fm, err := loadLastFeedMediaForPlant(sess, plant)
 	if err != nil {
-		logrus.Errorln(err)
+		logrus.Errorf("loadLastFeedMediaForPlant in fetchPublicPlant %q - plant: %+v", err, plant)
 		//http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	box := sgldb.Box{}
 	if err := sess.Select("*").From("boxes").And("id = ?", plant.BoxID).One(&box); err != nil {
-		logrus.Error(err.Error())
+		logrus.Errorf("sess.Select('boxes') in fetchPublicPlant %q - plant: %+v", err, plant)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err := json.NewEncoder(w).Encode(publicPlantResult{plant.ID.UUID.String(), plant.Name, fm.FilePath, fm.ThumbnailPath, plant.Settings, box.Settings}); err != nil {
-		logrus.Error(err.Error())
+	result := publicPlantResult{plant.ID.UUID.String(), plant.Name, fm.FilePath, fm.ThumbnailPath, plant.Settings, box.Settings}
+	if err := json.NewEncoder(w).Encode(result); err != nil {
+		logrus.Errorf("json.NewEncoder in fetchPublicPlant %q - result: %+v", err, result)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -171,14 +172,14 @@ func fetchPublicFeedEntries(w http.ResponseWriter, r *http.Request, p httprouter
 
 	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
 	if err != nil {
-		logrus.Error(err.Error())
+		logrus.Errorf("strconv.Atoi in fetchPublicFeedEntries %q - offset: %s url: %s", err, r.URL.Query().Get("offset"), r.URL.String())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
 	if err != nil {
-		logrus.Error(err.Error())
+		logrus.Errorf("strconv.Atoi in fetchPublicFeedEntries %q - limit: %s url: %s", err, r.URL.Query().Get("limit"), r.URL.String())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -201,12 +202,13 @@ func fetchPublicFeedEntries(w http.ResponseWriter, r *http.Request, p httprouter
 	selector = selector.Where("p.is_public = ?", true).And("p.id = ?", p.ByName("id")).And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')").And("fe.deleted = ?", false).And("p.deleted = ?", false)
 	selector = selector.OrderBy("fe.createdat DESC").Offset(offset).Limit(limit)
 	if err := selector.All(&feedEntries); err != nil {
-		logrus.Error(err.Error())
+		logrus.Errorf("selector.All in fetchPublicFeedEntries %q - limit: %d offset: %d id: %s", err, limit, offset, p.ByName("id"))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err := json.NewEncoder(w).Encode(publicFeedEntriesResult{feedEntries}); err != nil {
-		logrus.Error(err.Error())
+	result := publicFeedEntriesResult{feedEntries}
+	if err := json.NewEncoder(w).Encode(result); err != nil {
+		logrus.Errorf("json.NewEncoder in fetchPublicFeedEntries %q - %+v", err, result)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -232,12 +234,13 @@ func fetchPublicFeedEntry(w http.ResponseWriter, r *http.Request, p httprouter.P
 	selector = selector.Join("plants p").On("p.feedid = f.id")
 	selector = selector.Where("p.is_public = ?", true).And("fe.id = ?", p.ByName("id")).And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')").And("fe.deleted = ?", false).And("p.deleted = ?", false)
 	if err := selector.One(&feedEntry); err != nil {
-		logrus.Error(err.Error())
+		logrus.Errorf("selector.One in fetchPublicFeedEntry %q - id: %s", err, p.ByName("id"))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err := json.NewEncoder(w).Encode(publicFeedEntryResult{feedEntry}); err != nil {
-		logrus.Error(err.Error())
+	result := publicFeedEntryResult{feedEntry}
+	if err := json.NewEncoder(w).Encode(result); err != nil {
+		logrus.Errorf("json.NewEncoder in fetchPublicFeedEntry %q - %+v", err, result)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -257,7 +260,7 @@ func fetchPublicFeedMedias(w http.ResponseWriter, r *http.Request, p httprouter.
 	selector = selector.Join("plants p").On("p.feedid = f.id")
 	selector = selector.Where("p.is_public = ?", true).And("fe.id = ?", p.ByName("id")).And("fm.deleted = ?", false)
 	if err := selector.All(&feedMedias); err != nil {
-		logrus.Error(err.Error())
+		logrus.Errorf("selector.All in fetchPublicFeedMedias %q - id: %s", err, p.ByName("id"))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -266,15 +269,16 @@ func fetchPublicFeedMedias(w http.ResponseWriter, r *http.Request, p httprouter.
 	for i, fm := range feedMedias {
 		fm, err = loadFeedMediaPublicURLs(fm)
 		if err != nil {
-			logrus.Errorln(err)
+			logrus.Errorf("loadFeedMediaPublicURLs in fetchPublicFeedMedias %q - %+v", err, fm)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		feedMedias[i] = fm
 	}
 
-	if err := json.NewEncoder(w).Encode(publicFeedMediasResult{feedMedias}); err != nil {
-		logrus.Error(err.Error())
+	result := publicFeedMediasResult{feedMedias}
+	if err := json.NewEncoder(w).Encode(result); err != nil {
+		logrus.Errorf("json.NewEncoder in fetchPublicFeedMedias %q - %+v", err, result)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -290,20 +294,20 @@ func fetchPublicFeedMedia(w http.ResponseWriter, r *http.Request, p httprouter.P
 	selector = selector.Join("plants p").On("p.feedid = f.id")
 	selector = selector.Where("p.is_public = ?", true).And("fm.id = ?", p.ByName("id")).And("fm.deleted = ?", false)
 	if err := selector.One(&feedMedia); err != nil {
-		logrus.Error(err.Error())
+		logrus.Errorf("selector.One in fetchPublicFeedMedia %q - id: %s", err, p.ByName("id"))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	var err error
 	feedMedia, err = loadFeedMediaPublicURLs(feedMedia)
 	if err != nil {
-		logrus.Errorln(err)
+		logrus.Errorf("loadFeedMediaPublicURLs in fetchPublicFeedMedia %q - %+v", err, feedMedia)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if err := json.NewEncoder(w).Encode(feedMedia); err != nil {
-		logrus.Error(err.Error())
+		logrus.Errorf("json.NewEncoder in fetchPublicFeedMedia %q - %+v", err, feedMedia)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

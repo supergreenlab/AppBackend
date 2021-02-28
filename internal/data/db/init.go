@@ -42,8 +42,7 @@ func InitDB() {
 	var err error
 	Sess, err = postgresql.Open(Settings)
 	if err != nil {
-		logrus.Errorf("db.Open(): %q\n", err)
-		logrus.Errorf("%q", err)
+		logrus.Errorf("db.Open in InitDB %q\n", err)
 		return
 	}
 }

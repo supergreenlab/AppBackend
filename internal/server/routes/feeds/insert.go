@@ -65,7 +65,7 @@ var createUserEndHandler = middlewares.InsertEndpoint(
 				})
 				tokenString, err := token.SignedString(hmacSampleSecret)
 				if err != nil {
-					logrus.Errorln(err.Error())
+					logrus.Errorf("token.SignedString in createUserEndHandler %q - userID: %s userEndID: %s", err, uid, id)
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
@@ -75,7 +75,7 @@ var createUserEndHandler = middlewares.InsertEndpoint(
 				boxes := []db.Box{}
 				err = sess.Select("*").From("boxes").Where("userid = ?", uid).And("deleted = ?", false).All(&boxes)
 				if err != nil {
-					logrus.Errorln(err.Error())
+					logrus.Errorf("sess.Select.From('boxes') in createUserEndHandler %q - uid: %s", err, uid)
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
@@ -84,7 +84,7 @@ var createUserEndHandler = middlewares.InsertEndpoint(
 				plants := []db.Plant{}
 				err = sess.Select("*").From("plants").Where("userid = ?", uid).And("deleted = ?", false).And("archived = ?", false).All(&plants)
 				if err != nil {
-					logrus.Errorln(err.Error())
+					logrus.Errorf("sess.Select.From('plants') in createUserEndHandler %q - uid: %s", err, uid)
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
@@ -93,7 +93,7 @@ var createUserEndHandler = middlewares.InsertEndpoint(
 				timelapses := []db.Timelapse{}
 				err = sess.Select("*").From("timelapses").Where("userid = ?", uid).And("deleted = ?", false).And("(select archived from plants where plants.id = timelapses.plantid) = ?", false).All(&timelapses)
 				if err != nil {
-					logrus.Errorln(err.Error())
+					logrus.Errorf("sess.Select.From('timelapses') in createUserEndHandler %q - uid: %s", err, uid)
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
@@ -102,7 +102,7 @@ var createUserEndHandler = middlewares.InsertEndpoint(
 				devices := []db.Device{}
 				err = sess.Select("*").From("devices").Where("userid = ?", uid).And("deleted = ?", false).All(&devices)
 				if err != nil {
-					logrus.Errorln(err.Error())
+					logrus.Errorf("sess.Select.From('devices') in createUserEndHandler %q - uid: %s", err, uid)
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
@@ -115,7 +115,7 @@ var createUserEndHandler = middlewares.InsertEndpoint(
 						udb.Raw("(select archived from plants where plants.feedid = feeds.id) = ?", false)),
 				).All(&feeds)
 				if err != nil {
-					logrus.Errorln(err.Error())
+					logrus.Errorf("sess.Select.From('feeds') in createUserEndHandler %q - uid: %s", err, uid)
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
@@ -128,7 +128,7 @@ var createUserEndHandler = middlewares.InsertEndpoint(
 						udb.Raw("(select archived from plants where plants.feedid = feedentries.feedid) = ?", false)),
 				).All(&feedEntries)
 				if err != nil {
-					logrus.Errorln(err.Error())
+					logrus.Errorf("sess.Select.From('feedentries') in createUserEndHandler %q - uid: %s", err, uid)
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
@@ -141,7 +141,7 @@ var createUserEndHandler = middlewares.InsertEndpoint(
 						udb.Raw("(select archived from plants where plants.feedid = (select feedid from feedentries where feedmedias.feedentryid = feedentries.id)) = ?", false)),
 				).All(&feedMedias)
 				if err != nil {
-					logrus.Errorln(err.Error())
+					logrus.Errorf("sess.Select.From('feedmedias') in createUserEndHandler %q - uid: %s", err, uid)
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
@@ -265,7 +265,7 @@ func deleteLikeIfExists(fn httprouter.Handle) httprouter.Handle {
 		if err == nil {
 			err := sess.Collection("likes").Find().Where("id = ?", like.ID).Delete()
 			if err != nil {
-				logrus.Error(err.Error())
+				logrus.Errorf("sess.Collection('likes') in deleteLikeIfExists %q %+v", err, like)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -273,7 +273,7 @@ func deleteLikeIfExists(fn httprouter.Handle) httprouter.Handle {
 			ctx = context.WithValue(ctx, middlewares.InsertedIDContextKey{}, like.ID.UUID)
 			middlewares.OutputObjectID(w, r.WithContext(ctx), p)
 		} else {
-			logrus.Println(err)
+			logrus.Infof("sess.Collection('likes') in deleteLikeIfExists %q", err)
 			fn(w, r, p)
 		}
 	}
@@ -329,7 +329,7 @@ func deleteBookmarkIfExists(fn httprouter.Handle) httprouter.Handle {
 		if err == nil {
 			err := sess.Collection("bookmarks").Find().Where("id = ?", bookmark.ID).Delete()
 			if err != nil {
-				logrus.Error(err.Error())
+				logrus.Errorf("sess.Collection('bookmarks') in deleteBookmarkIfExists %q - %+v", err, bookmark)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -337,7 +337,7 @@ func deleteBookmarkIfExists(fn httprouter.Handle) httprouter.Handle {
 			ctx = context.WithValue(ctx, middlewares.InsertedIDContextKey{}, bookmark.ID.UUID)
 			middlewares.OutputObjectID(w, r.WithContext(ctx), p)
 		} else {
-			logrus.Println(err)
+			logrus.Infof("sess.Collection('bookmarks') in deleteLikeIfExists %q", err)
 			fn(w, r, p)
 		}
 	}

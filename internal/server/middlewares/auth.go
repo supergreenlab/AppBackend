@@ -41,12 +41,20 @@ import (
 
 var (
 	_ = pflag.String("jwtsecret", "", "JWT secret")
+	_ = pflag.String("logrequests", "true", "Set to false in production") // TODO move this somewhere else
 )
+
+func init() {
+	viper.SetDefault("JWTSecret", "")
+	viper.SetDefault("LogRequests", "true")
+}
 
 // AnonStack - allows anonymous connection
 func AnonStack() middleware.Stack {
 	anon := middleware.NewStack()
-	anon.Use(wares.Logging)
+	if viper.GetString("LogRequests") == "true" {
+		anon.Use(wares.Logging)
+	}
 	anon.Use(CreateDBSession)
 	return anon
 }
@@ -54,7 +62,9 @@ func AnonStack() middleware.Stack {
 // AuthStack - Decodes JWT token, errors on failure
 func AuthStack() middleware.Stack {
 	auth := middleware.NewStack()
-	auth.Use(wares.Logging)
+	if viper.GetString("LogRequests") == "true" {
+		auth.Use(wares.Logging)
+	}
 	auth.Use(JwtToken)
 	auth.Use(UserIDRequired)
 	auth.Use(CreateDBSession)
@@ -64,7 +74,9 @@ func AuthStack() middleware.Stack {
 // OptionalAuthStack - Decodes JWT token, errors on failure
 func OptionalAuthStack() middleware.Stack {
 	auth := middleware.NewStack()
-	auth.Use(wares.Logging)
+	if viper.GetString("LogRequests") == "true" {
+		auth.Use(wares.Logging)
+	}
 	auth.Use(JwtToken)
 	auth.Use(CreateDBSession)
 	return auth
@@ -92,8 +104,9 @@ func CheckAccessRight(collection, field string, optional bool, factory func() db
 			sess := r.Context().Value(SessContextKey{}).(sqlbuilder.Database)
 
 			if err := tools.CheckUserID(sess, uid, o, collection, field, optional, factory); err != nil {
-				logrus.Errorln(err.Error())
-				http.Error(w, "Object is owned by another user", http.StatusUnauthorized)
+				errorMsg := "Object is owned by another user"
+				logrus.Errorf("CheckUserID in CheckAccessRight '%s' %q for uid: %s o.GetUserID: %s", errorMsg, err, uid, o.GetUserID())
+				http.Error(w, errorMsg, http.StatusUnauthorized)
 				return
 			}
 

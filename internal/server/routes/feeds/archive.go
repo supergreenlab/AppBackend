@@ -40,49 +40,51 @@ func archivePlantHandler(w http.ResponseWriter, r *http.Request, p httprouter.Pa
 	o := &db.Plant{}
 	err := sess.Collection("plants").Find("id", id).One(o)
 	if err != nil {
-		logrus.Errorln(err.Error())
+		logrus.Errorf("sess.Collection('plants') in archivePlantHandler %q - id: %s uid: %s ueid: %s", err, id, uid, ueid)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if uid != o.GetUserID() {
-		http.Error(w, "Plant is owned by another user", http.StatusBadRequest)
+		errorMsg := "Plant is owned by another user"
+		logrus.Errorf("uid != o.GetUserID() in archivePlantHandler %q - uid: %s o: %+v", errorMsg, uid, o)
+		http.Error(w, errorMsg, http.StatusBadRequest)
 		return
 	}
 
 	if _, err := sess.Update("plants").Set("archived", true).Where("id = ?", o.GetID()).Exec(); err != nil {
-		logrus.Warning(err.Error())
+		logrus.Errorf("sess.Update('plants') in archivePlantHandler %q - uid: %s o: %+v", err, uid, o)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if _, err := sess.Update("userend_plants").Set("dirty", true).Where("plantid", id).And("userendid != ?", ueid).And("userendid in (select id from userends where userid = ?)", uid).Exec(); err != nil {
-		logrus.Warning(err.Error())
+		logrus.Warningf("sess.Update('userend_plants') in archivePlantHandler %q - id: %s uid: %s ueid: %s", err, id, uid, ueid)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if _, err := sess.DeleteFrom("userend_plants").Where("plantid = ?", id).And("userendid = ?", ueid).Exec(); err != nil {
-		logrus.Errorln(err)
+		logrus.Errorf("sess.DeleteFrom('userend_plants') in archivePlantHandler %q - id: %s uid: %s ueid: %s", err, id, uid, ueid)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if _, err := sess.DeleteFrom("userend_timelapses").Where("timelapseid in (select id from timelapses where timelapses.plantid = ?)", id).Exec(); err != nil {
-		logrus.Errorln(err)
+		logrus.Errorf("sess.DeleteFrom('userend_timelapses') in archivePlantHandler %q - id: %s uid: %s ueid: %s", err, id, uid, ueid)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if _, err := sess.DeleteFrom("userend_feeds").Where("feedid = (select feedid from plants where plants.id = ?)", id).Exec(); err != nil {
-		logrus.Errorln(err)
+		logrus.Errorf("sess.DeleteFrom('userend_feeds') in archivePlantHandler %q - id: %s uid: %s ueid: %s", err, id, uid, ueid)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if _, err := sess.DeleteFrom("userend_feedentries").Where("feedentryid in (select id from feedentries where feedentries.feedid = (select feedid from plants where plants.id = ?))", id).Exec(); err != nil {
-		logrus.Errorln(err)
+		logrus.Errorf("sess.DeleteFrom('userend_feedentries') in archivePlantHandler %q - id: %s uid: %s ueid: %s", err, id, uid, ueid)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if _, err := sess.DeleteFrom("userend_feedmedias").Where("feedmediaid in (select id from feedmedias where feedentryid in (select id from feedentries where feedentries.feedid = (select feedid from plants where plants.id = ?)))", id).Exec(); err != nil {
-		logrus.Errorln(err)
+		logrus.Errorf("sess.DeleteFrom('userend_feedmedias') in archivePlantHandler %q - id: %s uid: %s ueid: %s", err, id, uid, ueid)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

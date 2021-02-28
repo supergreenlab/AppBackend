@@ -42,17 +42,17 @@ func listenCommentsAdded() {
 		id := c.(middlewares.InsertMessage).ID
 		feedEntry, err := db.GetFeedEntry(com.FeedEntryID)
 		if err != nil {
-			logrus.Errorf("listenCommentsAdded db.GetFeedEntry: %q\n", err)
+			logrus.Errorf("db.GetFeedEntry in listenCommentsAdded %q - %+v", err, com)
 			continue
 		}
 		plant, err := db.GetPlantForFeedEntryID(com.FeedEntryID)
 		if err != nil {
-			logrus.Errorf("listenCommentsAdded db.GetPlantForFeedEntryID: %q\n", err)
+			logrus.Errorf("db.GetPlantForFeedEntryID in listenCommentsAdded %q - %+v", err, com)
 			continue
 		}
 		user, err := db.GetUser(com.UserID)
 		if err != nil {
-			logrus.Errorf("listenCommentsAdded db.GetUser: %q\n", err)
+			logrus.Errorf("db.GetUser in listenCommentsAdded %q - %+v", err, com)
 			continue
 		}
 
@@ -60,7 +60,7 @@ func listenCommentsAdded() {
 		if com.ReplyTo.Valid {
 			comReplied, err := db.GetComment(com.ReplyTo.UUID)
 			if err != nil {
-				logrus.Errorf("listenCommentsAdded db.GetComment: %q\n", err)
+				logrus.Errorf("db.GetComment in listenCommentsAdded %q - %+v", err, com)
 			}
 			if com.UserID != comReplied.UserID {
 				title := fmt.Sprintf("%s replied to your comment on the diary %s!", user.Nickname, plant.Name)
@@ -79,7 +79,7 @@ func listenCommentsAdded() {
 		for _, m := range mentions {
 			userMentionned, err := db.GetUserForNickname(m[1])
 			if err != nil {
-				logrus.Errorf("%q", err)
+				logrus.Errorf("db.GetUserForNickname in listenCommentsAdded %q - %+v", err, m)
 				continue
 			}
 			if userMentionned.ID.UUID == userIDNotif {

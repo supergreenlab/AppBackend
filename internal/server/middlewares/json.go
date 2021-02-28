@@ -21,7 +21,6 @@ package middlewares
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/SuperGreenLab/AppBackend/internal/server/tools"
@@ -42,10 +41,10 @@ func DecodeJSON(fnObject func() interface{}) func(fn httprouter.Handle) httprout
 			if err != nil {
 				var mr *tools.MalformedRequest
 				if errors.As(err, &mr) {
-					logrus.Errorln(err.Error())
+					logrus.Errorf("tools.DecodeJSONBody in DecodeJSON %q - %s", err, r.URL.String())
 					http.Error(w, mr.Msg, mr.Status)
 				} else {
-					log.Println(err.Error())
+					logrus.Errorf("tools.DecodeJSONBody in DecodeJSON %q - %s", err, r.URL.String())
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				}
 				return

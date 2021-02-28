@@ -35,7 +35,7 @@ import (
 )
 
 var (
-	slackWebhook = pflag.String("slackwebhook", "", "Webhook url for the slack notifications")
+	_ = pflag.String("slackwebhook", "", "Webhook url for the slack notifications")
 )
 
 func listenFeedEntriesAdded() {
@@ -46,7 +46,7 @@ func listenFeedEntriesAdded() {
 
 		plant, err := db.GetPlantForFeedEntryID(id)
 		if err != nil {
-			logrus.Errorf("listenFeedEntriesAdded db.GetPlantForFeedEntryID: %q\n", err)
+			logrus.Errorf("db.GetPlantForFeedEntryID in listenFeedEntriesAdded %q - id: %s fe: %+v", err, id, fe)
 			continue
 		}
 		if !plant.Public {
@@ -78,7 +78,7 @@ func PublicDiaryEntryPosted(id uuid.UUID, fe db.FeedEntry, p db.Plant) {
 	logrus.Info(viper.GetString("SlackWebhook"))
 	err := slack.PostWebhook(viper.GetString("SlackWebhook"), &msg)
 	if err != nil {
-		logrus.Errorf("%q", err)
+		logrus.Errorf("slack.PostWebhook in PublicDiaryEntryPosted %q - id: %s fe: %+v p: %+v", err, id, fe, p)
 	}
 }
 
@@ -102,7 +102,7 @@ func CommentPosted(id uuid.UUID, com db.Comment, p db.Plant, u db.User) {
 	logrus.Info(viper.GetString("SlackWebhook"))
 	err := slack.PostWebhook(viper.GetString("SlackWebhook"), &msg)
 	if err != nil {
-		logrus.Errorf("%q", err)
+		logrus.Errorf("slack.PostWebhook in CommentPosted %q - com: %+v p: %+v u: %+v", err, com, p, u)
 	}
 }
 
@@ -125,7 +125,7 @@ func CommentLikeAdded(l db.Like, com db.Comment, p db.Plant, u db.User) {
 
 	err := slack.PostWebhook(viper.GetString("SlackWebhook"), &msg)
 	if err != nil {
-		logrus.Errorf("%q", err)
+		logrus.Errorf("slack.PostWebhook in CommentLikeAdded %q - l: %+v com: %+v p: %+v u: %+v", err, l, com, p, u)
 	}
 }
 
@@ -148,7 +148,7 @@ func PostLikeAdded(l db.Like, p db.Plant, u db.User) {
 
 	err := slack.PostWebhook(viper.GetString("SlackWebhook"), &msg)
 	if err != nil {
-		logrus.Errorf("%q", err)
+		logrus.Errorf("slack.PostWebhook in PostLikeAdded %q - l: %+v p: %+v u: %+v", err, l, p, u)
 	}
 }
 

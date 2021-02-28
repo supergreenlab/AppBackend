@@ -52,7 +52,7 @@ func SubscribeControllerIntMetric(topic string) chan ControllerIntMetric {
 		for msg := range rps.Channel() {
 			v, err := strconv.ParseFloat(msg.Payload, 64)
 			if err != nil {
-				logrus.Error(err.Error())
+				logrus.Errorf("strconv.ParseFloat in SubscribeControllerIntMetric %q - %+v", err.Error(), msg)
 				continue
 			}
 

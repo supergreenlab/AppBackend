@@ -48,7 +48,7 @@ type feedMediaUploadURLResult struct {
 func feedMediaUploadURLHandler(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	fmup := feedMediaUploadURLParams{}
 	if err := tools.DecodeJSONBody(w, r, &fmup); err != nil {
-		logrus.Errorln(err)
+		logrus.Errorf("tools.DecodeJSONBody in feedMediaUploadURLHandler %q", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -70,7 +70,7 @@ func feedMediaUploadURLHandler(w http.ResponseWriter, r *http.Request, p httprou
 
 	url1, err := minioClient.PresignedPutObject("feedmedias", path, expiry)
 	if err != nil {
-		logrus.Errorln(err)
+		logrus.Errorf("minioClient.PresignedPutObject in feedMediaUploadURLHandler %q - %s", err, path)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -79,14 +79,14 @@ func feedMediaUploadURLHandler(w http.ResponseWriter, r *http.Request, p httprou
 	path = fmt.Sprintf("thumbnail-%s.jpg", uuid.Must(uuid.NewV4()).String())
 	url2, err := minioClient.PresignedPutObject("feedmedias", path, expiry)
 	if err != nil {
-		logrus.Errorln(err)
+		logrus.Errorf("minioClient.PresignedPutObject in feedMediaUploadURLHandler %q - %s", err, path)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	res.ThumbnailPath = url2.RequestURI()
 
 	if err := json.NewEncoder(w).Encode(res); err != nil {
-		logrus.Errorln(err)
+		logrus.Errorf("json.NewEncoder in feedMediaUploadURLHandler %q", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
