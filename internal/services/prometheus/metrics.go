@@ -39,7 +39,7 @@ var (
 	requestsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "appbackend_requests",
 		Help: "Number of http requests",
-	}, []string{"path"})
+	}, []string{"path", "method"})
 	alertsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "appbackend_alerts",
 		Help: "Number of alerts",

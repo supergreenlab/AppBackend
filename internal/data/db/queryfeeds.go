@@ -63,9 +63,9 @@ func GetPlantForFeedEntryID(feedEntryID uuid.UUID) (Plant, error) {
 	return plant, nil
 }
 
-func GetPlantsForController(controllerID string, boxSlotID int) ([]Plant, error) {
+func GetActivePlantsForControllerIdentifier(controllerID string, boxSlotID int) ([]Plant, error) {
 	plants := []Plant{}
-	selector := Sess.Select("plants.*").From("plants").Join("boxes").On("boxes.id = plants.boxid").Join("devices").On("devices.id = boxes.deviceid").Where("devices.identifier = ?", controllerID).And("boxes.devicebox = ?", boxSlotID)
+	selector := Sess.Select("plants.*").From("plants").Join("boxes").On("boxes.id = plants.boxid").Join("devices").On("devices.id = boxes.deviceid").Where("devices.identifier = ?", controllerID).And("boxes.devicebox = ?", boxSlotID).And("plants.deleted = false").And("plants.archived = false").And("devices.deleted = false")
 	if err := selector.All(&plants); err != nil {
 		return plants, err
 	}

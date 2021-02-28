@@ -93,7 +93,7 @@ func checkMetric(metricName string, metric pubsub.ControllerIntMetric, getMinMax
 			logrus.Errorf("setAlertType in checkMetric %q - metric: %+v boxID: %d alertType: %s", err, metric, boxID, alertType)
 			return
 		}
-		plants, err := db.GetPlantsForController(metric.ControllerID, boxID)
+		plants, err := db.GetActivePlantsForControllerIdentifier(metric.ControllerID, boxID)
 		if err != nil {
 			logrus.Errorf("db.GetPlantsForController in checkMetric %q - metric: %+v boxID: %d alertType: %s", err, metric, boxID, alertType)
 			return
@@ -103,7 +103,7 @@ func checkMetric(metricName string, metric pubsub.ControllerIntMetric, getMinMax
 			title := fmt.Sprintf("Your plant %s is %s %s (%f, should be between %f and %f)!", plant.Name, metricName, alertType, metric.Value, minValue, maxValue)
 			/*data, notif := NewNotificationDataAlert(title, com.Text, "", plant.ID.UUID)
 			notifications.SendNotificationToUser(userMentionned.ID.UUID, data, &notif)*/
-			logrus.Infof("Sending notification %q", title)
+			logrus.Infof("Sending notification %q %+v plant: %s feed: %s box: %s", title, metric, plant.ID.UUID, plant.FeedID, plant.BoxID)
 		}
 		prometheus.AlertTriggered(metricName, alertType)
 	} else {

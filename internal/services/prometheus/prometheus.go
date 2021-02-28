@@ -41,7 +41,7 @@ func (ht *HTTPTiming) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	timer := prometheus.NewTimer(httpDuration.WithLabelValues(path))
 	ht.router.ServeHTTP(w, r)
 	timer.ObserveDuration()
-	requestsCount.WithLabelValues(path).Inc()
+	requestsCount.WithLabelValues(path, r.Method).Inc()
 }
 
 func NewHTTPTiming(router *httprouter.Router) *HTTPTiming {
