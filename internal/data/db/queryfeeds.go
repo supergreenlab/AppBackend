@@ -40,8 +40,6 @@ func GetBox(boxID uuid.UUID) (Box, error) {
 	return box, err
 }
 
-func GetBoxFromControllerIdentifier()
-
 func GetUserEndsForUserID(userID uuid.UUID) ([]UserEnd, error) {
 	userends := []UserEnd{}
 
@@ -63,4 +61,15 @@ func GetPlantForFeedEntryID(feedEntryID uuid.UUID) (Plant, error) {
 	}
 
 	return plant, nil
+}
+
+func GetPlantsForController(controllerID string, boxSlotID int) ([]Plant, error) {
+	plants := []Plant{}
+	selector := Sess.Select("plants.*").From("plants").Join("boxes").On("boxes.id = plants.boxid").Join("devices").On("devices.id = boxes.deviceid").Where("devices.identifier = ?", controllerID).And("boxes.devicebox = ?", boxSlotID)
+	if err := selector.All(&plants); err != nil {
+		return plants, err
+	}
+
+	return plants, nil
+
 }

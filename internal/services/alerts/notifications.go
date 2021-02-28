@@ -25,7 +25,8 @@ import (
 )
 
 var (
-	NotificationTypeAlert = "ALERT"
+	NotificationTypeAlert    = "ALERT"
+	NotificationTypeReminder = "REMINDER"
 )
 
 type NotificationDataAlert struct {

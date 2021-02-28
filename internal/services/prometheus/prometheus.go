@@ -52,6 +52,10 @@ func NotificationSent(notificationType string) {
 	notificationsCount.WithLabelValues(notificationType).Inc()
 }
 
+func InitNotificationSent(notificationType string) {
+	notificationsCount.WithLabelValues(notificationType)
+}
+
 func NotificationError(notificationType string) {
 	notificationErrors.WithLabelValues(notificationType).Inc()
 }

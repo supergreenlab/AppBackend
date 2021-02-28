@@ -18,7 +18,14 @@
 
 package social
 
+import "github.com/SuperGreenLab/AppBackend/internal/services/prometheus"
+
 func Init() {
+	prometheus.InitNotificationSent(NotificationTypePlantComment)
+	prometheus.InitNotificationSent(NotificationTypePlantCommentReply)
+	prometheus.InitNotificationSent(NotificationTypeLikePlantComment)
+	prometheus.InitNotificationSent(NotificationTypeLikePlantFeedEntry)
+
 	initComments()
 	initLikes()
 }
