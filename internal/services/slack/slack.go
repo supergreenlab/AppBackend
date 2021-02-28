@@ -50,7 +50,7 @@ func listenFeedEntriesAdded() {
 			continue
 		}
 		if !plant.Public {
-			return
+			continue
 		}
 		PublicDiaryEntryPosted(id, *fe, plant)
 	}
@@ -58,7 +58,9 @@ func listenFeedEntriesAdded() {
 
 func PublicDiaryEntryPosted(id uuid.UUID, fe db.FeedEntry, p db.Plant) {
 	params := map[string]interface{}{}
-	json.Unmarshal([]byte(fe.Params), &params)
+	if err := json.Unmarshal([]byte(fe.Params), &params); err != nil {
+		logrus.Errorf("json.Unmarshal in PublicDiaryEntryPosted %q - %+v", err, fe)
+	}
 	attachment := slack.Attachment{
 		Color:         "good",
 		Fallback:      fmt.Sprintf("New public diary entry on the plant %s", p.Name),
@@ -75,7 +77,6 @@ func PublicDiaryEntryPosted(id uuid.UUID, fe db.FeedEntry, p db.Plant) {
 		Attachments: []slack.Attachment{attachment},
 	}
 
-	logrus.Info(viper.GetString("SlackWebhook"))
 	err := slack.PostWebhook(viper.GetString("SlackWebhook"), &msg)
 	if err != nil {
 		logrus.Errorf("slack.PostWebhook in PublicDiaryEntryPosted %q - id: %s fe: %+v p: %+v", err, id, fe, p)
@@ -99,7 +100,6 @@ func CommentPosted(id uuid.UUID, com db.Comment, p db.Plant, u db.User) {
 		Attachments: []slack.Attachment{attachment},
 	}
 
-	logrus.Info(viper.GetString("SlackWebhook"))
 	err := slack.PostWebhook(viper.GetString("SlackWebhook"), &msg)
 	if err != nil {
 		logrus.Errorf("slack.PostWebhook in CommentPosted %q - com: %+v p: %+v u: %+v", err, com, p, u)

@@ -27,5 +27,5 @@ var (
 )
 
 func init() {
-	ps = pubs.New(500)
+	ps = pubs.New(100)
 }
