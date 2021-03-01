@@ -69,13 +69,14 @@ func (os Boxes) Each(fn func(Object)) {
 
 // Plant -
 type Plant struct {
-	ID     uuid.NullUUID `db:"id,omitempty" json:"id"`
-	UserID uuid.UUID     `db:"userid" json:"userID"`
-	BoxID  uuid.UUID     `db:"boxid" json:"boxID"`
-	FeedID uuid.UUID     `db:"feedid" json:"feedID"`
-	Name   string        `db:"name" json:"name"`
-	Single bool          `db:"single" json:"single"` // TODO remove this field
-	Public bool          `db:"is_public" json:"public"`
+	ID            uuid.NullUUID `db:"id,omitempty" json:"id"`
+	UserID        uuid.UUID     `db:"userid" json:"userID"`
+	BoxID         uuid.UUID     `db:"boxid" json:"boxID"`
+	FeedID        uuid.UUID     `db:"feedid" json:"feedID"`
+	Name          string        `db:"name" json:"name"`
+	Single        bool          `db:"single" json:"single"` // TODO remove this field
+	Public        bool          `db:"is_public" json:"public"`
+	AlertsEnabled bool          `db:"alerts_enabled" json:"alertsEnabled"`
 
 	Settings string `db:"settings" json:"settings"`
 

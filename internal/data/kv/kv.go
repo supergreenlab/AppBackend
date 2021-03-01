@@ -35,19 +35,19 @@ func HasNumKey(key string) (bool, error) {
 	return n != 0, err
 }
 
-func GetNum(key string) (float64, error) {
+func GetNum(key string, def float64) (float64, error) {
 	n, err := r.Get(key).Float64()
 	if errors.Is(err, redis.Nil) {
-		n = 0
+		n = def
 		err = nil
 	}
 	return n, err
 }
 
-func GetInt(key string) (int, error) {
+func GetInt(key string, def int) (int, error) {
 	n, err := r.Get(key).Int()
 	if errors.Is(err, redis.Nil) {
-		n = 0
+		n = def
 		err = nil
 	}
 	return n, err

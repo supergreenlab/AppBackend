@@ -24,14 +24,54 @@ import (
 	"time"
 )
 
+func GetAlertMinTemperatureDay(controllerID string, box int, def float64) (float64, error) {
+	key := fmt.Sprintf("%s.ALERT.BOX_%d_MIN_TEMP_DAY", controllerID, box)
+	return GetNum(key, def)
+}
+
+func GetAlertMaxTemperatureDay(controllerID string, box int, def float64) (float64, error) {
+	key := fmt.Sprintf("%s.ALERT.BOX_%d_MAX_TEMP_DAY", controllerID, box)
+	return GetNum(key, def)
+}
+
+func GetAlertMinTemperatureNight(controllerID string, box int, def float64) (float64, error) {
+	key := fmt.Sprintf("%s.ALERT.BOX_%d_MIN_TEMP_NIGHT", controllerID, box)
+	return GetNum(key, def)
+}
+
+func GetAlertMaxTemperatureNight(controllerID string, box int, def float64) (float64, error) {
+	key := fmt.Sprintf("%s.ALERT.BOX_%d_MAX_TEMP_NIGHT", controllerID, box)
+	return GetNum(key, def)
+}
+
+func GetAlertMinHumidityDay(controllerID string, box int, def float64) (float64, error) {
+	key := fmt.Sprintf("%s.ALERT.BOX_%d_MIN_HUMI_DAY", controllerID, box)
+	return GetNum(key, def)
+}
+
+func GetAlertMaxHumidityDay(controllerID string, box int, def float64) (float64, error) {
+	key := fmt.Sprintf("%s.ALERT.BOX_%d_MAX_HUMI_DAY", controllerID, box)
+	return GetNum(key, def)
+}
+
+func GetAlertMinHumidityNight(controllerID string, box int, def float64) (float64, error) {
+	key := fmt.Sprintf("%s.ALERT.BOX_%d_MIN_HUMI_NIGHT", controllerID, box)
+	return GetNum(key, def)
+}
+
+func GetAlertMaxHumidityNight(controllerID string, box int, def float64) (float64, error) {
+	key := fmt.Sprintf("%s.ALERT.BOX_%d_MAX_HUMI_NIGHT", controllerID, box)
+	return GetNum(key, def)
+}
+
 func GetTemperature(controllerID string, box int) (float64, error) {
 	key := fmt.Sprintf("%s.KV.BOX_%d_TEMP", controllerID, box)
-	return GetNum(key)
+	return GetNum(key, 0)
 }
 
 func GetBoxTempSource(controllerID string, box int) (int, error) {
 	key := fmt.Sprintf("%s.KV.BOX_%d_TEMP_SOURCE", controllerID, box)
-	return GetInt(key)
+	return GetInt(key, 0)
 }
 
 type GetSensorPresentFunc func(controllerID string, sht21 int) (bool, error)
@@ -56,7 +96,7 @@ func GetSHT21PresentForBox(controllerID string, box int) (bool, error) {
 
 func GetTimerPower(controllerID string, box int) (float64, error) {
 	key := fmt.Sprintf("%s.KV.BOX_%d_TIMER_OUTPUT", controllerID, box)
-	return GetNum(key)
+	return GetNum(key, 0)
 }
 
 type GetAlertStatusFunc func(controllerID string, box int) (bool, error)

@@ -20,12 +20,12 @@ package alerts
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/data/kv"
+	"github.com/SuperGreenLab/AppBackend/internal/services/notifications"
 	"github.com/SuperGreenLab/AppBackend/internal/services/prometheus"
 	"github.com/SuperGreenLab/AppBackend/internal/services/pubsub"
 	"github.com/go-redis/redis"
@@ -37,9 +37,16 @@ func boxIDNumFromMetric(name string) (int, error) {
 	return strconv.Atoi(parts[1])
 }
 
-type getMinMaxFunc func(timerPower float64) (float64, float64)
+var (
+	alertTypeTooHigh = "TOO_HIGH"
+	alertTypeTooLow  = "TOO_LOW"
+)
 
-func checkMetric(metricName string, metric pubsub.ControllerIntMetric, getMinMax getMinMaxFunc, getSensorPresentForBox kv.GetSensorPresentForBoxFunc, getAlertStatus kv.GetAlertStatusFunc, setAlertStatus kv.SetAlertStatusFunc, getAlertType kv.GetAlertTypeFunc, setAlertType kv.SetAlertTypeFunc) {
+type getMinMaxFunc func(controllerID string, boxID int, timerPower float64) (float64, float64, error)
+
+type getAlertContentFunc func(plant db.Plant, alertType string, timerPower, value, minValue, maxValue float64) (string, string)
+
+func checkMetric(metricName string, getAlertContent getAlertContentFunc, metric pubsub.ControllerIntMetric, getMinMax getMinMaxFunc, getSensorPresentForBox kv.GetSensorPresentForBoxFunc, getAlertStatus kv.GetAlertStatusFunc, setAlertStatus kv.SetAlertStatusFunc, getAlertType kv.GetAlertTypeFunc, setAlertType kv.SetAlertTypeFunc) {
 	boxID, err := boxIDNumFromMetric(metric.Key)
 	if err != nil {
 		logrus.Errorf("boxIDNumFromMetric in checkMetric %q - %+v", err, metric)
@@ -59,10 +66,14 @@ func checkMetric(metricName string, metric pubsub.ControllerIntMetric, getMinMax
 	}
 	timerPower, err := kv.GetTimerPower(metric.ControllerID, boxID)
 	if err != nil {
-		logrus.Errorf("kv.GetTimerPower checkMetric %q - metric: %+v boxID: %d", err, metric, boxID)
+		logrus.Errorf("kv.GetTimerPower in checkMetric %q - metric: %+v boxID: %d", err, metric, boxID)
 		return
 	}
-	minValue, maxValue := getMinMax(timerPower)
+	minValue, maxValue, err := getMinMax(metric.ControllerID, boxID, timerPower)
+	if err != nil {
+		logrus.Errorf("getMinMax in checkMetric %q - metric: %+v boxID: %d", err, metric, boxID)
+		return
+	}
 
 	alertStatus, err := getAlertStatus(metric.ControllerID, boxID)
 	if err != nil {
@@ -70,8 +81,8 @@ func checkMetric(metricName string, metric pubsub.ControllerIntMetric, getMinMax
 		return
 	}
 
-	tooLow := metric.Value <= minValue
-	tooHigh := metric.Value >= maxValue
+	tooLow := metric.Value < minValue
+	tooHigh := metric.Value > maxValue
 	if tooLow || tooHigh {
 		if alertStatus {
 			return
@@ -84,9 +95,9 @@ func checkMetric(metricName string, metric pubsub.ControllerIntMetric, getMinMax
 
 		alertType := ""
 		if tooLow {
-			alertType = "TOO_LOW"
+			alertType = alertTypeTooLow
 		} else if tooHigh {
-			alertType = "TOO_HIGH"
+			alertType = alertTypeTooHigh
 		}
 		err = setAlertType(metric.ControllerID, boxID, alertType)
 		if err != nil {
@@ -100,12 +111,15 @@ func checkMetric(metricName string, metric pubsub.ControllerIntMetric, getMinMax
 		}
 		logrus.Infof("%s alert %s: %s{id=%s}=%f (timerPower: %f)", metricName, alertType, metric.Key, metric.ControllerID, metric.Value, timerPower)
 		for _, plant := range plants {
-			title := fmt.Sprintf("Your plant %s is %s %s (%f, should be between %f and %f)!", plant.Name, metricName, alertType, metric.Value, minValue, maxValue)
-			/*data, notif := NewNotificationDataAlert(title, com.Text, "", plant.ID.UUID)
-			notifications.SendNotificationToUser(userMentionned.ID.UUID, data, &notif)*/
-			logrus.Infof("Sending notification %q %+v plant: %s feed: %s box: %s", title, metric, plant.ID.UUID, plant.FeedID, plant.BoxID)
+			if plant.AlertsEnabled == false {
+				continue
+			}
+			title, body := getAlertContent(plant, alertType, timerPower, metric.Value, minValue, maxValue)
+			data, notif := NewNotificationDataAlert(title, body, "", plant.ID.UUID)
+			notifications.SendNotificationToUser(plant.UserID, data, &notif)
+			logrus.Infof("Sending notification %q %q %+v plant: %s feed: %s box: %s", title, body, metric, plant.ID.UUID, plant.FeedID, plant.BoxID)
+			prometheus.AlertTriggered(metricName, alertType)
 		}
-		prometheus.AlertTriggered(metricName, alertType)
 	} else {
 		if !alertStatus {
 			return
@@ -117,10 +131,10 @@ func checkMetric(metricName string, metric pubsub.ControllerIntMetric, getMinMax
 			return
 		}
 
-		if alertType == "TOO_LOW" && metric.Value < minValue*1.15 {
+		if alertType == alertTypeTooLow && metric.Value < minValue*1.15 {
 			return
 		}
-		if alertType == "TOO_HIGH" && metric.Value > maxValue/1.15 {
+		if alertType == alertTypeTooHigh && metric.Value > maxValue/1.15 {
 			return
 		}
 
