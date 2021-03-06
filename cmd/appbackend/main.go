@@ -19,55 +19,20 @@
 package main
 
 import (
-	"fmt"
-
+	"github.com/SuperGreenLab/AppBackend/internal/data/config"
+	"github.com/SuperGreenLab/AppBackend/internal/data/db"
+	"github.com/SuperGreenLab/AppBackend/internal/data/kv"
 	"github.com/SuperGreenLab/AppBackend/internal/server"
 	"github.com/SuperGreenLab/AppBackend/internal/services"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
-
-	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
-
-var (
-	devMode    = pflag.String("devmode", "", "Sets app to development mode")
-	pgPassword = pflag.String("pgpassword", "password", "PostgreSQL password")
-)
-
-func initDB() {
-	m, err := migrate.New(
-		"file://db/migrations",
-		fmt.Sprintf("postgres://postgres:%s@postgres:5432/sglapp?sslmode=disable", viper.GetString("PGPassword")))
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err := m.Up(); err != nil && err.Error() != "no change" {
-		log.Fatal(err)
-	}
-}
 
 func main() {
-	viper.SetConfigName("appbackend")
-	viper.AddConfigPath("/etc/appbackend")
-	viper.AddConfigPath(".")
+	config.Init()
 
-	err := viper.ReadInConfig()
-	if err != nil {
-		panic(fmt.Errorf("fatal error config file: %s", err))
-	}
-
-	viper.SetEnvPrefix("APPBACKEND")
-	viper.AutomaticEnv()
-
-	viper.SetDefault("PGPassword", "password")
-
-	pflag.Parse()
-	viper.BindPFlags(pflag.CommandLine)
-
-	initDB()
+	db.MigrateDB()
+	db.Init()
+	kv.Init()
 
 	server.Start()
 

@@ -64,3 +64,8 @@ func SubscribeControllerIntMetric(topic string) chan ControllerIntMetric {
 	}()
 	return ch
 }
+
+func Init() {
+	initRedis()
+	initPubsub()
+}

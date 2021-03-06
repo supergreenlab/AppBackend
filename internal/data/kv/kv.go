@@ -79,7 +79,7 @@ func SetString(key, value string) error {
 	return r.Set(key, value, 0).Err()
 }
 
-func init() {
+func Init() {
 	viper.SetDefault("RedisURL", "redis:6379")
 	r = redis.NewClient(&redis.Options{
 		Addr:     viper.GetString("RedisURL"),

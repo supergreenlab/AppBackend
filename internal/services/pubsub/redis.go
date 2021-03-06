@@ -31,6 +31,9 @@ var (
 
 func init() {
 	viper.SetDefault("RedisURL", "redis:6379")
+}
+
+func initRedis() {
 	r = redis.NewClient(&redis.Options{
 		Addr:     viper.GetString("RedisURL"),
 		Password: "", // no password set

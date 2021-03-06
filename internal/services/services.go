@@ -22,14 +22,16 @@ import (
 	"github.com/SuperGreenLab/AppBackend/internal/services/alerts"
 	"github.com/SuperGreenLab/AppBackend/internal/services/notifications"
 	"github.com/SuperGreenLab/AppBackend/internal/services/prometheus"
+	"github.com/SuperGreenLab/AppBackend/internal/services/pubsub"
 	"github.com/SuperGreenLab/AppBackend/internal/services/slack"
 	"github.com/SuperGreenLab/AppBackend/internal/services/social"
 )
 
 func Init() {
+	prometheus.Init()
+	pubsub.Init()
 	notifications.Init()
 	social.Init()
 	alerts.Init()
-	prometheus.Init()
 	slack.Init()
 }

@@ -26,7 +26,6 @@ import (
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
 
-	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/routes/feeds"
 	"github.com/SuperGreenLab/AppBackend/internal/server/routes/metrics"
 	"github.com/SuperGreenLab/AppBackend/internal/server/routes/users"
@@ -36,7 +35,6 @@ import (
 
 // Start starts the server
 func Start() {
-	db.InitDB()
 	storage.SetupBucket("feedmedias")
 	storage.SetupBucket("users")
 

@@ -26,6 +26,6 @@ var (
 	ps *pubs.PubSub
 )
 
-func init() {
+func initPubsub() {
 	ps = pubs.New(100)
 }

@@ -33,6 +33,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
 	"github.com/sirupsen/logrus"
+	udb "upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
@@ -48,11 +49,11 @@ func syncCollection(collection, id string, factory func() interface{}, customSel
 			sess := r.Context().Value(cmiddlewares.SessContextKey{}).(sqlbuilder.Database)
 			ueid := r.Context().Value(fmiddlewares.UserEndIDContextKey{}).(uuid.UUID)
 			res := factory()
-			selector := sess.Select("a.*").From(fmt.Sprintf("%s a", collection)).Join(fmt.Sprintf("userend_%s b", collection)).On(fmt.Sprintf("b.%s = a.id", id)).Where("b.userendid = ?", ueid).And("dirty = true")
+			selector := sess.Select(udb.Raw("a.*")).From(fmt.Sprintf("%s a", collection)).Join(fmt.Sprintf("userend_%s b", collection)).On(fmt.Sprintf("b.%s = a.id", id)).Where("b.userendid = ?", ueid).And("dirty = true")
 			if customSelect != nil {
 				selector = customSelect(selector)
 			}
-			if err := selector.OrderBy("cat ASC").All(res); err != nil {
+			if err := selector.OrderBy("a.cat ASC").All(res); err != nil {
 				logrus.Errorf("selector.OrderBy in syncCollection %q - collection: %s id: %s ueid: %s", err, collection, id, ueid)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -79,27 +80,44 @@ func syncCollection(collection, id string, factory func() interface{}, customSel
 }
 
 var syncBoxesHandler = syncCollection("boxes", "boxid", func() interface{} { return &[]db.Box{} }, nil, nil)
+
 var syncPlantsHandler = syncCollection("plants", "plantid", func() interface{} { return &[]db.Plant{} }, nil, nil)
+
 var syncTimelapsesHandler = syncCollection("timelapses", "timelapseid", func() interface{} { return &[]db.Timelapse{} }, nil, nil)
+
 var syncDevicesHandler = syncCollection("devices", "deviceid", func() interface{} { return &[]db.Device{} }, nil, nil)
+
 var syncFeedsHandler = syncCollection("feeds", "feedid", func() interface{} { return &[]db.Feed{} }, func(selector sqlbuilder.Selector) sqlbuilder.Selector {
 	// TODO this should be filtered on userend creation
 	return selector.And("isnewsfeed", false)
 }, nil)
+
 var syncFeedEntriesHandler = syncCollection("feedentries", "feedentryid", func() interface{} { return &[]db.FeedEntry{} }, func(selector sqlbuilder.Selector) sqlbuilder.Selector {
 	return selector.Join("feeds f").On("f.id = a.feedid").Where("f.isnewsfeed", false)
 }, nil)
-var syncFeedMediasHandler = syncCollection("feedmedias", "feedmediaid", func() interface{} { return &[]db.FeedMedia{} }, nil, []middleware.Middleware{
+
+type FeedMediaWithArchived struct {
+	db.FeedMedia
+	Archived bool `json:"-" db:"archived"`
+}
+
+var syncFeedMediasHandler = syncCollection("feedmedias", "feedmediaid", func() interface{} { return &[]FeedMediaWithArchived{} }, func(selector sqlbuilder.Selector) sqlbuilder.Selector {
+	return selector.Columns(udb.Raw("p.archived")).Join("feedentries fe").On("fe.id = a.feedentryid").Join("plants p").On("p.feedid = fe.feedid")
+}, []middleware.Middleware{
 	func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			var err error
-			feedMedias := r.Context().Value(middlewares.ObjectContextKey{}).(*[]db.FeedMedia)
+			feedMedias := r.Context().Value(middlewares.ObjectContextKey{}).(*[]FeedMediaWithArchived)
 			for i, fm := range *feedMedias {
-				fm, err = loadFeedMediaPublicURLs(fm)
-				if err != nil {
-					logrus.Errorf("loadFeedMediaPublicURLs in syncFeedMediasHandler %q - fm: %+v", err, fm)
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
+				if fm.Deleted == false && fm.Archived == false {
+					fm.FeedMedia, err = loadFeedMediaPublicURLs(fm.FeedMedia)
+					if err != nil {
+						logrus.Errorf("loadFeedMediaPublicURLs in syncFeedMediasHandler %q - fm: %+v", err, fm)
+						http.Error(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
+				} else {
+					logrus.Infof("Skipped %+v", fm)
 				}
 				(*feedMedias)[i] = fm
 			}

@@ -20,6 +20,7 @@ package feeds
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -41,7 +42,7 @@ func loadLastFeedMediaForPlant(sess sqlbuilder.Database, p sgldb.Plant) (sgldb.F
 	selector = selector.From("feedmedias fm")
 	selector = selector.Join("feedentries fe").On("fm.feedentryid = fe.id and fe.deleted = ?", false)
 	selector = selector.Join("plants p").On("fe.feedid = p.feedid")
-	selector = selector.Where("p.id = ?", p.ID)
+	selector = selector.Where("p.id = ?", p.ID).And("fm.deleted = ?", false)
 	selector = selector.OrderBy("fm.cat desc").Limit(1)
 	fm := sgldb.FeedMedia{}
 	if err = selector.One(&fm); err != nil {
@@ -87,10 +88,12 @@ func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Para
 		limit = 50
 	}
 
+	// TODO do something better
+	lastFeedEntryQuery := "(select feedentries.cat from feedentries where feedentries.feedid = plants.feedid and feedentries.deleted = false and feedentries.etype in ('FE_MEDIA','FE_BENDING','FE_DEFOLATION','FE_TRANSPLANT','FE_FIMMING','FE_TOPPING','FE_MEASURE') order by cat desc limit 1)"
 	plants := []sgldb.Plant{}
-	selector := sess.Select("plants.*", db.Raw("(select feedentries.cat from feedentries where feedentries.feedid = plants.feedid and feedentries.deleted = false order by cat desc limit 1) as lastfe"))
+	selector := sess.Select("plants.*", db.Raw(fmt.Sprintf("%s as lastfe", lastFeedEntryQuery)))
 	selector = selector.From("plants")
-	selector = selector.Where("is_public = ?", true).And("plants.deleted = ?", false)
+	selector = selector.Where("is_public = ?", true).And("plants.deleted = ?", false).And(fmt.Sprintf("exists %s", lastFeedEntryQuery))
 	selector = selector.OrderBy("lastfe desc").Offset(offset).Limit(limit)
 	if err := selector.All(&plants); err != nil {
 		logrus.Errorf("selector.All in fetchPublicPlants %q", err)
@@ -101,8 +104,8 @@ func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Para
 	for _, plant := range plants {
 		fm, err := loadLastFeedMediaForPlant(sess, plant)
 		if err != nil {
-			results = append(results, publicListingPlantResult{ID: plant.ID.UUID.String(), Name: plant.Name})
-			logrus.Warningf("loadLastFeedMediaForPlant in fetchPublicPlants %q - plant: %+v", err, plant)
+			/*results = append(results, publicListingPlantResult{ID: plant.ID.UUID.String(), Name: plant.Name})
+			logrus.Warningf("loadLastFeedMediaForPlant in fetchPublicPlants %q - plant: %+v", err, plant)*/
 			continue
 		}
 

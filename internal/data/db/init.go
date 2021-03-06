@@ -19,30 +19,55 @@
 package db
 
 import (
+	"fmt"
+	"log"
+
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+
+	_ "github.com/lib/pq"
+
+	"github.com/golang-migrate/migrate/v4"
+
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+
 	"upper.io/db.v3/lib/sqlbuilder"
 	"upper.io/db.v3/postgresql"
 )
 
-// Settings - db connection settings
 var (
-	Settings postgresql.ConnectionURL
-	Sess     sqlbuilder.Database
+	Sess       sqlbuilder.Database
+	pgPassword = pflag.String("pgpassword", "password", "PostgreSQL password")
 )
 
-// InitDB - initializes the Settings variable from config params
-func InitDB() {
-	Settings = postgresql.ConnectionURL{
+func init() {
+	viper.SetDefault("PGPassword", "password")
+}
+
+func MigrateDB() {
+	m, err := migrate.New(
+		"file://db/migrations",
+		fmt.Sprintf("postgres://postgres:%s@postgres:5432/sglapp?sslmode=disable", viper.GetString("PGPassword")))
+	if err != nil {
+		log.Fatalf("migrate.New() in MigrateDB failed %q\n", err)
+	}
+	if err := m.Up(); err != nil && err.Error() != "no change" {
+		log.Fatalf("migrate.Up() in MigrateDB failed %q\n", err)
+	}
+}
+
+func Init() {
+	settings := postgresql.ConnectionURL{
 		Host:     "postgres",
 		Database: "sglapp",
 		User:     "postgres",
 		Password: viper.GetString("PGPassword"),
 	}
 	var err error
-	Sess, err = postgresql.Open(Settings)
+	Sess, err = postgresql.Open(settings)
 	if err != nil {
-		logrus.Errorf("db.Open in InitDB %q\n", err)
-		return
+		logrus.Fatalf("db.Open in InitDB %q\n", err)
 	}
 }
