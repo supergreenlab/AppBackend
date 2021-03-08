@@ -87,7 +87,7 @@ func listenFeedMediasAdded() {
 			paramMsg, _ := params["message"].(string)
 			msg = fmt.Sprintf("**New diary entry for the Plant \"%s\"**", plant.Name)
 			if paramMsg != "" {
-				msg = fmt.Sprintf("%s\n%s", msg, paramMsg)
+				msg = fmt.Sprintf("%s\n\n*%s*\n\n", msg, paramMsg)
 			}
 			msg = fmt.Sprintf("%s\nCheck it out here: https://supergreenlab.com/public/plant?id=%s&feid=%s", msg, plant.ID.UUID, fe.ID.UUID)
 		}
