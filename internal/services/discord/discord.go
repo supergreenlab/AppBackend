@@ -19,8 +19,11 @@
 package discord
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/jpeg"
 	"log"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
@@ -30,6 +33,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/gofrs/uuid"
 	"github.com/minio/minio-go"
+	"github.com/nfnt/resize"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -92,7 +96,23 @@ func listenFeedMediasAdded() {
 			msg = fmt.Sprintf("%s\nCheck it out here: <https://supergreenlab.com/public/plant?id=%s&feid=%s>", msg, plant.ID.UUID, fe.ID.UUID)
 		}
 		sentEntries[fe.ID.UUID] = true
-		_, err = s.ChannelFileSendWithMessage(viper.GetString("DiscordPublicPostChannel"), msg, "pic.jpg", obj)
+
+		img, _, err := image.Decode(obj)
+		if err != nil {
+			logrus.Errorf("image.Decode in listenFeedMediasAdded %q - %+v", err, fe)
+			continue
+		}
+		resized := resize.Thumbnail(1250, 1250, img, resize.Lanczos3)
+
+		buff := new(bytes.Buffer)
+		err = jpeg.Encode(buff, resized, &jpeg.Options{Quality: 80})
+		if err != nil {
+			fmt.Println("failed to create buffer", err)
+			continue
+		}
+		jpegimg := bytes.NewReader(buff.Bytes())
+
+		_, err = s.ChannelFileSendWithMessage(viper.GetString("DiscordPublicPostChannel"), msg, "pic.jpg", jpegimg)
 		if err != nil {
 			logrus.Errorf("s.ChannelFileSendWithMessage in listenFeedMediasAdded %q - id: %s fm: %+v", err, id, fm)
 			continue
