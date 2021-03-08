@@ -20,6 +20,7 @@ package services
 
 import (
 	"github.com/SuperGreenLab/AppBackend/internal/services/alerts"
+	"github.com/SuperGreenLab/AppBackend/internal/services/discord"
 	"github.com/SuperGreenLab/AppBackend/internal/services/notifications"
 	"github.com/SuperGreenLab/AppBackend/internal/services/prometheus"
 	"github.com/SuperGreenLab/AppBackend/internal/services/pubsub"
@@ -34,4 +35,5 @@ func Init() {
 	social.Init()
 	alerts.Init()
 	slack.Init()
+	discord.Init()
 }

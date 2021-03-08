@@ -8,6 +8,7 @@ require (
 	github.com/ClickHouse/clickhouse-go v1.3.14 // indirect
 	github.com/SuperGreenLab/WebBackend v0.0.0-20191105152239-1a7c2c8088bd // indirect
 	github.com/aws/aws-sdk-go v1.29.31 // indirect
+	github.com/bwmarrin/discordgo v0.20.1
 	github.com/cockroachdb/cockroach-go v0.0.0-20200312223839-f565e4789405 // indirect
 	github.com/cskr/pubsub v1.0.2
 	github.com/denisenkom/go-mssqldb v0.0.0-20200206145737-bbfc9a55622e // indirect
@@ -32,6 +33,7 @@ require (
 	github.com/minio/minio-go v6.0.14+incompatible
 	github.com/minio/minio-go/v6 v6.0.50
 	github.com/nakagami/firebirdsql v0.0.0-20200321090558-89c04e66f1df // indirect
+	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.2.1
 	github.com/rileyr/middleware v0.0.0-20171218202914-adaf4755ca16

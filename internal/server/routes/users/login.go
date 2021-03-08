@@ -98,7 +98,7 @@ var createUserHandler = middlewares.InsertEndpoint(
 				u := r.Context().Value(middlewares.ObjectContextKey{}).(*db.User)
 				sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
 				u.Nickname = strings.Trim(u.Nickname, " ")
-				if len(u.Nickname) < 5 || len(u.Nickname) > 21 {
+				if len(u.Nickname) < 4 || len(u.Nickname) > 21 {
 					errorMsg := "Nickname length should be between 5 and 21 caracters"
 					logrus.Errorf("%q - %+v", errorMsg, u)
 					http.Error(w, errorMsg, http.StatusBadRequest)
