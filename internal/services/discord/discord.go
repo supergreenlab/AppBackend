@@ -89,7 +89,7 @@ func listenFeedMediasAdded() {
 			if paramMsg != "" {
 				msg = fmt.Sprintf("%s\n\n*%s*\n\n", msg, paramMsg)
 			}
-			msg = fmt.Sprintf("%s\nCheck it out here: https://supergreenlab.com/public/plant?id=%s&feid=%s", msg, plant.ID.UUID, fe.ID.UUID)
+			msg = fmt.Sprintf("%s\nCheck it out here: <https://supergreenlab.com/public/plant?id=%s&feid=%s>", msg, plant.ID.UUID, fe.ID.UUID)
 		}
 		sentEntries[fe.ID.UUID] = true
 		_, err = s.ChannelFileSendWithMessage(viper.GetString("DiscordPublicPostChannel"), msg, "pic.jpg", obj)
