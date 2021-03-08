@@ -21,7 +21,6 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
@@ -46,10 +45,6 @@ var (
 func init() {
 	viper.SetDefault("DiscordToken", "")
 	viper.SetDefault("DiscordPublicPostChannel", "")
-}
-
-func UploadPicIMWO(msg string, f io.Reader) error {
-	return nil
 }
 
 func listenFeedMediasAdded() {
