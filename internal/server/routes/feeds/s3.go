@@ -27,14 +27,13 @@ import (
 
 func loadFeedMediaPublicURLs(fm db.FeedMedia) (db.FeedMedia, error) {
 	expiry := time.Second * 60 * 60
-	minioClient := storage.CreateMinioClient()
-	url1, err := minioClient.PresignedGetObject("feedmedias", fm.FilePath, expiry, nil)
+	url1, err := storage.Client.PresignedGetObject("feedmedias", fm.FilePath, expiry, nil)
 	if err != nil {
 		return fm, err
 	}
 	fm.FilePath = url1.RequestURI()
 
-	url2, err := minioClient.PresignedGetObject("feedmedias", fm.ThumbnailPath, expiry, nil)
+	url2, err := storage.Client.PresignedGetObject("feedmedias", fm.ThumbnailPath, expiry, nil)
 	if err != nil {
 		return fm, err
 	}

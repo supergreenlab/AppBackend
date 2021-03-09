@@ -75,8 +75,7 @@ func listenFeedMediasAdded() {
 			filePath = fm.ThumbnailPath
 		}
 
-		minioClient := storage.CreateMinioClient()
-		obj, err := minioClient.GetObject("feedmedias", filePath, minio.GetObjectOptions{})
+		obj, err := storage.Client.GetObject("feedmedias", filePath, minio.GetObjectOptions{})
 		if err != nil {
 			logrus.Errorf("minioClient.GetObject in listenFeedMediasAdded %q - id: %s fm: %+v", err, id, fm)
 			continue

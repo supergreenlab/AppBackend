@@ -193,9 +193,8 @@ func picMediaURL(fn httprouter.Handle) httprouter.Handle {
 			if c.Pic.Valid == false {
 				continue
 			}
-			minioClient := storage.CreateMinioClient()
 			expiry := time.Second * 60 * 60
-			url1, err := minioClient.PresignedGetObject("users", c.Pic.String, expiry, nil)
+			url1, err := storage.Client.PresignedGetObject("users", c.Pic.String, expiry, nil)
 			if err != nil {
 				c.Pic = null.NewString("", false)
 				logrus.Errorf("minioClient.PresignedGetObject in picMediaURL %q - %+v", err, c)

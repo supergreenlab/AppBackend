@@ -25,12 +25,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
-
 	"github.com/gofrs/uuid"
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
 	"github.com/SuperGreenLab/AppBackend/internal/server/tools"
 
 	"github.com/julienschmidt/httprouter"
@@ -59,16 +58,15 @@ func feedMediaUploadURLHandler(w http.ResponseWriter, r *http.Request, p httprou
 	} else if strings.HasSuffix(fmup.FileName, ".jpg") || strings.HasSuffix(fmup.FileName, ".jpeg") {
 		path = fmt.Sprintf("pictures-%s.jpg", uuid.Must(uuid.NewV4()).String())
 	} else {
-		logrus.Errorf("Unknown file type %s", fmup.FileName)
+		logrus.Errorf("Unknown file type %s - userID: %s", fmup.FileName)
 		http.Error(w, "Unknown file type", http.StatusBadRequest)
 		return
 	}
 
 	res := feedMediaUploadURLResult{}
-	minioClient := storage.CreateMinioClient()
 	expiry := time.Second * 60
 
-	url1, err := minioClient.PresignedPutObject("feedmedias", path, expiry)
+	url1, err := storage.Client.PresignedPutObject("feedmedias", path, expiry)
 	if err != nil {
 		logrus.Errorf("minioClient.PresignedPutObject in feedMediaUploadURLHandler %q - %s", err, path)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -77,7 +75,7 @@ func feedMediaUploadURLHandler(w http.ResponseWriter, r *http.Request, p httprou
 	res.FilePath = url1.RequestURI()
 
 	path = fmt.Sprintf("thumbnail-%s.jpg", uuid.Must(uuid.NewV4()).String())
-	url2, err := minioClient.PresignedPutObject("feedmedias", path, expiry)
+	url2, err := storage.Client.PresignedPutObject("feedmedias", path, expiry)
 	if err != nil {
 		logrus.Errorf("minioClient.PresignedPutObject in feedMediaUploadURLHandler %q - %s", err, path)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

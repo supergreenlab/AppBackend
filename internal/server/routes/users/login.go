@@ -62,12 +62,14 @@ func loginHandler() httprouter.Handle {
 		u := db.User{}
 		err := sess.Select("id", "password").From("users").Where("lower(replace(nickname, ' ', '')) = ?", lp.Handle).One(&u)
 		if err != nil {
+			lp.Password = ""
 			logrus.Errorf("sess.Select in loginHandler %q - %+v", err, lp)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(lp.Password))
 		if err != nil {
+			lp.Password = ""
 			logrus.Errorf("bcrypt.CompareHashAndPassword in loginHandler %q - %+v", err, lp)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -78,6 +80,7 @@ func loginHandler() httprouter.Handle {
 		})
 		tokenString, err := token.SignedString(hmacSampleSecret)
 		if err != nil {
+			lp.Password = ""
 			logrus.Errorf("token.SignedString in loginHandler %q - %+v", err, lp)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -100,6 +103,7 @@ var createUserHandler = middlewares.InsertEndpoint(
 				u.Nickname = strings.Trim(u.Nickname, " ")
 				if len(u.Nickname) < 4 || len(u.Nickname) > 21 {
 					errorMsg := "Nickname length should be between 5 and 21 caracters"
+					u.Password = ""
 					logrus.Errorf("%q - %+v", errorMsg, u)
 					http.Error(w, errorMsg, http.StatusBadRequest)
 					return
@@ -108,6 +112,7 @@ var createUserHandler = middlewares.InsertEndpoint(
 				nickname := strings.ToLower(strings.Replace(u.Nickname, " ", "", -1))
 				n, err := sess.Collection("users").Find().Where("lower(replace(nickname, ' ', '')) = ?", nickname).Count() // TODO this is stupid
 				if err != nil {
+					u.Password = ""
 					logrus.Errorf("%q - %+v", err, u)
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
@@ -115,6 +120,7 @@ var createUserHandler = middlewares.InsertEndpoint(
 
 				if n > 0 {
 					errorMsg := "User already exists"
+					u.Password = ""
 					logrus.Errorf("%q - %+v", errorMsg, u)
 					http.Error(w, errorMsg, http.StatusBadRequest)
 					return
@@ -174,9 +180,8 @@ func meHandler(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	user.Password = "" // TODO split model private/public fields?
 
 	if user.Pic.Valid {
-		minioClient := storage.CreateMinioClient()
 		expiry := time.Second * 60 * 60
-		url1, err := minioClient.PresignedGetObject("users", user.Pic.String, expiry, nil)
+		url1, err := storage.Client.PresignedGetObject("users", user.Pic.String, expiry, nil)
 		if err != nil {
 			user.Pic = null.NewString("", false)
 			logrus.Errorln(err.Error())
@@ -200,10 +205,9 @@ func profilePicUploadURLHandler(w http.ResponseWriter, r *http.Request, p httpro
 	path := fmt.Sprintf("profile-%s.jpg", uuid.Must(uuid.NewV4()).String())
 
 	res := profilePicUploadURLResult{}
-	minioClient := storage.CreateMinioClient()
 	expiry := time.Second * 60
 
-	url1, err := minioClient.PresignedPutObject("users", path, expiry)
+	url1, err := storage.Client.PresignedPutObject("users", path, expiry)
 	if err != nil {
 		logrus.Errorln(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

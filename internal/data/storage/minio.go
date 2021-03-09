@@ -26,10 +26,13 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	Client *minio.Client
+)
+
 // SetupBucket - create bucket if not exists
 func SetupBucket(name string) {
-	minioClient := CreateMinioClient()
-	exists, err := minioClient.BucketExists(name)
+	exists, err := Client.BucketExists(name)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -37,14 +40,14 @@ func SetupBucket(name string) {
 		log.Printf("Already created bucket: %s\n", name)
 		return
 	}
-	err = minioClient.MakeBucket(name, "")
+	err = Client.MakeBucket(name, "")
 	if err != nil {
 		log.Fatalln(err)
 	}
 }
 
 // CreateMinioClient - creates an initialized minio client
-func CreateMinioClient() *minio.Client {
+func createMinioClient() *minio.Client {
 	accessKey := viper.GetString("S3AccessKey")
 	secretKey := viper.GetString("S3SecretKey")
 	host := viper.GetString("S3Host")
@@ -55,4 +58,8 @@ func CreateMinioClient() *minio.Client {
 		return nil
 	}
 	return minioClient
+}
+
+func Init() {
+	Client = createMinioClient()
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/SuperGreenLab/AppBackend/internal/data/config"
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/data/kv"
+	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
 	"github.com/SuperGreenLab/AppBackend/internal/server"
 	"github.com/SuperGreenLab/AppBackend/internal/services"
 	log "github.com/sirupsen/logrus"
@@ -33,6 +34,7 @@ func main() {
 	db.MigrateDB()
 	db.Init()
 	kv.Init()
+	storage.Init()
 
 	server.Start()
 
