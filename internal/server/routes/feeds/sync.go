@@ -20,6 +20,7 @@ package feeds
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -98,18 +99,22 @@ var syncFeedEntriesHandler = syncCollection("feedentries", "feedentryid", func()
 
 type FeedMediaWithArchived struct {
 	db.FeedMedia
-	Archived bool `json:"-" db:"archived"`
+	PlantArchived sql.NullBool `json:"-" db:"plant_archived"`
+	BoxArchived   sql.NullBool `json:"-" db:"box_archived"`
 }
 
 var syncFeedMediasHandler = syncCollection("feedmedias", "feedmediaid", func() interface{} { return &[]FeedMediaWithArchived{} }, func(selector sqlbuilder.Selector) sqlbuilder.Selector {
-	return selector.Columns(udb.Raw("p.archived")).Join("feedentries fe").On("fe.id = a.feedentryid").Join("plants p").On("p.feedid = fe.feedid")
+	selector = selector.Join("feedentries fe").On("fe.id = a.feedentryid")
+	selector = selector.Columns(udb.Raw("p.archived as plant_archived")).LeftJoin("plants p").On("p.feedid = fe.feedid")
+	selector = selector.Columns(udb.Raw("boxes.archived as box_archived")).LeftJoin("boxes").On("boxes.feedid = fe.feedid")
+	return selector
 }, []middleware.Middleware{
 	func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			var err error
 			feedMedias := r.Context().Value(middlewares.ObjectContextKey{}).(*[]FeedMediaWithArchived)
 			for i, fm := range *feedMedias {
-				if fm.Deleted == false && fm.Archived == false {
+				if fm.Deleted == false && fm.PlantArchived.Bool == false && fm.BoxArchived.Bool == false {
 					fm.FeedMedia, err = loadFeedMediaPublicURLs(fm.FeedMedia)
 					if err != nil {
 						logrus.Errorf("loadFeedMediaPublicURLs in syncFeedMediasHandler %q - fm: %+v", err, fm)

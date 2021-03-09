@@ -108,6 +108,7 @@ var createUserEndHandler = middlewares.InsertEndpoint(
 				}
 				fillUserEnd(sess, id, "devices", db.Devices(devices), func() db.UserEndObject { return &db.UserEndDevice{} })
 
+				// TODO replace with joins + add box archived flag management
 				feeds := []db.Feed{}
 				err = sess.Select("*").From("feeds").Where("userid = ?", uid).And("deleted = ?", false).And(
 					udb.Or(
