@@ -96,7 +96,7 @@ func listenFeedMediasAdded() {
 		}
 		sentEntries[fe.ID.UUID] = true
 
-		img, _, err := image.Decode(obj)
+		img, err := imaging.Decode(obj, imaging.AutoOrientation(true))
 		if err != nil {
 			logrus.Errorf("image.Decode in listenFeedMediasAdded %q - %+v", err, fe)
 			continue
