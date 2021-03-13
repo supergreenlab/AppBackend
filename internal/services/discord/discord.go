@@ -31,9 +31,9 @@ import (
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/SuperGreenLab/AppBackend/internal/services/pubsub"
 	"github.com/bwmarrin/discordgo"
+	"github.com/disintegration/imaging"
 	"github.com/gofrs/uuid"
 	"github.com/minio/minio-go"
-	"github.com/nfnt/resize"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -101,7 +101,12 @@ func listenFeedMediasAdded() {
 			logrus.Errorf("image.Decode in listenFeedMediasAdded %q - %+v", err, fe)
 			continue
 		}
-		resized := resize.Thumbnail(1250, 1250, img, resize.Lanczos3)
+		var resized image.Image
+		if img.Bounds().Max.X > img.Bounds().Max.Y {
+			resized = imaging.Resize(img, 1250, 0, imaging.Lanczos)
+		} else {
+			resized = imaging.Resize(img, 0, 1250, imaging.Lanczos)
+		}
 
 		buff := new(bytes.Buffer)
 		err = jpeg.Encode(buff, resized, &jpeg.Options{Quality: 80})
