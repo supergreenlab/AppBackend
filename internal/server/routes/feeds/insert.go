@@ -353,3 +353,12 @@ var createBookmarkHandler = middlewares.InsertEndpoint(
 	},
 	nil,
 )
+
+var createLinkBookmarkHandler = middlewares.InsertEndpoint(
+	"linkbookmarks",
+	func() interface{} { return &db.LinkBookmark{} },
+	[]middleware.Middleware{
+		middlewares.SetUserID,
+	},
+	nil,
+)

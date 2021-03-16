@@ -43,12 +43,14 @@ var (
 	s           *discordgo.Session
 	_           = pflag.String("discordtoken", "", "Discord server token")
 	_           = pflag.String("discordpublicpostchannel", "", "Public post discord channel")
+	_           = pflag.String("discordlinkbookmarkchannel", "", "Link bookmark discord channel")
 	sentEntries = map[uuid.UUID]bool{}
 )
 
 func init() {
 	viper.SetDefault("DiscordToken", "")
 	viper.SetDefault("DiscordPublicPostChannel", "")
+	viper.SetDefault("DiscordLinkBookmarkChannel", "")
 }
 
 func listenFeedMediasAdded() {
@@ -124,6 +126,27 @@ func listenFeedMediasAdded() {
 	}
 }
 
+func listenLinkBookmarksAdded() {
+	ch := pubsub.SubscribeOject("insert.linkbookmarks")
+	for c := range ch {
+		lb := c.(middlewares.InsertMessage).Object.(*db.LinkBookmark)
+		id := c.(middlewares.InsertMessage).ID
+
+		user, err := db.GetUser(lb.UserID)
+		if err != nil {
+			logrus.Errorf("db.GetUser in listenLinkBookmarksAdded %q - id: %s lb: %+v", err, id, lb)
+			continue
+		}
+
+		msg := fmt.Sprintf("**New bookmark posted by %s**\n\n%s", user.Nickname, lb.URL)
+		_, err = s.ChannelMessageSend(viper.GetString("DiscordLinkBookmarkChannel"), msg)
+		if err != nil {
+			logrus.Errorf("s.ChannelMessageSend in listenLinkBookmarksAdded %q - id: %s lb: %+v", err, id, lb)
+			continue
+		}
+	}
+}
+
 func Init() {
 	var err error
 	s, err = discordgo.New("Bot " + viper.GetString("DiscordToken"))
@@ -138,4 +161,5 @@ func Init() {
 	}
 
 	go listenFeedMediasAdded()
+	go listenLinkBookmarksAdded()
 }

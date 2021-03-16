@@ -45,6 +45,7 @@ func Init(router *httprouter.Router) {
 	router.POST("/like", auth.Wrap(createLikeHandler))
 	router.POST("/report", auth.Wrap(createReportHandler))
 	router.POST("/bookmark", auth.Wrap(createBookmarkHandler))
+	router.POST("/linkbookmark", auth.Wrap(createLinkBookmarkHandler))
 
 	router.PUT("/box", authWithUserEndID.Wrap(updateBoxHandler))
 	router.PUT("/plant", authWithUserEndID.Wrap(updatePlantHandler))

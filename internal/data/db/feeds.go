@@ -438,6 +438,32 @@ func (b Bookmark) GetUserID() uuid.UUID {
 	return b.UserID
 }
 
+// LinkBookmark -
+type LinkBookmark struct {
+	ID     uuid.NullUUID `db:"id,omitempty" json:"id"`
+	UserID uuid.UUID     `db:"userid" json:"userID"`
+
+	URL string `db:"url" json:"url"`
+
+	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
+	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
+}
+
+// GetID -
+func (b LinkBookmark) GetID() uuid.NullUUID {
+	return b.ID
+}
+
+// SetUserID -
+func (b *LinkBookmark) SetUserID(userID uuid.UUID) {
+	b.UserID = userID
+}
+
+// GetUserID -
+func (b LinkBookmark) GetUserID() uuid.UUID {
+	return b.UserID
+}
+
 // UserEnd -
 type UserEnd struct {
 	ID     uuid.NullUUID `db:"id,omitempty" json:"id"`
