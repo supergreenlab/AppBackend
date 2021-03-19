@@ -129,6 +129,7 @@ github.com/docker/docker v1.4.2-0.20200213202729-31a86c4ab209/go.mod h1:eEKB0N0r
 github.com/docker/go-connections v0.4.0/go.mod h1:Gbd7IOopHjR8Iph03tsViu4nIes5XhDvyHbTtUxmeec=
 github.com/docker/go-units v0.3.3/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
 github.com/docker/go-units v0.4.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
+github.com/dropbox/dropbox-sdk-go-unofficial v5.4.0+incompatible h1:9jnukMIowLSo3SY7+GTwxmYJv4QC0LxXbo97zHWCyoc=
 github.com/dropbox/dropbox-sdk-go-unofficial v5.4.0+incompatible/go.mod h1:lr+LhMM3F6Y3lW1T9j2U5l7QeuWm87N9+PPXo3yH4qY=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/eapache/go-resiliency v1.1.0/go.mod h1:kFI+JgMyC7bLPUVY133qvEBtVayf5mFgVsvEsIPBvNs=
@@ -851,8 +852,14 @@ gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8
 gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/errgo.v2 v2.1.0/go.mod h1:hNsd1EY+bozCKY1Ytp96fpM3vjJbqLJn88ws8XvfDNI=
 gopkg.in/fsnotify.v1 v1.4.7/go.mod h1:Tz8NjZHkW78fSQdbUxIjBTcgA1z1m8ZHf0WmKUhAMys=
+gopkg.in/gographics/imagick.v2 v2.5.0 h1:3wOeg/IgtagJtveISUaX9A3F/L/5PxaFHkAz5AzgbgA=
 gopkg.in/gographics/imagick.v2 v2.5.0/go.mod h1:of4TbGX8yMcpgWkWFjha7FsOFr+NjOJ5O1qtKU27Yj0=
+gopkg.in/gographics/imagick.v2 v2.6.0 h1:ewRsUQk3QkjGumERlndbFn/kTYRjyMaPY5gxwpuAhik=
+gopkg.in/gographics/imagick.v2 v2.6.0/go.mod h1:/QVPLV/iKdNttRKthmDkeeGg+vdHurVEPc8zkU0XgBk=
+gopkg.in/gographics/imagick.v3 v3.2.0 h1:eUwlkCw2fa20OGu47G39Im8c50S9n/CVkh8PwtOKExA=
 gopkg.in/gographics/imagick.v3 v3.2.0/go.mod h1:HbW83cYCl1jftZi3B/VZpVqsuNi4vW7qUrghjxBiT+8=
+gopkg.in/gographics/imagick.v3 v3.3.0 h1:MI9qkquiNDmrSGnTG2241GZqOUgEfR7KQpVsVLxiylk=
+gopkg.in/gographics/imagick.v3 v3.3.0/go.mod h1:+Q9nyA2xRZXrDyTtJ/eko+8V/5E7bWYs08ndkZp8UmA=
 gopkg.in/guregu/null.v3 v3.5.0 h1:xTcasT8ETfMcUHn0zTvIYtQud/9Mx5dJqD554SZct0o=
 gopkg.in/guregu/null.v3 v3.5.0/go.mod h1:E4tX2Qe3h7QdL+uZ3a0vqvYwKQsRSQKM5V4YltdgH9Y=
 gopkg.in/inconshreveable/log15.v2 v2.0.0-20180818164646-67afb5ed74ec/go.mod h1:aPpfJ7XW+gOuirDoZ8gHhLh3kZ1B08FtV2bbmy7Jv3s=

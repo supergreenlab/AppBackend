@@ -40,6 +40,12 @@ func GetBox(boxID uuid.UUID) (Box, error) {
 	return box, err
 }
 
+func GetDevice(deviceID uuid.UUID) (Device, error) {
+	device := Device{}
+	err := GetObjectWithID(deviceID, "devices", &device)
+	return device, err
+}
+
 func GetUserEndsForUserID(userID uuid.UUID) ([]UserEnd, error) {
 	userends := []UserEnd{}
 

@@ -14,6 +14,7 @@ require (
 	github.com/denisenkom/go-mssqldb v0.0.0-20200206145737-bbfc9a55622e // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/disintegration/imaging v1.6.2
+	github.com/dropbox/dropbox-sdk-go-unofficial v5.4.0+incompatible
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
 	github.com/go-ini/ini v1.57.0 // indirect
@@ -52,6 +53,8 @@ require (
 	golang.org/x/tools v0.0.0-20200325010219-a49f79bcc224
 	google.golang.org/api v0.20.0
 	google.golang.org/genproto v0.0.0-20200324203455-a04cca1dde73 // indirect
+	gopkg.in/gographics/imagick.v2 v2.6.0
+	gopkg.in/gographics/imagick.v3 v3.3.0
 	gopkg.in/guregu/null.v3 v3.5.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	modernc.org/mathutil v1.1.0 // indirect

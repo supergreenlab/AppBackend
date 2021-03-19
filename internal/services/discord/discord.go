@@ -110,12 +110,34 @@ func listenFeedMediasAdded() {
 			resized = imaging.Resize(img, 0, 1250, imaging.Lanczos)
 		}
 
+		box, err := db.GetBox(plant.BoxID)
+		if err != nil {
+			logrus.Errorf("db.GetBox in listenFeedMediasAdded %q - plant: %+v", err, plant)
+			continue
+		}
+		var device *db.Device
+		if box.DeviceID.Valid {
+			d, err := db.GetDevice(box.DeviceID.UUID)
+			if err != nil {
+				logrus.Errorf("db.GetDevice in listenFeedMediasAdded %q - device: %+v", err, device)
+				continue
+			}
+			device = &d
+		}
+
 		buff := new(bytes.Buffer)
 		err = jpeg.Encode(buff, resized, &jpeg.Options{Quality: 80})
 		if err != nil {
 			fmt.Println("failed to create buffer", err)
 			continue
 		}
+
+		buff, err = addSGLOverlays(box, plant, device, buff)
+		if err != nil {
+			logrus.Errorf("addSGLOverlays in listenFeedMediasAdded %q - device: %+v", err, device)
+			continue
+		}
+
 		jpegimg := bytes.NewReader(buff.Bytes())
 
 		_, err = s.ChannelFileSendWithMessage(viper.GetString("DiscordPublicPostChannel"), msg, "pic.jpg", jpegimg)

@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
+	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/SuperGreenLab/AppBackend/internal/services/pubsub"
 	"github.com/gofrs/uuid"
@@ -53,6 +54,49 @@ func listenFeedEntriesAdded() {
 			continue
 		}
 		PublicDiaryEntryPosted(id, *fe, plant)
+	}
+}
+
+func listenFeedMediasAdded() {
+	ch := pubsub.SubscribeOject("insert.feedmedias")
+	for c := range ch {
+		fm := c.(middlewares.InsertMessage).Object.(*db.FeedMedia)
+		id := c.(middlewares.InsertMessage).ID
+
+		filePath := fm.FilePath
+		if filePath[len(filePath)-3:] == "mp4" {
+			filePath = fm.ThumbnailPath
+		}
+
+		expiry := time.Second * 60 * 60
+		url1, err := storage.Client.PresignedGetObject("feedmedias", filePath, expiry, nil)
+		if err != nil {
+			logrus.Errorf("minioClient.GetObject in listenFeedMediasAdded %q - id: %s fm: %+v", err, id, fm)
+			continue
+		}
+		PublicFeedMediaPosted(fmt.Sprintf("https://storage.supergreenlab.com%s", url1.RequestURI()))
+	}
+}
+
+func PublicFeedMediaPosted(imageURL string) {
+	attachment := slack.Attachment{
+		Color:         "good",
+		AuthorName:    "SuperGreenApp",
+		AuthorSubname: "supergreenlab.com/app",
+		AuthorLink:    "https://www.supergreenlab.com",
+		AuthorIcon:    "https://www.supergreenlab.com/_nuxt/img/icon_sgl_basics.709180a.png",
+		Text:          "",
+		ImageURL:      imageURL,
+		FooterIcon:    "https://www.supergreenlab.com/_nuxt/img/icon_sgl_basics.709180a.png",
+		Ts:            json.Number(strconv.FormatInt(time.Now().Unix(), 10)),
+	}
+	msg := slack.WebhookMessage{
+		Attachments: []slack.Attachment{attachment},
+	}
+
+	err := slack.PostWebhook(viper.GetString("SlackWebhook"), &msg)
+	if err != nil {
+		logrus.Errorf("slack.PostWebhook in PublicDiaryEntryPosted %q - imageURL: %s", err, imageURL)
 	}
 }
 
@@ -158,4 +202,5 @@ func init() {
 
 func Init() {
 	go listenFeedEntriesAdded()
+	go listenFeedMediasAdded()
 }
