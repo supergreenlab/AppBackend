@@ -118,7 +118,7 @@ func listenFeedMediasAdded() {
 			if err := json.Unmarshal([]byte(fe.Params), &params); err == nil {
 				paramMsg, _ := params["message"].(string)
 				if paramMsg != "" {
-					msg = fmt.Sprintf("%s\n\n*%s*\n\n", msg, paramMsg)
+					msg = fmt.Sprintf("%s\n\n*%s*", msg, paramMsg)
 				}
 			} else {
 				logrus.Errorf("json.Unmarshal in listenFeedMediasAdded %q - %+v", err, fe)
