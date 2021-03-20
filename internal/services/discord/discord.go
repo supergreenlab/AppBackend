@@ -101,7 +101,7 @@ func listenFeedMediasAdded() {
 
 				if germinationDateStr, ok := plantSettings["germinationDate"].(string); ok && germinationDateStr != "" {
 					if germinationDate, err := time.Parse(time.RFC3339, germinationDateStr); err == nil {
-						msg = fmt.Sprintf("%s\n**Germinating since**: %d days", msg, int(time.Since(germinationDate).Hours()/24))
+						msg = fmt.Sprintf("%s\n**Germinated**: %d days ago", msg, int(time.Since(germinationDate).Hours()/24))
 					}
 				}
 
