@@ -241,7 +241,8 @@ type FeedEntry struct {
 	Date   time.Time     `db:"createdat" json:"date"`
 	Type   string        `db:"etype" json:"type"`
 
-	Params string `db:"params" json:"params"`
+	Params string      `db:"params" json:"params"`
+	Meta   null.String `db:"meta,omitempty" json:"meta,omitempty"`
 
 	Deleted bool `db:"deleted" json:"deleted"`
 
