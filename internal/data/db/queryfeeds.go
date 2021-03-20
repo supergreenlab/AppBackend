@@ -19,6 +19,8 @@
 package db
 
 import (
+	"time"
+
 	"github.com/gofrs/uuid"
 )
 
@@ -26,6 +28,15 @@ func GetFeedEntry(feedEntryID uuid.UUID) (FeedEntry, error) {
 	feedEntry := FeedEntry{}
 	err := GetObjectWithID(feedEntryID, "feedentries", &feedEntry)
 	return feedEntry, err
+}
+
+func GetFeedEntriesBetweenDates(from, to time.Time) ([]FeedEntry, error) {
+	feedEntries := []FeedEntry{}
+	selector := Sess.Select("*").From("feedentries").Where("cat >= ?", from).And("cat <= ?", to)
+	if err := selector.All(&feedEntries); err != nil {
+		return feedEntries, err
+	}
+	return feedEntries, nil
 }
 
 func GetComment(commentID uuid.UUID) (Comment, error) {
@@ -40,10 +51,28 @@ func GetBox(boxID uuid.UUID) (Box, error) {
 	return box, err
 }
 
+func GetBoxFromPlantFeed(feedID uuid.UUID) (Box, error) {
+	box := Box{}
+	selector := Sess.Select("boxes.*").From("boxes").Join("plants").On("plants.boxid = boxes.id").Where("plants.feedid = ?", feedID)
+	if err := selector.One(&box); err != nil {
+		return box, err
+	}
+	return box, nil
+}
+
 func GetDevice(deviceID uuid.UUID) (Device, error) {
 	device := Device{}
 	err := GetObjectWithID(deviceID, "devices", &device)
 	return device, err
+}
+
+func GetDeviceFromPlantFeed(feedID uuid.UUID) (Device, error) {
+	device := Device{}
+	selector := Sess.Select("device.*").From("devices").Join("boxes").On("boxes.deviceid = devices.id").Join("plants").On("plants.boxid = boxes.id").Where("plants.feedid = ?", feedID)
+	if err := selector.One(&selector); err != nil {
+		return device, err
+	}
+	return device, nil
 }
 
 func GetUserEndsForUserID(userID uuid.UUID) ([]UserEnd, error) {
