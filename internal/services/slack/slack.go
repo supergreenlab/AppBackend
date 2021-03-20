@@ -63,6 +63,15 @@ func listenFeedMediasAdded() {
 		fm := c.(middlewares.InsertMessage).Object.(*db.FeedMedia)
 		id := c.(middlewares.InsertMessage).ID
 
+		plant, err := db.GetPlantForFeedEntryID(fm.FeedEntryID)
+		if err != nil {
+			logrus.Errorf("db.GetPlantForFeedEntryID in (slack)listenFeedMediasAdded %q - id: %s fm: %+v", err, id, fm)
+			continue
+		}
+		if !plant.Public {
+			continue
+		}
+
 		filePath := fm.FilePath
 		if filePath[len(filePath)-3:] == "mp4" {
 			filePath = fm.ThumbnailPath
@@ -71,7 +80,7 @@ func listenFeedMediasAdded() {
 		expiry := time.Second * 60 * 60
 		url1, err := storage.Client.PresignedGetObject("feedmedias", filePath, expiry, nil)
 		if err != nil {
-			logrus.Errorf("minioClient.GetObject in listenFeedMediasAdded %q - id: %s fm: %+v", err, id, fm)
+			logrus.Errorf("minioClient.GetObject in (slack)listenFeedMediasAdded %q - id: %s fm: %+v", err, id, fm)
 			continue
 		}
 		PublicFeedMediaPosted(fmt.Sprintf("https://storage.supergreenlab.com%s", url1.RequestURI()))
