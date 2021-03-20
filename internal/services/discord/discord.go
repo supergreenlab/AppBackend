@@ -25,6 +25,7 @@ import (
 	"image"
 	"image/jpeg"
 	"log"
+	"time"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
@@ -83,18 +84,47 @@ func listenFeedMediasAdded() {
 			continue
 		}
 
-		params := map[string]interface{}{}
-		if err := json.Unmarshal([]byte(fe.Params), &params); err != nil {
-			logrus.Errorf("json.Unmarshal in listenFeedMediasAdded %q - %+v", err, fe)
-		}
 		msg := ""
 		if sentEntries[fe.ID.UUID] == false {
-			paramMsg, _ := params["message"].(string)
 			msg = fmt.Sprintf("**New diary entry for the Plant \"%s\"**", plant.Name)
-			if paramMsg != "" {
-				msg = fmt.Sprintf("%s\n\n*%s*\n\n", msg, paramMsg)
+			plantSettings := map[string]interface{}{}
+			if err := json.Unmarshal([]byte(plant.Settings), &plantSettings); err == nil {
+				if strain, ok := plantSettings["strain"].(string); ok && strain != "" {
+					msg = fmt.Sprintf("%s\nStrain: **%s**", msg, strain)
+					if seedBank, ok := plantSettings["seedBank"].(string); ok && seedBank != "" {
+						msg = fmt.Sprintf("%s from **%s**", msg, seedBank)
+					}
+					if plantType, ok := plantSettings["plantType"].(string); ok && plantType != "" {
+						msg = fmt.Sprintf("%s (%s)", msg, plantType)
+					}
+				}
+
+				if germinationDateStr, ok := plantSettings["germinationDate"].(string); ok && germinationDateStr != "" {
+					if germinationDate, err := time.Parse(time.RFC3339, germinationDateStr); err == nil {
+						msg = fmt.Sprintf("%s\n**Germinating since**: %d days", msg, int(time.Since(germinationDate).Hours()/24))
+					}
+				}
+
+				if bloomingDateStr, ok := plantSettings["bloomingStart"].(string); ok && bloomingDateStr != "" {
+					if bloomingDate, err := time.Parse(time.RFC3339, bloomingDateStr); err == nil {
+						msg = fmt.Sprintf("%s\n**Blooming since**: %d days", msg, int(time.Since(bloomingDate).Hours()/24))
+					}
+				}
+			} else {
+				logrus.Errorf("json.Unmarshal in listenFeedMediasAdded %q - %+v", err, plant)
 			}
-			msg = fmt.Sprintf("%s\nCheck it out here: <https://supergreenlab.com/public/plant?id=%s&feid=%s>", msg, plant.ID.UUID, fe.ID.UUID)
+
+			params := map[string]interface{}{}
+			if err := json.Unmarshal([]byte(fe.Params), &params); err == nil {
+				paramMsg, _ := params["message"].(string)
+				if paramMsg != "" {
+					msg = fmt.Sprintf("%s\n\n*%s*\n\n", msg, paramMsg)
+				}
+			} else {
+				logrus.Errorf("json.Unmarshal in listenFeedMediasAdded %q - %+v", err, fe)
+			}
+
+			msg = fmt.Sprintf("%s\n\n_Drop a comment/like here: <https://supergreenlab.com/public/plant?id=%s&feid=%s>_ 💚", msg, plant.ID.UUID, fe.ID.UUID)
 		}
 		sentEntries[fe.ID.UUID] = true
 
