@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
+	"github.com/SuperGreenLab/AppBackend/internal/data/kv"
 	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/SuperGreenLab/AppBackend/internal/services/pubsub"
@@ -155,10 +156,17 @@ func listenFeedMediasAdded() {
 			device = &d
 		}
 
+		if sht21Present, err := kv.GetSHT21PresentForBox(device.Identifier, int(*box.DeviceBox)); !sht21Present || err != nil {
+			if err != nil {
+				logrus.Errorf("getSensorPresentForBox in listenFeedMediasAdded %q - device: %+v box: %+v", err, device, box)
+			}
+			device = nil
+		}
+
 		buff := new(bytes.Buffer)
 		err = jpeg.Encode(buff, resized, &jpeg.Options{Quality: 80})
 		if err != nil {
-			fmt.Println("failed to create buffer", err)
+			logrus.Errorf("jpeg.Encode in listenFeedMediasAdded %q - fm: %+v", err, fm)
 			continue
 		}
 
