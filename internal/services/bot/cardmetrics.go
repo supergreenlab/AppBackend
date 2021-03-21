@@ -33,7 +33,7 @@ import (
 )
 
 func loadTimeSeries(device db.Device, from, to int64, module, metric string, i int) (prometheus.TimeSeries, error) {
-	rr, err := prometheus.QueryProm(fmt.Sprintf("g_%s{id=\"%s\"}", fmt.Sprintf("%s_%d_%s", module, i, metric), device.Identifier), from, to, 40)
+	rr, err := prometheus.QueryProm(fmt.Sprintf("g_%s{id=\"%s\"}", fmt.Sprintf("%s_%d_%s", module, i, metric), device.Identifier), from, to, 50)
 
 	if err != nil {
 		logrus.Errorf("prometheus.QueryProm in loadTimeSeries %q - device: %+v from: %d to: %d module: %s metric: %s i: %d", err, device, from, to, module, metric, i)
@@ -61,16 +61,19 @@ func cardMetricsProcess() {
 			box, err := db.GetBoxFromPlantFeed(fe.FeedID)
 			if err != nil {
 				logrus.Errorf("db.GetBoxFromPlantFeed in cardMetricsProcess %q - fe: %+v", err, fe)
+				time.Sleep(1 * time.Second)
 				continue
 			}
 
 			if !box.DeviceID.Valid {
+				time.Sleep(1 * time.Second)
 				continue
 			}
 
 			device, err := db.GetDeviceFromPlantFeed(fe.FeedID)
 			if err != nil {
-				logrus.Errorf("db.GetDeviceFromFeed in cardMetricsProcess %q - fe: %+v", err, fe)
+				logrus.Errorf("db.GetDeviceFromPlantFeed in cardMetricsProcess %q - fe: %+v", err, fe)
+				time.Sleep(1 * time.Second)
 				continue
 			}
 
@@ -78,6 +81,7 @@ func cardMetricsProcess() {
 				if err != nil {
 					logrus.Errorf("getSensorPresentForBox in cardMetricsProcess %q - box: %+v device: %+v", err, box, device)
 				}
+				time.Sleep(1 * time.Second)
 				continue
 			}
 
@@ -107,7 +111,7 @@ func cardMetricsProcess() {
 					}
 					continue
 				}
-				if dimming, err := loadTimeSeries(device, from, to, "LIGHT", "DIM", i); err == nil {
+				if dimming, err := loadTimeSeries(device, from, to, "LED", "DIM", i); err == nil {
 					dimmings = append(dimmings, dimming)
 				}
 			}
@@ -119,8 +123,13 @@ func cardMetricsProcess() {
 			j, err := json.Marshal(meta)
 			if err != nil {
 				logrus.Errorf("json.Marshal in cardMetricsProcess %q - box: %+v device: %+v", err, box, device)
+				time.Sleep(1 * time.Second)
+				continue
 			}
 			logrus.Infof("%s", string(j))
+			if err := db.SetFeedEntryMeta(fe.ID.UUID, string(j)); err != nil {
+				logrus.Errorf("db.SetFeedEntryMeta in cardMetricsProcess %q - fe: %+v j: %s", err, fe, string(j))
+			}
 
 			time.Sleep(1 * time.Second)
 		}

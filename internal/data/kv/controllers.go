@@ -100,7 +100,7 @@ func GetTimerPower(controllerID string, box int) (float64, error) {
 }
 
 func GetLedBox(controllerID string, led int) (int, error) {
-	key := fmt.Sprintf("%s.KV.LED_%d_DIM", controllerID, led)
+	key := fmt.Sprintf("%s.KV.LED_%d_BOX", controllerID, led)
 	n, err := r.Get(key).Int()
 	return n, err
 }

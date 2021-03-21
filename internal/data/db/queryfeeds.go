@@ -39,6 +39,13 @@ func GetFeedEntriesBetweenDates(from, to time.Time) ([]FeedEntry, error) {
 	return feedEntries, nil
 }
 
+func SetFeedEntryMeta(feedEntryID uuid.UUID, meta string) error {
+	if _, err := Sess.Update("feedentries").Set("meta", meta).Where("id = ?", feedEntryID).Exec(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func GetComment(commentID uuid.UUID) (Comment, error) {
 	comment := Comment{}
 	err := GetObjectWithID(commentID, "comments", &comment)
@@ -68,8 +75,8 @@ func GetDevice(deviceID uuid.UUID) (Device, error) {
 
 func GetDeviceFromPlantFeed(feedID uuid.UUID) (Device, error) {
 	device := Device{}
-	selector := Sess.Select("device.*").From("devices").Join("boxes").On("boxes.deviceid = devices.id").Join("plants").On("plants.boxid = boxes.id").Where("plants.feedid = ?", feedID)
-	if err := selector.One(&selector); err != nil {
+	selector := Sess.Select("devices.*").From("devices").Join("boxes").On("boxes.deviceid = devices.id").Join("plants").On("plants.boxid = boxes.id").Where("plants.feedid = ?", feedID)
+	if err := selector.One(&device); err != nil {
 		return device, err
 	}
 	return device, nil
