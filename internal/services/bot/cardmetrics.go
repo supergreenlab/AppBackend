@@ -53,7 +53,7 @@ func cardMetricsProcess() {
 				logrus.Errorf("db.GetDeviceFromFeed in cardMetricsProcess %q - fe: %+v", err, fe)
 				continue
 			}
-			rr, err := prometheus.QueryProm(fmt.Sprintf("g_%s{id=\"%s\"}", fmt.Sprintf("BOX_%d_TEMP", box.DeviceBox), device.Identifier), t.Add(-18*time.Hour).Unix(), t.Add(18*time.Hour).Unix(), 40)
+			rr, err := prometheus.QueryProm(fmt.Sprintf("g_%s{id=\"%s\"}", fmt.Sprintf("BOX_%d_TEMP", *box.DeviceBox), device.Identifier), t.Add(-18*time.Hour).Unix(), t.Add(18*time.Hour).Unix(), 40)
 
 			if err != nil {
 				logrus.Errorf("prometheus query failed: %s\n", err)
