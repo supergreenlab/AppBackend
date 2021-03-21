@@ -21,7 +21,7 @@ package metrics
 import "github.com/SuperGreenLab/AppBackend/internal/data/prometheus"
 
 type servedResult struct {
-	Metrics [][]float64 `json:"metrics"`
+	Metrics prometheus.TimeSeries `json:"metrics"`
 }
 
 func newServedResult(rr prometheus.RangeResult, min, max float64) servedResult {

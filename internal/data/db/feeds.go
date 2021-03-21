@@ -21,6 +21,7 @@ package db
 import (
 	"time"
 
+	"github.com/SuperGreenLab/AppBackend/internal/data/prometheus"
 	"github.com/gofrs/uuid"
 	"gopkg.in/guregu/null.v3"
 )
@@ -273,6 +274,15 @@ func (os FeedEntries) Each(fn func(Object)) {
 	for _, o := range os {
 		fn(o)
 	}
+}
+
+type FeedEntryMeta struct {
+	Temperature prometheus.TimeSeries   `json:"temperature,omitempty"`
+	Humidity    prometheus.TimeSeries   `json:"humidity,omitempty"`
+	VPD         prometheus.TimeSeries   `json:"vpd,omitempty"`
+	Timer       prometheus.TimeSeries   `json:"timer,omitempty"`
+	Dimming     []prometheus.TimeSeries `json:"dimming,omitempty"`
+	Ventilation prometheus.TimeSeries   `json:"ventilation,omitempty"`
 }
 
 // FeedMedia -

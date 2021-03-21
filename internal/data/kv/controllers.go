@@ -99,6 +99,12 @@ func GetTimerPower(controllerID string, box int) (float64, error) {
 	return GetNum(key, 0)
 }
 
+func GetLedBox(controllerID string, led int) (int, error) {
+	key := fmt.Sprintf("%s.KV.LED_%d_DIM", controllerID, led)
+	n, err := r.Get(key).Int()
+	return n, err
+}
+
 type GetAlertStatusFunc func(controllerID string, box int) (bool, error)
 
 func GetTemperatureAlertStatus(controllerID string, box int) (bool, error) {

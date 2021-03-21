@@ -20,8 +20,10 @@ type RangeResult struct {
 	} `json:"data"`
 }
 
+type TimeSeries [][]float64
+
 // ToFloat64 returns the RangeResult as an array of [timestamp, value]
-func (r RangeResult) ToFloat64(min, max float64) [][]float64 {
+func (r RangeResult) ToFloat64(min, max float64) TimeSeries {
 	res := [][]float64{}
 	if len(r.Data.Result) < 1 {
 		return res
