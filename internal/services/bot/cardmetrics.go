@@ -33,7 +33,7 @@ import (
 )
 
 func loadTimeSeries(device db.Device, from, to int64, module, metric string, i int) (prometheus.TimeSeries, error) {
-	rr, err := prometheus.QueryProm(fmt.Sprintf("g_%s{id=\"%s\"}", fmt.Sprintf("%d_%d_%s", module, i, metric), device.Identifier), from, to, 40)
+	rr, err := prometheus.QueryProm(fmt.Sprintf("g_%s{id=\"%s\"}", fmt.Sprintf("%s_%d_%s", module, i, metric), device.Identifier), from, to, 40)
 
 	if err != nil {
 		logrus.Errorf("prometheus.QueryProm in loadTimeSeries %q - device: %+v from: %d to: %d module: %s metric: %s i: %d", err, device, from, to, module, metric, i)
