@@ -86,8 +86,8 @@ func cardMetricsProcess() {
 			}
 
 			meta := db.FeedEntryMeta{}
-			from := t.Add(-18 * time.Hour).Unix()
-			to := t.Add(18 * time.Hour).Unix()
+			from := t.Add(-36 * time.Hour).Unix()
+			to := t.Add(36 * time.Hour).Unix()
 			if temp, err := loadTimeSeries(device, from, to, "BOX", "TEMP", int(*box.DeviceBox)); err == nil {
 				meta.Temperature = temp
 			}
