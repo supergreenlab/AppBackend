@@ -354,6 +354,41 @@ var createBookmarkHandler = middlewares.InsertEndpoint(
 	nil,
 )
 
+func deleteFollowIfExists(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+		uid := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
+		f := r.Context().Value(middlewares.ObjectContextKey{}).(*db.Follow)
+
+		var follow db.Follow
+		err := sess.Collection("follows").Find().Where("userid = ?", uid).And("plantid = ?", f.PlantID).One(&follow)
+		if err == nil {
+			err := sess.Collection("follows").Find().Where("id = ?", follow.ID).Delete()
+			if err != nil {
+				logrus.Errorf("sess.Collection('follows') in deleteFollowIfExists %q %+v", err, follow)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			ctx := context.WithValue(r.Context(), middlewares.ObjectContextKey{}, follow)
+			ctx = context.WithValue(ctx, middlewares.InsertedIDContextKey{}, follow.ID.UUID)
+			middlewares.OutputObjectID(w, r.WithContext(ctx), p)
+		} else {
+			logrus.Infof("sess.Collection('follows') in deleteFollowIfExists %q", err)
+			fn(w, r, p)
+		}
+	}
+}
+
+var createFollowHandler = middlewares.InsertEndpoint(
+	"follows",
+	func() interface{} { return &db.Follow{} },
+	[]middleware.Middleware{
+		deleteFollowIfExists,
+		middlewares.SetUserID,
+	},
+	nil,
+)
+
 var createLinkBookmarkHandler = middlewares.InsertEndpoint(
 	"linkbookmarks",
 	func() interface{} { return &db.LinkBookmark{} },

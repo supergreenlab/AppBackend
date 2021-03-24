@@ -475,6 +475,32 @@ func (b LinkBookmark) GetUserID() uuid.UUID {
 	return b.UserID
 }
 
+// Follow -
+type Follow struct {
+	ID uuid.NullUUID `db:"id,omitempty" json:"id"`
+
+	UserID  uuid.UUID     `db:"userid" json:"userID"`
+	PlantID uuid.NullUUID `db:"plantid" json:"plantID"`
+
+	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
+	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
+}
+
+// GetID -
+func (f Follow) GetID() uuid.NullUUID {
+	return f.ID
+}
+
+// SetUserID -
+func (f *Follow) SetUserID(userID uuid.UUID) {
+	f.UserID = userID
+}
+
+// GetUserID -
+func (f Follow) GetUserID() uuid.UUID {
+	return f.UserID
+}
+
 // UserEnd -
 type UserEnd struct {
 	ID     uuid.NullUUID `db:"id,omitempty" json:"id"`
