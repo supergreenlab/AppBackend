@@ -38,12 +38,12 @@ import (
 
 func loadLastFeedMediaForPlant(sess sqlbuilder.Database, p sgldb.Plant) (sgldb.FeedMedia, error) {
 	var err error
-	selector := sess.Select("fm.*")
-	selector = selector.From("feedmedias fm")
-	selector = selector.Join("feedentries fe").On("fm.feedentryid = fe.id and fe.deleted = ?", false)
-	selector = selector.Join("plants p").On("fe.feedid = p.feedid")
-	selector = selector.Where("p.id = ?", p.ID).And("fm.deleted = ?", false)
-	selector = selector.OrderBy("fm.cat desc").Limit(1)
+	selector := sess.Select("fm.*").
+		From("feedmedias fm").
+		Join("feedentries fe").On("fm.feedentryid = fe.id and fe.deleted = ?", false).
+		Join("plants p").On("fe.feedid = p.feedid").
+		Where("p.id = ?", p.ID).And("fm.deleted = ?", false).
+		OrderBy("fm.cat desc").Limit(1)
 	fm := sgldb.FeedMedia{}
 	if err = selector.One(&fm); err != nil {
 		return fm, err
@@ -89,12 +89,18 @@ func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Para
 	}
 
 	// TODO do something better
-	lastFeedEntryQuery := "(select feedentries.cat from feedentries where feedentries.feedid = plants.feedid and feedentries.deleted = false and feedentries.etype in ('FE_MEDIA','FE_BENDING','FE_DEFOLATION','FE_TRANSPLANT','FE_FIMMING','FE_TOPPING','FE_MEASURE') order by cat desc limit 1)"
+	lastFeedEntrySelector := sess.Select("feedentries.cat").
+		From("feedentries").
+		Where("feedentries.feedid = plants.feedid").
+		And("feedentries.deleted = false").
+		And("feedentries.etype in ?", []string{"FE_MEDIA", "FE_BENDING", "FE_DEFOLATION", "FE_TRANSPLANT", "FE_FIMMING", "FE_TOPPING", "FE_MEASURE"}).
+		OrderBy("cat desc").Limit(1)
+	//"(select feedentries.cat from feedentries where feedentries.feedid = plants.feedid and feedentries.deleted = false and feedentries.etype in ('FE_MEDIA','FE_BENDING','FE_DEFOLATION','FE_TRANSPLANT','FE_FIMMING','FE_TOPPING','FE_MEASURE') order by cat desc limit 1)"
 	plants := []sgldb.Plant{}
-	selector := sess.Select("plants.*", db.Raw(fmt.Sprintf("%s as lastfe", lastFeedEntryQuery)))
-	selector = selector.From("plants")
-	selector = selector.Where("is_public = ?", true).And("plants.deleted = ?", false).And(fmt.Sprintf("exists %s", lastFeedEntryQuery))
-	selector = selector.OrderBy("lastfe desc").Offset(offset).Limit(limit)
+	selector := sess.Select("plants.*", db.Raw(fmt.Sprintf("(%s) as lastfe", lastFeedEntrySelector.String()))).
+		From("plants").
+		Where("is_public = ?", true).And("plants.deleted = ?", false).And(fmt.Sprintf("exists (%s)", lastFeedEntrySelector.String())).
+		OrderBy("lastfe desc").Offset(offset).Limit(limit)
 	if err := selector.All(&plants); err != nil {
 		logrus.Errorf("selector.All in fetchPublicPlants %q", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -104,8 +110,6 @@ func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Para
 	for _, plant := range plants {
 		fm, err := loadLastFeedMediaForPlant(sess, plant)
 		if err != nil {
-			/*results = append(results, publicListingPlantResult{ID: plant.ID.UUID.String(), Name: plant.Name})
-			logrus.Warningf("loadLastFeedMediaForPlant in fetchPublicPlants %q - plant: %+v", err, plant)*/
 			continue
 		}
 
@@ -195,15 +199,15 @@ func fetchPublicFeedEntries(w http.ResponseWriter, r *http.Request, p httprouter
 	feedEntries := []publicFeedEntry{}
 	selector := sess.Select("fe.*").From("feedentries fe")
 	if userIDExists {
-		selector = selector.Columns(udb.Raw("exists(select * from likes l where l.userid = ? and l.feedentryid = fe.id) as liked", uid))
-		selector = selector.Columns(udb.Raw("exists(select * from bookmarks b where b.userid = ? and b.feedentryid = fe.id) as bookmarked", uid))
+		selector = selector.Columns(udb.Raw("exists(select * from likes l where l.userid = ? and l.feedentryid = fe.id) as liked", uid)).
+			Columns(udb.Raw("exists(select * from bookmarks b where b.userid = ? and b.feedentryid = fe.id) as bookmarked", uid))
 	}
-	selector = selector.Columns(udb.Raw("(select count(*) from likes l where l.feedentryid = fe.id) as nlikes"))
-	selector = selector.Columns(udb.Raw("(select count(*) from comments c where c.feedentryid = fe.id) as ncomments"))
-	selector = selector.Join("feeds f").On("fe.feedid = f.id")
-	selector = selector.Join("plants p").On("p.feedid = f.id")
-	selector = selector.Where("p.is_public = ?", true).And("p.id = ?", p.ByName("id")).And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')").And("fe.deleted = ?", false).And("p.deleted = ?", false)
-	selector = selector.OrderBy("fe.createdat DESC").Offset(offset).Limit(limit)
+	selector = selector.Columns(udb.Raw("(select count(*) from likes l where l.feedentryid = fe.id) as nlikes")).
+		Columns(udb.Raw("(select count(*) from comments c where c.feedentryid = fe.id) as ncomments")).
+		Join("feeds f").On("fe.feedid = f.id").
+		Join("plants p").On("p.feedid = f.id").
+		Where("p.is_public = ?", true).And("p.id = ?", p.ByName("id")).And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')").And("fe.deleted = ?", false).And("p.deleted = ?", false).
+		OrderBy("fe.createdat DESC").Offset(offset).Limit(limit)
 	if err := selector.All(&feedEntries); err != nil {
 		logrus.Errorf("selector.All in fetchPublicFeedEntries %q - limit: %d offset: %d id: %s", err, limit, offset, p.ByName("id"))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -228,14 +232,14 @@ func fetchPublicFeedEntry(w http.ResponseWriter, r *http.Request, p httprouter.P
 	feedEntry := publicFeedEntry{}
 	selector := sess.Select("fe.*").From("feedentries fe")
 	if userIDExists {
-		selector = selector.Columns(udb.Raw("exists(select * from likes l where l.userid = ? and l.feedentryid = fe.id) as liked", uid))
-		selector = selector.Columns(udb.Raw("exists(select * from bookmarks b where b.userid = ? and b.feedentryid = fe.id) as bookmarked", uid))
+		selector = selector.Columns(udb.Raw("exists(select * from likes l where l.userid = ? and l.feedentryid = fe.id) as liked", uid)).
+			Columns(udb.Raw("exists(select * from bookmarks b where b.userid = ? and b.feedentryid = fe.id) as bookmarked", uid))
 	}
-	selector = selector.Columns(udb.Raw("(select count(*) from likes l where l.feedentryid = fe.id) as nlikes"))
-	selector = selector.Columns(udb.Raw("(select count(*) from comments c where c.feedentryid = fe.id) as ncomments"))
-	selector = selector.Join("feeds f").On("fe.feedid = f.id")
-	selector = selector.Join("plants p").On("p.feedid = f.id")
-	selector = selector.Where("p.is_public = ?", true).And("fe.id = ?", p.ByName("id")).And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')").And("fe.deleted = ?", false).And("p.deleted = ?", false)
+	selector = selector.Columns(udb.Raw("(select count(*) from likes l where l.feedentryid = fe.id) as nlikes")).
+		Columns(udb.Raw("(select count(*) from comments c where c.feedentryid = fe.id) as ncomments")).
+		Join("feeds f").On("fe.feedid = f.id").
+		Join("plants p").On("p.feedid = f.id").
+		Where("p.is_public = ?", true).And("fe.id = ?", p.ByName("id")).And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')").And("fe.deleted = ?", false).And("p.deleted = ?", false)
 	if err := selector.One(&feedEntry); err != nil {
 		logrus.Errorf("selector.One in fetchPublicFeedEntry %q - id: %s", err, p.ByName("id"))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -257,11 +261,11 @@ func fetchPublicFeedMedias(w http.ResponseWriter, r *http.Request, p httprouter.
 	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
 
 	feedMedias := []sgldb.FeedMedia{}
-	selector := sess.Select("fm.*").From("feedmedias fm")
-	selector = selector.Join("feedentries fe").On("fm.feedentryid = fe.id")
-	selector = selector.Join("feeds f").On("fe.feedid = f.id")
-	selector = selector.Join("plants p").On("p.feedid = f.id")
-	selector = selector.Where("p.is_public = ?", true).And("fe.id = ?", p.ByName("id")).And("fm.deleted = ?", false)
+	selector := sess.Select("fm.*").From("feedmedias fm").
+		Join("feedentries fe").On("fm.feedentryid = fe.id").
+		Join("feeds f").On("fe.feedid = f.id").
+		Join("plants p").On("p.feedid = f.id").
+		Where("p.is_public = ?", true).And("fe.id = ?", p.ByName("id")).And("fm.deleted = ?", false)
 	if err := selector.All(&feedMedias); err != nil {
 		logrus.Errorf("selector.All in fetchPublicFeedMedias %q - id: %s", err, p.ByName("id"))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -291,11 +295,11 @@ func fetchPublicFeedMedia(w http.ResponseWriter, r *http.Request, p httprouter.P
 	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
 
 	feedMedia := sgldb.FeedMedia{}
-	selector := sess.Select("fm.*").From("feedmedias fm")
-	selector = selector.Join("feedentries fe").On("fm.feedentryid = fe.id")
-	selector = selector.Join("feeds f").On("fe.feedid = f.id")
-	selector = selector.Join("plants p").On("p.feedid = f.id")
-	selector = selector.Where("p.is_public = ?", true).And("fm.id = ?", p.ByName("id")).And("fm.deleted = ?", false)
+	selector := sess.Select("fm.*").From("feedmedias fm").
+		Join("feedentries fe").On("fm.feedentryid = fe.id").
+		Join("feeds f").On("fe.feedid = f.id").
+		Join("plants p").On("p.feedid = f.id").
+		Where("p.is_public = ?", true).And("fm.id = ?", p.ByName("id")).And("fm.deleted = ?", false)
 	if err := selector.One(&feedMedia); err != nil {
 		logrus.Errorf("selector.One in fetchPublicFeedMedia %q - id: %s", err, p.ByName("id"))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
