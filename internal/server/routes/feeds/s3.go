@@ -21,22 +21,28 @@ package feeds
 import (
 	"time"
 
-	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
 )
 
-func loadFeedMediaPublicURLs(fm db.FeedMedia) (db.FeedMedia, error) {
-	expiry := time.Second * 60 * 60
-	url1, err := storage.Client.PresignedGetObject("feedmedias", fm.FilePath, expiry, nil)
-	if err != nil {
-		return fm, err
-	}
-	fm.FilePath = url1.RequestURI()
+type FeedMediasURL interface {
+	SetURLs(filePath string, thumbnailPath string)
+	GetURLs() (filePath string, thumbnailPath string)
+}
 
-	url2, err := storage.Client.PresignedGetObject("feedmedias", fm.ThumbnailPath, expiry, nil)
+func loadFeedMediaPublicURLs(fm FeedMediasURL) error {
+	filePath, thumbnailPath := fm.GetURLs()
+	expiry := time.Second * 60 * 60
+	url1, err := storage.Client.PresignedGetObject("feedmedias", filePath, expiry, nil)
 	if err != nil {
-		return fm, err
+		return err
 	}
-	fm.ThumbnailPath = url2.RequestURI()
-	return fm, nil
+	filePath = url1.RequestURI()
+
+	url2, err := storage.Client.PresignedGetObject("feedmedias", thumbnailPath, expiry, nil)
+	if err != nil {
+		return err
+	}
+	thumbnailPath = url2.RequestURI()
+	fm.SetURLs(filePath, thumbnailPath)
+	return nil
 }

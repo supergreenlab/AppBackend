@@ -115,7 +115,7 @@ var syncFeedMediasHandler = syncCollection("feedmedias", "feedmediaid", func() i
 			feedMedias := r.Context().Value(middlewares.ObjectContextKey{}).(*[]FeedMediaWithArchived)
 			for i, fm := range *feedMedias {
 				if fm.Deleted == false && fm.PlantArchived.Bool == false && fm.BoxArchived.Bool == false {
-					fm.FeedMedia, err = loadFeedMediaPublicURLs(fm.FeedMedia)
+					err = loadFeedMediaPublicURLs(&fm.FeedMedia)
 					if err != nil {
 						logrus.Errorf("loadFeedMediaPublicURLs in syncFeedMediasHandler %q - fm: %+v", err, fm)
 						http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -124,6 +124,7 @@ var syncFeedMediasHandler = syncCollection("feedmedias", "feedmediaid", func() i
 				} else {
 					logrus.Infof("Skipped %+v", fm)
 				}
+				// might not be useful anymore
 				(*feedMedias)[i] = fm
 			}
 			ctx := context.WithValue(r.Context(), middlewares.ObjectContextKey{}, feedMedias)

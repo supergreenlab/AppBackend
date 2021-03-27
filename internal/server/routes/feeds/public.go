@@ -23,13 +23,14 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	sgldb "github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
-	db "upper.io/db.v3"
+	"upper.io/db.v3"
 	udb "upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
@@ -48,7 +49,7 @@ func loadLastFeedMediaForPlant(sess sqlbuilder.Database, p sgldb.Plant) (sgldb.F
 	if err = selector.One(&fm); err != nil {
 		return fm, err
 	}
-	fm, err = loadFeedMediaPublicURLs(fm)
+	err = loadFeedMediaPublicURLs(&fm)
 	if err != nil {
 		return fm, err
 	}
@@ -56,10 +57,20 @@ func loadLastFeedMediaForPlant(sess sqlbuilder.Database, p sgldb.Plant) (sgldb.F
 }
 
 type publicListingPlantResult struct {
-	ID            string `json:"id"`
-	Name          string `json:"name"`
-	FilePath      string `json:"filePath"`
-	ThumbnailPath string `json:"thumbnailPath"`
+	ID            string `db:"id" json:"id"`
+	Name          string `db:"name" json:"name"`
+	FilePath      string `db:"filepath" json:"filePath"`
+	ThumbnailPath string `db:"thumbnailpath" json:"thumbnailPath"`
+}
+
+func (r *publicListingPlantResult) SetURLs(filePath string, thumbnailPath string) {
+	r.FilePath = filePath
+	r.ThumbnailPath = thumbnailPath
+}
+
+func (r publicListingPlantResult) GetURLs() (filePath string, thumbnailPath string) {
+	filePath, thumbnailPath = r.FilePath, r.ThumbnailPath
+	return
 }
 
 type publicPlantsResult struct {
@@ -88,33 +99,37 @@ func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Para
 		limit = 50
 	}
 
-	// TODO do something better
-	lastFeedEntrySelector := sess.Select("feedentries.cat").
+	lastFeedEntrySelector := sess.Select("feedid", udb.Raw("max(cat) as cat")).
 		From("feedentries").
-		Where("feedentries.feedid = plants.feedid").
-		And("feedentries.deleted = false").
-		And("feedentries.etype in ?", []string{"FE_MEDIA", "FE_BENDING", "FE_DEFOLATION", "FE_TRANSPLANT", "FE_FIMMING", "FE_TOPPING", "FE_MEASURE"}).
-		OrderBy("cat desc").Limit(1)
-	//"(select feedentries.cat from feedentries where feedentries.feedid = plants.feedid and feedentries.deleted = false and feedentries.etype in ('FE_MEDIA','FE_BENDING','FE_DEFOLATION','FE_TRANSPLANT','FE_FIMMING','FE_TOPPING','FE_MEASURE') order by cat desc limit 1)"
-	plants := []sgldb.Plant{}
-	selector := sess.Select("plants.*", db.Raw(fmt.Sprintf("(%s) as lastfe", lastFeedEntrySelector.String()))).
+		Where("deleted = false").
+		And(fmt.Sprintf("etype in ('%s')", strings.Join([]string{"FE_MEDIA", "FE_BENDING", "FE_DEFOLATION", "FE_TRANSPLANT", "FE_FIMMING", "FE_TOPPING", "FE_MEASURE"}, "', '"))).
+		GroupBy("feedid")
+	selector := sess.Select("plants.id", "plants.name", "feedmedias.filepath", "feedmedias.thumbnailpath").
 		From("plants").
-		Where("is_public = ?", true).And("plants.deleted = ?", false).And(fmt.Sprintf("exists (%s)", lastFeedEntrySelector.String())).
-		OrderBy("lastfe desc").Offset(offset).Limit(limit)
-	if err := selector.All(&plants); err != nil {
+		Join(db.Raw(fmt.Sprintf("(%s) latest", lastFeedEntrySelector.String()))).Using("feedid").
+		Join("feedentries").On("feedentries.cat = latest.cat").And("feedentries.feedid = plants.feedid").
+		Join("feedmedias").On("feedmedias.feedentryid = feedentries.id").
+		Where("plants.is_public = ?", true).
+		And("plants.deleted = ?", false).
+		OrderBy("latest.cat desc").
+		Offset(offset).Limit(limit)
+
+	results := []publicListingPlantResult{}
+	if err := selector.All(&results); err != nil {
 		logrus.Errorf("selector.All in fetchPublicPlants %q", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	results := make([]publicListingPlantResult, 0, len(plants))
-	for _, plant := range plants {
-		fm, err := loadLastFeedMediaForPlant(sess, plant)
+
+	for i, p := range results {
+		err = loadFeedMediaPublicURLs(&p)
 		if err != nil {
+			logrus.Errorf("loadFeedMediaPublicURLs in fetchPublicPlants %q - p: %+v", err, p)
 			continue
 		}
-
-		results = append(results, publicListingPlantResult{plant.ID.UUID.String(), plant.Name, fm.FilePath, fm.ThumbnailPath})
+		results[i] = p
 	}
+
 	if err := json.NewEncoder(w).Encode(publicPlantsResult{results}); err != nil {
 		logrus.Errorf("json.NewEncoder in fetchPublicPlants %q - results: %+v", err, results)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -206,7 +221,11 @@ func fetchPublicFeedEntries(w http.ResponseWriter, r *http.Request, p httprouter
 		Columns(udb.Raw("(select count(*) from comments c where c.feedentryid = fe.id) as ncomments")).
 		Join("feeds f").On("fe.feedid = f.id").
 		Join("plants p").On("p.feedid = f.id").
-		Where("p.is_public = ?", true).And("p.id = ?", p.ByName("id")).And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')").And("fe.deleted = ?", false).And("p.deleted = ?", false).
+		Where("p.is_public = ?", true).
+		And("p.id = ?", p.ByName("id")).
+		And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')").
+		And("fe.deleted = ?", false).
+		And("p.deleted = ?", false).
 		OrderBy("fe.createdat DESC").Offset(offset).Limit(limit)
 	if err := selector.All(&feedEntries); err != nil {
 		logrus.Errorf("selector.All in fetchPublicFeedEntries %q - limit: %d offset: %d id: %s", err, limit, offset, p.ByName("id"))
@@ -239,7 +258,11 @@ func fetchPublicFeedEntry(w http.ResponseWriter, r *http.Request, p httprouter.P
 		Columns(udb.Raw("(select count(*) from comments c where c.feedentryid = fe.id) as ncomments")).
 		Join("feeds f").On("fe.feedid = f.id").
 		Join("plants p").On("p.feedid = f.id").
-		Where("p.is_public = ?", true).And("fe.id = ?", p.ByName("id")).And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')").And("fe.deleted = ?", false).And("p.deleted = ?", false)
+		Where("p.is_public = ?", true).
+		And("fe.id = ?", p.ByName("id")).
+		And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')").
+		And("fe.deleted = ?", false).
+		And("p.deleted = ?", false)
 	if err := selector.One(&feedEntry); err != nil {
 		logrus.Errorf("selector.One in fetchPublicFeedEntry %q - id: %s", err, p.ByName("id"))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -265,7 +288,9 @@ func fetchPublicFeedMedias(w http.ResponseWriter, r *http.Request, p httprouter.
 		Join("feedentries fe").On("fm.feedentryid = fe.id").
 		Join("feeds f").On("fe.feedid = f.id").
 		Join("plants p").On("p.feedid = f.id").
-		Where("p.is_public = ?", true).And("fe.id = ?", p.ByName("id")).And("fm.deleted = ?", false)
+		Where("p.is_public = ?", true).
+		And("fe.id = ?", p.ByName("id")).
+		And("fm.deleted = ?", false)
 	if err := selector.All(&feedMedias); err != nil {
 		logrus.Errorf("selector.All in fetchPublicFeedMedias %q - id: %s", err, p.ByName("id"))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -274,12 +299,13 @@ func fetchPublicFeedMedias(w http.ResponseWriter, r *http.Request, p httprouter.
 
 	var err error
 	for i, fm := range feedMedias {
-		fm, err = loadFeedMediaPublicURLs(fm)
+		err = loadFeedMediaPublicURLs(&fm)
 		if err != nil {
 			logrus.Errorf("loadFeedMediaPublicURLs in fetchPublicFeedMedias %q - %+v", err, fm)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		// might not be useful anymore
 		feedMedias[i] = fm
 	}
 
@@ -299,14 +325,16 @@ func fetchPublicFeedMedia(w http.ResponseWriter, r *http.Request, p httprouter.P
 		Join("feedentries fe").On("fm.feedentryid = fe.id").
 		Join("feeds f").On("fe.feedid = f.id").
 		Join("plants p").On("p.feedid = f.id").
-		Where("p.is_public = ?", true).And("fm.id = ?", p.ByName("id")).And("fm.deleted = ?", false)
+		Where("p.is_public = ?", true).
+		And("fm.id = ?", p.ByName("id")).
+		And("fm.deleted = ?", false)
 	if err := selector.One(&feedMedia); err != nil {
 		logrus.Errorf("selector.One in fetchPublicFeedMedia %q - id: %s", err, p.ByName("id"))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	var err error
-	feedMedia, err = loadFeedMediaPublicURLs(feedMedia)
+	err = loadFeedMediaPublicURLs(&feedMedia)
 	if err != nil {
 		logrus.Errorf("loadFeedMediaPublicURLs in fetchPublicFeedMedia %q - %+v", err, feedMedia)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
