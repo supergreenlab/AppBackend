@@ -104,14 +104,21 @@ func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Para
 		Where("deleted = false").
 		And(fmt.Sprintf("etype in ('%s')", strings.Join([]string{"FE_MEDIA", "FE_BENDING", "FE_DEFOLATION", "FE_TRANSPLANT", "FE_FIMMING", "FE_TOPPING", "FE_MEASURE"}, "', '"))).
 		GroupBy("feedid")
+	lastFeedMediaSelector := sess.Select("feedid", udb.Raw("max(feedmedias.cat) as cat")).
+		From("feedmedias").
+		Join("feedentries").On("feedentries.id = feedmedias.feedentryid").
+		Where("feedmedias.deleted = false").
+		GroupBy("feedid")
+
 	selector := sess.Select("plants.id", "plants.name", "feedmedias.filepath", "feedmedias.thumbnailpath").
 		From("plants").
-		Join(db.Raw(fmt.Sprintf("(%s) latest", lastFeedEntrySelector.String()))).Using("feedid").
-		Join("feedentries").On("feedentries.cat = latest.cat").And("feedentries.feedid = plants.feedid").
-		Join("feedmedias").On("feedmedias.feedentryid = feedentries.id").
+		Join(db.Raw(fmt.Sprintf("(%s) latestfe", lastFeedEntrySelector.String()))).Using("feedid").
+		Join(db.Raw(fmt.Sprintf("(%s) latestfm", lastFeedMediaSelector.String()))).Using("feedid").
+		Join("feedentries").On("feedentries.cat = latestfe.cat").And("feedentries.feedid = plants.feedid").
+		Join("feedmedias").On("feedmedias.cat = latestfm.cat").And("latestfm.feedid = plants.feedid").
 		Where("plants.is_public = ?", true).
 		And("plants.deleted = ?", false).
-		OrderBy("latest.cat desc").
+		OrderBy("latestfm.cat desc").
 		Offset(offset).Limit(limit)
 
 	results := []publicListingPlantResult{}
