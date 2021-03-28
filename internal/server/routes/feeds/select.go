@@ -164,7 +164,7 @@ func filterFeedEntryID(fn httprouter.Handle) httprouter.Handle {
 	}
 }
 
-func joinSocialSelector(ctx context.Context, selector sqlbuilder.Selector) sqlbuilder.Selector {
+func joinCommentSocialSelector(ctx context.Context, selector sqlbuilder.Selector) sqlbuilder.Selector {
 	uid, userIDExists := ctx.Value(middlewares.UserIDContextKey{}).(uuid.UUID)
 	selector = selector.Columns(udb.Raw("u.nickname"), udb.Raw("u.pic")).Join("users u").On("t.userid = u.id")
 
@@ -176,10 +176,10 @@ func joinSocialSelector(ctx context.Context, selector sqlbuilder.Selector) sqlbu
 	return selector
 }
 
-func joinSocial(fn httprouter.Handle) httprouter.Handle {
+func joinCommentSocial(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
-		selector = joinSocialSelector(r.Context(), selector)
+		selector = joinCommentSocialSelector(r.Context(), selector)
 		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
 		fn(w, r.WithContext(ctx), p)
 	}
@@ -227,7 +227,7 @@ func selectRepliesForComments(fn httprouter.Handle) httprouter.Handle {
 		}
 
 		replies := &[]Comment{}
-		selector := joinSocialSelector(r.Context(), sess.Select("t.*").From("comments t").Where("replyto in ?", ids))
+		selector := joinCommentSocialSelector(r.Context(), sess.Select("t.*").From("comments t").Where("replyto in ?", ids))
 		if err := selector.All(replies); err != nil {
 			logrus.Errorf("selector.All in selectRepliesForComments %q - %+v", err, ids)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -245,7 +245,7 @@ var selectFeedEntryComments = middlewares.SelectEndpoint(
 	func() interface{} { return &SelectFeedEntryCommentsParams{} },
 	[]middleware.Middleware{
 		filterFeedEntryID,
-		joinSocial,
+		joinCommentSocial,
 	},
 	[]middleware.Middleware{
 		selectRepliesForComments,
@@ -269,7 +269,7 @@ var selectComment = middlewares.SelectEndpoint(
 	func() interface{} { return &SelectFeedEntryCommentsParams{} },
 	[]middleware.Middleware{
 		filterCommentID,
-		joinSocial,
+		joinCommentSocial,
 	},
 	[]middleware.Middleware{
 		selectRepliesForComments,

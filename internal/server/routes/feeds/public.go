@@ -37,68 +37,25 @@ import (
 
 // TODO use select* middlewares
 
-func loadLastFeedMediaForPlant(sess sqlbuilder.Database, p sgldb.Plant) (sgldb.FeedMedia, error) {
-	var err error
-	selector := sess.Select("fm.*").
-		From("feedmedias fm").
-		Join("feedentries fe").On("fm.feedentryid = fe.id and fe.deleted = ?", false).
-		Join("plants p").On("fe.feedid = p.feedid").
-		Where("p.id = ?", p.ID).And("fm.deleted = ?", false).
-		OrderBy("fm.cat desc").Limit(1)
-	fm := sgldb.FeedMedia{}
-	if err = selector.One(&fm); err != nil {
-		return fm, err
-	}
-	err = loadFeedMediaPublicURLs(&fm)
-	if err != nil {
-		return fm, err
-	}
-	return fm, nil
-}
-
-type publicListingPlantResult struct {
-	ID            string `db:"id" json:"id"`
-	Name          string `db:"name" json:"name"`
-	FilePath      string `db:"filepath" json:"filePath"`
-	ThumbnailPath string `db:"thumbnailpath" json:"thumbnailPath"`
-}
-
-func (r *publicListingPlantResult) SetURLs(filePath string, thumbnailPath string) {
-	r.FilePath = filePath
-	r.ThumbnailPath = thumbnailPath
-}
-
-func (r publicListingPlantResult) GetURLs() (filePath string, thumbnailPath string) {
-	filePath, thumbnailPath = r.FilePath, r.ThumbnailPath
-	return
-}
-
-type publicPlantsResult struct {
-	Plants []publicListingPlantResult `json:"plants"`
-}
-
-func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
-
+func pageOffsetLimit(r *http.Request, selector sqlbuilder.Selector) sqlbuilder.Selector {
 	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
 	if err != nil {
-		logrus.Errorf("strconv.Atoi in fetchPublicPlants %q - offset: %s url: %s", err, r.URL.Query().Get("offset"), r.URL.String())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		offset = 0
 	}
 
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
 	if err != nil {
-		logrus.Errorf("strconv.Atoi in fetchPublicPlants %q - limit: %s url: %s", err, r.URL.Query().Get("limit"), r.URL.String())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		limit = 10
 	}
 	if limit < 0 {
 		limit = 0
 	} else if limit > 50 {
 		limit = 50
 	}
+	return selector.Offset(offset).Limit(limit)
+}
 
+func joinLatestFeedMedia(sess sqlbuilder.Database, selector sqlbuilder.Selector) sqlbuilder.Selector {
 	lastFeedEntrySelector := sess.Select("feedid", udb.Raw("max(cat) as cat")).
 		From("feedentries").
 		Where("deleted = false").
@@ -110,18 +67,68 @@ func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Para
 		Where("feedmedias.deleted = false").
 		GroupBy("feedid")
 
-	selector := sess.Select("plants.id", "plants.name", "feedmedias.filepath", "feedmedias.thumbnailpath").
-		From("plants").
+	return selector.Columns("feedmedias.filepath", "feedmedias.thumbnailpath").
 		Join(db.Raw(fmt.Sprintf("(%s) latestfe", lastFeedEntrySelector.String()))).Using("feedid").
 		Join(db.Raw(fmt.Sprintf("(%s) latestfm", lastFeedMediaSelector.String()))).Using("feedid").
 		Join("feedentries").On("feedentries.cat = latestfe.cat").And("feedentries.feedid = plants.feedid").
-		Join("feedmedias").On("feedmedias.cat = latestfm.cat").And("latestfm.feedid = plants.feedid").
+		Join("feedmedias").On("feedmedias.cat = latestfm.cat").And("latestfm.feedid = plants.feedid")
+}
+
+func joinBoxSettings(selector sqlbuilder.Selector) sqlbuilder.Selector {
+	return selector.Columns("boxes.settings as boxsettings").
+		Join("boxes").On("boxes.id = plants.boxid")
+}
+
+func joinFollows(r *http.Request, selector sqlbuilder.Selector) sqlbuilder.Selector {
+	uid, userIDExists := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
+	if !userIDExists {
+		return selector
+	}
+	return selector.Columns(db.Raw("(follow.id is not null) as followed")).
+		Join("follows").On("follows.plantid = plants.id and follows.userid = ?", uid)
+}
+
+type publicPlantResult struct {
+	ID            string `db:"id" json:"id"`
+	Name          string `db:"name" json:"name"`
+	FilePath      string `db:"filepath" json:"filePath"`
+	ThumbnailPath string `db:"thumbnailpath" json:"thumbnailPath"`
+
+	Followed bool `db:"followed" json:"followed"`
+
+	Settings    string `db:"settings" json:"settings"`
+	BoxSettings string `db:"boxsettings" json:"boxSettings"`
+}
+
+func (r *publicPlantResult) SetURLs(filePath string, thumbnailPath string) {
+	r.FilePath = filePath
+	r.ThumbnailPath = thumbnailPath
+}
+
+func (r publicPlantResult) GetURLs() (filePath string, thumbnailPath string) {
+	filePath, thumbnailPath = r.FilePath, r.ThumbnailPath
+	return
+}
+
+type publicPlantsResult struct {
+	Plants []publicPlantResult `json:"plants"`
+}
+
+func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+
+	selector := sess.Select("plants.id", "plants.name", "plants.settings").
+		From("plants").
 		Where("plants.is_public = ?", true).
 		And("plants.deleted = ?", false).
-		OrderBy("latestfm.cat desc").
-		Offset(offset).Limit(limit)
+		OrderBy("latestfm.cat desc")
 
-	results := []publicListingPlantResult{}
+	selector = joinLatestFeedMedia(sess, selector)
+	selector = joinBoxSettings(selector)
+	selector = joinFollows(r, selector)
+	selector = pageOffsetLimit(r, selector)
+
+	results := []publicPlantResult{}
 	if err := selector.All(&results); err != nil {
 		logrus.Errorf("selector.All in fetchPublicPlants %q", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -129,7 +136,7 @@ func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Para
 	}
 
 	for i, p := range results {
-		err = loadFeedMediaPublicURLs(&p)
+		err := loadFeedMediaPublicURLs(&p)
 		if err != nil {
 			logrus.Errorf("loadFeedMediaPublicURLs in fetchPublicPlants %q - p: %+v", err, p)
 			continue
@@ -144,39 +151,32 @@ func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Para
 	}
 }
 
-type publicPlantResult struct {
-	ID            string `json:"id"`
-	Name          string `json:"name"`
-	FilePath      string `json:"filePath"`
-	ThumbnailPath string `json:"thumbnailPath"`
-	Settings      string `json:"settings"`
-	BoxSettings   string `json:"boxSettings"`
-}
-
 func fetchPublicPlant(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
 
-	plant := sgldb.Plant{}
-	if err := sess.Select("*").From("plants").Where("is_public = ?", true).And("deleted = ?", false).And("id = ?", p.ByName("id")).One(&plant); err != nil {
+	plant := publicPlantResult{}
+	selector := sess.Select("plants.id", "plants.name", "plants.settings").
+		From("plants").
+		Where("plants.is_public = ?", true).
+		And("plants.deleted = ?", false).
+		And("plants.id = ?", p.ByName("id"))
+
+	selector = joinLatestFeedMedia(sess, selector)
+	selector = joinBoxSettings(selector)
+
+	if err := selector.One(&plant); err != nil {
 		logrus.Errorf("sess.Select('plants') in fetchPublicPlant %q - id: %s", err, p.ByName("id"))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fm, err := loadLastFeedMediaForPlant(sess, plant)
+
+	err := loadFeedMediaPublicURLs(&plant)
 	if err != nil {
-		logrus.Errorf("loadLastFeedMediaForPlant in fetchPublicPlant %q - plant: %+v", err, plant)
-		//http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-	box := sgldb.Box{}
-	if err := sess.Select("*").From("boxes").And("id = ?", plant.BoxID).One(&box); err != nil {
-		logrus.Errorf("sess.Select('boxes') in fetchPublicPlant %q - plant: %+v", err, plant)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		logrus.Errorf("loadFeedMediaPublicURLs in fetchPublicPlant %q - plant: %+v", err, plant)
 	}
 
-	result := publicPlantResult{plant.ID.UUID.String(), plant.Name, fm.FilePath, fm.ThumbnailPath, plant.Settings, box.Settings}
-	if err := json.NewEncoder(w).Encode(result); err != nil {
-		logrus.Errorf("json.NewEncoder in fetchPublicPlant %q - result: %+v", err, result)
+	if err := json.NewEncoder(w).Encode(plant); err != nil {
+		logrus.Errorf("json.NewEncoder in fetchPublicPlant %q - plant: %+v", err, plant)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -195,47 +195,42 @@ type publicFeedEntriesResult struct {
 	Entries []publicFeedEntry `json:"entries"`
 }
 
-func fetchPublicFeedEntries(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+func joinFeedEntrySocialSelector(r *http.Request, selector sqlbuilder.Selector) sqlbuilder.Selector {
 	uid, userIDExists := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
 
-	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
-	if err != nil {
-		logrus.Errorf("strconv.Atoi in fetchPublicFeedEntries %q - offset: %s url: %s", err, r.URL.Query().Get("offset"), r.URL.String())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
-	if err != nil {
-		logrus.Errorf("strconv.Atoi in fetchPublicFeedEntries %q - limit: %s url: %s", err, r.URL.Query().Get("limit"), r.URL.String())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if limit < 0 {
-		limit = 0
-	} else if limit > 50 {
-		limit = 50
-	}
-
-	feedEntries := []publicFeedEntry{}
-	selector := sess.Select("fe.*").From("feedentries fe")
+	// TODO optimize with joins?
 	if userIDExists {
 		selector = selector.Columns(udb.Raw("exists(select * from likes l where l.userid = ? and l.feedentryid = fe.id) as liked", uid)).
 			Columns(udb.Raw("exists(select * from bookmarks b where b.userid = ? and b.feedentryid = fe.id) as bookmarked", uid))
 	}
-	selector = selector.Columns(udb.Raw("(select count(*) from likes l where l.feedentryid = fe.id) as nlikes")).
-		Columns(udb.Raw("(select count(*) from comments c where c.feedentryid = fe.id) as ncomments")).
-		Join("feeds f").On("fe.feedid = f.id").
+
+	return selector.Columns(udb.Raw("(select count(*) from likes l where l.feedentryid = fe.id) as nlikes")).
+		Columns(udb.Raw("(select count(*) from comments c where c.feedentryid = fe.id) as ncomments"))
+}
+
+func checkFeedEntryIsPublic(selector sqlbuilder.Selector) sqlbuilder.Selector {
+	return selector.Join("feeds f").On("fe.feedid = f.id").
 		Join("plants p").On("p.feedid = f.id").
 		Where("p.is_public = ?", true).
-		And("p.id = ?", p.ByName("id")).
 		And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')").
 		And("fe.deleted = ?", false).
-		And("p.deleted = ?", false).
-		OrderBy("fe.createdat DESC").Offset(offset).Limit(limit)
+		And("p.deleted = ?", false)
+}
+
+func fetchPublicFeedEntries(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+
+	feedEntries := []publicFeedEntry{}
+	selector := sess.Select("fe.*").From("feedentries fe").
+		Where("p.id = ?", p.ByName("id")).
+		OrderBy("fe.createdat DESC")
+
+	selector = joinFeedEntrySocialSelector(r, selector)
+	selector = checkFeedEntryIsPublic(selector)
+	selector = pageOffsetLimit(r, selector)
+
 	if err := selector.All(&feedEntries); err != nil {
-		logrus.Errorf("selector.All in fetchPublicFeedEntries %q - limit: %d offset: %d id: %s", err, limit, offset, p.ByName("id"))
+		logrus.Errorf("selector.All in fetchPublicFeedEntries %q - id: %s", err, p.ByName("id"))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -253,23 +248,14 @@ type publicFeedEntryResult struct {
 
 func fetchPublicFeedEntry(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
-	uid, userIDExists := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
 
 	feedEntry := publicFeedEntry{}
-	selector := sess.Select("fe.*").From("feedentries fe")
-	if userIDExists {
-		selector = selector.Columns(udb.Raw("exists(select * from likes l where l.userid = ? and l.feedentryid = fe.id) as liked", uid)).
-			Columns(udb.Raw("exists(select * from bookmarks b where b.userid = ? and b.feedentryid = fe.id) as bookmarked", uid))
-	}
-	selector = selector.Columns(udb.Raw("(select count(*) from likes l where l.feedentryid = fe.id) as nlikes")).
-		Columns(udb.Raw("(select count(*) from comments c where c.feedentryid = fe.id) as ncomments")).
-		Join("feeds f").On("fe.feedid = f.id").
-		Join("plants p").On("p.feedid = f.id").
-		Where("p.is_public = ?", true).
-		And("fe.id = ?", p.ByName("id")).
-		And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')").
-		And("fe.deleted = ?", false).
-		And("p.deleted = ?", false)
+	selector := sess.Select("fe.*").From("feedentries fe").
+		Where("fe.id = ?", p.ByName("id"))
+
+	selector = joinFeedEntrySocialSelector(r, selector)
+	selector = checkFeedEntryIsPublic(selector)
+
 	if err := selector.One(&feedEntry); err != nil {
 		logrus.Errorf("selector.One in fetchPublicFeedEntry %q - id: %s", err, p.ByName("id"))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
