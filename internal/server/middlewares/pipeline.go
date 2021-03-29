@@ -28,6 +28,72 @@ import (
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
+type Endpoint struct {
+	Middlewares []middleware.Middleware
+	Output      httprouter.Handle
+}
+
+func (e Endpoint) Handle() httprouter.Handle {
+	s := middleware.NewStack()
+
+	for _, m := range e.Middlewares {
+		s.Use(m)
+	}
+	return s.Wrap(OutputObjectID)
+}
+
+func NewEndpoint() Endpoint {
+	return Endpoint{Middlewares: []middleware.Middleware{}}
+}
+
+type Factory func() interface{}
+
+type DBEndpointBuilder struct {
+	Pre  []middleware.Middleware
+	DBFn middleware.Middleware
+	Post []middleware.Middleware
+}
+
+func NewDBEndpointBuilder(param Factory, input Factory) DBEndpointBuilder {
+	e := DBEndpointBuilder{}
+	e.Pre = []middleware.Middleware{
+		DecodeQuery(param),
+		DecodeJSON(input),
+	}
+	e.Post = []middleware.Middleware{}
+	return e
+}
+
+func (dbe DBEndpointBuilder) Endpoint() Endpoint {
+	e := NewEndpoint()
+	e.Middlewares = append(e.Middlewares, dbe.Pre...)
+	e.Middlewares = append(e.Middlewares, dbe.DBFn)
+	e.Middlewares = append(e.Middlewares, dbe.Post...)
+	return e
+}
+
+type InsertEndpointBuilder struct {
+	DBEndpointBuilder
+
+	Collection string
+}
+
+func NewInsertEndpointBuilder(collection string, param Factory, input Factory) InsertEndpointBuilder {
+	e := InsertEndpointBuilder{
+		DBEndpointBuilder: NewDBEndpointBuilder(param, input),
+		Collection:        collection,
+	}
+	e.DBFn = InsertObject(collection)
+	return e
+}
+
+func (dbe InsertEndpointBuilder) Endpoint() Endpoint {
+	e := dbe.DBEndpointBuilder.Endpoint()
+	e.Middlewares = append(e.Middlewares, PublishInsert(dbe.Collection))
+	e.Output = OutputObjectID
+	return e
+}
+
 // InsertEndpoint - insert an object
 func InsertEndpoint(
 	collection string,

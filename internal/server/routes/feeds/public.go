@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	sgldb "github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
@@ -114,42 +115,56 @@ type publicPlantsResult struct {
 	Plants []publicPlantResult `json:"plants"`
 }
 
-func fetchPublicPlants(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+func fetchPublicPlants(makeSelector func(sess sqlbuilder.Database, w http.ResponseWriter, r *http.Request, p httprouter.Params) sqlbuilder.Selector) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
 
-	selector := sess.Select("plants.id", "plants.name", "plants.settings").
-		From("plants").
-		Where("plants.is_public = ?", true).
-		And("plants.deleted = ?", false).
-		OrderBy("latestfm.cat desc")
+		selector := makeSelector(sess, w, r, p).
+			Where("plants.is_public = ?", true).
+			And("plants.deleted = ?", false)
 
-	selector = joinLatestFeedMedia(sess, selector)
-	selector = joinBoxSettings(selector)
-	selector = joinFollows(r, selector)
-	selector = pageOffsetLimit(r, selector)
+		selector = joinLatestFeedMedia(sess, selector)
+		selector = joinBoxSettings(selector)
+		selector = joinFollows(r, selector)
+		selector = pageOffsetLimit(r, selector)
 
-	results := []publicPlantResult{}
-	if err := selector.All(&results); err != nil {
-		logrus.Errorf("selector.All in fetchPublicPlants %q", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	for i, p := range results {
-		err := loadFeedMediaPublicURLs(&p)
-		if err != nil {
-			logrus.Errorf("loadFeedMediaPublicURLs in fetchPublicPlants %q - p: %+v", err, p)
-			continue
+		results := []publicPlantResult{}
+		if err := selector.All(&results); err != nil {
+			logrus.Errorf("selector.All in fetchPublicPlants %q", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
-		results[i] = p
-	}
 
-	if err := json.NewEncoder(w).Encode(publicPlantsResult{results}); err != nil {
-		logrus.Errorf("json.NewEncoder in fetchPublicPlants %q - results: %+v", err, results)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		for i, p := range results {
+			err := loadFeedMediaPublicURLs(&p)
+			if err != nil {
+				logrus.Errorf("loadFeedMediaPublicURLs in fetchPublicPlants %q - p: %+v", err, p)
+				continue
+			}
+			results[i] = p
+		}
+
+		if err := json.NewEncoder(w).Encode(publicPlantsResult{results}); err != nil {
+			logrus.Errorf("json.NewEncoder in fetchPublicPlants %q - results: %+v", err, results)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 }
+
+var fetchLatestUpdatedPublicPlants = fetchPublicPlants(func(sess sqlbuilder.Database, w http.ResponseWriter, r *http.Request, p httprouter.Params) sqlbuilder.Selector {
+	return sess.Select("plants.id", "plants.name", "plants.settings").
+		From("plants").
+		OrderBy("latestfm.cat desc")
+})
+
+var fetchLatestUpdatedFollowedPublicPlants = fetchPublicPlants(func(sess sqlbuilder.Database, w http.ResponseWriter, r *http.Request, p httprouter.Params) sqlbuilder.Selector {
+	uid := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
+	return sess.Select("plants.id", "plants.name", "plants.settings").
+		From("plants").
+		Join("follows").On("follows.plantid = plants.id and userid = ?", uid).
+		OrderBy("latestfm.cat desc")
+})
 
 func fetchPublicPlant(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
@@ -189,6 +204,28 @@ type publicFeedEntry struct {
 	Bookmarked bool `db:"bookmarked" json:"bookmarked"`
 	NComments  int  `db:"ncomments" json:"nComments"`
 	NLikes     int  `db:"nlikes" json:"nLikes"`
+
+	// TODO make an interface based middleware to unify the select* middlewares
+	PlantID       uuid.NullUUID `db:"plantid,omitempty" json:"plantID,omitempty"`
+	PlantName     string        `db:"name,omitempty" json:"plantName,omitempty"`
+	CommentID     uuid.NullUUID `db:"commentid,omitempty" json:"commentID,omitempty"`
+	Comment       *string       `db:"comment,omitempty" json:"comment,omitempty"`
+	LikeDate      *time.Time    `db:"likecat,omitempty" json:"likeDate,omitempty"`
+	ThumbnailPath *string       `db:"thumbnailpath,omitempty" json:"thumbnailpath,omitempty"`
+}
+
+func (r *publicFeedEntry) SetURLs(_, thumbnailPath string) {
+	if thumbnailPath != "" {
+		*r.ThumbnailPath = thumbnailPath
+	}
+}
+
+func (r publicFeedEntry) GetURLs() (filePath, thumbnailPath string) {
+	filePath, thumbnailPath = "", ""
+	if r.ThumbnailPath != nil {
+		thumbnailPath = *r.ThumbnailPath
+	}
+	return
 }
 
 type publicFeedEntriesResult struct {
@@ -208,7 +245,7 @@ func joinFeedEntrySocialSelector(r *http.Request, selector sqlbuilder.Selector) 
 		Columns(udb.Raw("(select count(*) from comments c where c.feedentryid = fe.id) as ncomments"))
 }
 
-func checkFeedEntryIsPublic(selector sqlbuilder.Selector) sqlbuilder.Selector {
+func publicFeedEntriesOnly(selector sqlbuilder.Selector) sqlbuilder.Selector {
 	return selector.Join("feeds f").On("fe.feedid = f.id").
 		Join("plants p").On("p.feedid = f.id").
 		Where("p.is_public = ?", true).
@@ -217,30 +254,82 @@ func checkFeedEntryIsPublic(selector sqlbuilder.Selector) sqlbuilder.Selector {
 		And("p.deleted = ?", false)
 }
 
-func fetchPublicFeedEntries(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+func joinLatestFeedMediaForFeedEntry(sess sqlbuilder.Database, selector sqlbuilder.Selector) sqlbuilder.Selector {
+	lastFeedMediaSelector := sess.Select("feedentryid", udb.Raw("max(feedmedias.cat) as cat")).
+		From("feedmedias").
+		Where("feedmedias.deleted = false").
+		GroupBy("feedentryid")
 
-	feedEntries := []publicFeedEntry{}
-	selector := sess.Select("fe.*").From("feedentries fe").
-		Where("p.id = ?", p.ByName("id")).
-		OrderBy("fe.createdat DESC")
+	return selector.Columns("feedmedias.filepath", "feedmedias.thumbnailpath").
+		Join(db.Raw(fmt.Sprintf("(%s) latestfm", lastFeedMediaSelector.String()))).On("latestfm.feedentryid = fe.id").
+		Join("feedmedias").On("feedmedias.cat = latestfm.cat").And("latestfm.feedentryid = fe.id")
+}
 
-	selector = joinFeedEntrySocialSelector(r, selector)
-	selector = checkFeedEntryIsPublic(selector)
-	selector = pageOffsetLimit(r, selector)
+func joinPlantForFeedEntry(selector sqlbuilder.Selector) sqlbuilder.Selector {
+	return selector.Columns("plants.name", "plants.id as plantid").
+		Join("plants").On("plants.feedid = fe.feedid")
+}
 
-	if err := selector.All(&feedEntries); err != nil {
-		logrus.Errorf("selector.All in fetchPublicFeedEntries %q - id: %s", err, p.ByName("id"))
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	result := publicFeedEntriesResult{feedEntries}
-	if err := json.NewEncoder(w).Encode(result); err != nil {
-		logrus.Errorf("json.NewEncoder in fetchPublicFeedEntries %q - %+v", err, result)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+func fetchPublicFeedEntries(makeSelector func(sess sqlbuilder.Database, w http.ResponseWriter, r *http.Request, p httprouter.Params) sqlbuilder.Selector) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+
+		selector := makeSelector(sess, w, r, p)
+
+		selector = joinFeedEntrySocialSelector(r, selector)
+		selector = publicFeedEntriesOnly(selector)
+		selector = pageOffsetLimit(r, selector)
+
+		feedEntries := []publicFeedEntry{}
+		if err := selector.All(&feedEntries); err != nil {
+			logrus.Errorf("selector.All in fetchPublicFeedEntries %q - id: %s", err, p.ByName("id"))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		for i, p := range feedEntries {
+			err := loadFeedMediaPublicURLs(&p)
+			if err != nil {
+				logrus.Errorf("loadFeedMediaPublicURLs in fetchPublicFeedEntries %q - p: %+v", err, p)
+				continue
+			}
+			feedEntries[i] = p
+		}
+
+		result := publicFeedEntriesResult{feedEntries}
+		if err := json.NewEncoder(w).Encode(result); err != nil {
+			logrus.Errorf("json.NewEncoder in fetchPublicFeedEntries %q - %+v", err, result)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 }
+
+var fetchPublicPlantFeedEntries = fetchPublicFeedEntries(func(sess sqlbuilder.Database, w http.ResponseWriter, r *http.Request, p httprouter.Params) sqlbuilder.Selector {
+	return sess.Select("fe.*").From("feedentries fe").
+		Where("p.id = ?", p.ByName("id")).
+		OrderBy("fe.createdat DESC")
+})
+
+var fetchLatestCommentedFeedEntries = fetchPublicFeedEntries(func(sess sqlbuilder.Database, w http.ResponseWriter, r *http.Request, p httprouter.Params) sqlbuilder.Selector {
+	selector := sess.Select("fe.*", "comments.text as comment").From("feedentries fe").
+		Join("comments").On("comments.feedentryid = fe.id").
+		OrderBy("comments.cat DESC")
+	selector = joinLatestFeedMediaForFeedEntry(sess, selector)
+	selector = joinPlantForFeedEntry(selector)
+	return selector
+})
+
+var fetchLatestLikedFeedEntries = fetchPublicFeedEntries(func(sess sqlbuilder.Database, w http.ResponseWriter, r *http.Request, p httprouter.Params) sqlbuilder.Selector {
+	selector := sess.Select("fe.*", "comments.text as comment", "comments.id as commentid").From("likes").
+		LeftJoin("comments").On("comments.id = likes.commentid").
+		Join("feedentries fe").On("fe.id = likes.feedentryid or fe.id = comments.feedentryid").
+		OrderBy("likes.cat DESC")
+	selector = joinLatestFeedMediaForFeedEntry(sess, selector)
+	selector = joinPlantForFeedEntry(selector)
+	logrus.Info(selector.String())
+	return selector
+})
 
 type publicFeedEntryResult struct {
 	Entry publicFeedEntry `json:"entry"`
@@ -254,7 +343,7 @@ func fetchPublicFeedEntry(w http.ResponseWriter, r *http.Request, p httprouter.P
 		Where("fe.id = ?", p.ByName("id"))
 
 	selector = joinFeedEntrySocialSelector(r, selector)
-	selector = checkFeedEntryIsPublic(selector)
+	selector = publicFeedEntriesOnly(selector)
 
 	if err := selector.One(&feedEntry); err != nil {
 		logrus.Errorf("selector.One in fetchPublicFeedEntry %q - id: %s", err, p.ByName("id"))

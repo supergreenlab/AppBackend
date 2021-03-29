@@ -171,8 +171,8 @@ func joinCommentSocialSelector(ctx context.Context, selector sqlbuilder.Selector
 	if userIDExists {
 		selector = selector.Columns(udb.Raw("exists(select * from likes l where l.userid = ? and l.commentid = t.id) as liked", uid))
 	}
-	selector = selector.Columns(udb.Raw("(select count(*) from likes l where l.commentid = t.id) as nlikes"))
-	selector = selector.Columns(udb.Raw("(select count(*) from comments c where c.replyto = t.id) as nreplies"))
+	selector = selector.Columns(udb.Raw("(select count(*) from likes l where l.commentid = t.id) as nlikes")).
+		Columns(udb.Raw("(select count(*) from comments c where c.replyto = t.id) as nreplies"))
 	return selector
 }
 
@@ -305,11 +305,11 @@ func feedEntrySocialSelect(fn httprouter.Handle) httprouter.Handle {
 		selector := sess.Select()
 
 		if userIDExists {
-			selector = selector.Columns(udb.Raw("exists(select * from likes l where l.userid = ? and l.feedentryid = ?) as liked", uid, feid))
-			selector = selector.Columns(udb.Raw("exists(select * from bookmarks b where b.userid = ? and b.feedentryid = ?) as bookmarked", uid, feid))
+			selector = selector.Columns(udb.Raw("exists(select * from likes l where l.userid = ? and l.feedentryid = ?) as liked", uid, feid)).
+				Columns(udb.Raw("exists(select * from bookmarks b where b.userid = ? and b.feedentryid = ?) as bookmarked", uid, feid))
 		}
-		selector = selector.Columns(udb.Raw("(select count(*) from likes l where l.feedentryid = ?) as nlikes", feid))
-		selector = selector.Columns(udb.Raw("(select count(*) from comments c where c.feedentryid = ?) as ncomments", feid))
+		selector = selector.Columns(udb.Raw("(select count(*) from likes l where l.feedentryid = ?) as nlikes", feid)).
+			Columns(udb.Raw("(select count(*) from comments c where c.feedentryid = ?) as ncomments", feid))
 
 		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
 		fn(w, r.WithContext(ctx), p)
@@ -335,23 +335,23 @@ func joinFeedEntry(fn httprouter.Handle) httprouter.Handle {
 		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
 		uid, userIDExists := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
 
-		selector = selector.Columns("fe.*").Join("feedentries fe").On("t.feedentryid = fe.id").Where("is_public = ?", true)
-		selector = selector.Columns("p.id as plantid").Join("plants p").On("p.feedid = fe.feedid").Where("p.deleted = ?", false)
+		selector = selector.Columns("fe.*").Join("feedentries fe").On("t.feedentryid = fe.id").
+			Columns("p.id as plantid").Join("plants p").On("p.feedid = fe.feedid").Where("p.deleted = ?", false).And("p.is_public = ?", true)
 
 		if userIDExists {
-			selector = selector.Columns(udb.Raw("exists(select * from likes l where l.userid = ? and l.feedentryid = fe.id) as liked", uid))
-			selector = selector.Columns(udb.Raw("exists(select * from bookmarks b where b.userid = ? and b.feedentryid = fe.id) as bookmarked", uid))
+			selector = selector.Columns(udb.Raw("exists(select * from likes l where l.userid = ? and l.feedentryid = fe.id) as liked", uid)).
+				Columns(udb.Raw("exists(select * from bookmarks b where b.userid = ? and b.feedentryid = fe.id) as bookmarked", uid))
 		}
-		selector = selector.Columns(udb.Raw("(select count(*) from likes l where l.feedentryid = fe.id) as nlikes"))
-		selector = selector.Columns(udb.Raw("(select count(*) from comments c where c.feedentryid = fe.id) as ncomments"))
-		selector = selector.OrderBy("fe.createdat DESC")
+		selector = selector.Columns(udb.Raw("(select count(*) from likes l where l.feedentryid = fe.id) as nlikes")).
+			Columns(udb.Raw("(select count(*) from comments c where c.feedentryid = fe.id) as ncomments")).
+			OrderBy("fe.createdat DESC")
 
 		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
 		fn(w, r.WithContext(ctx), p)
 	}
 }
 
-type publicFeedEntryBookmarks struct {
+type publicFeedEntryBookmark struct {
 	publicFeedEntry
 
 	PlantID string `db:"plantid" json:"plantID"`
@@ -359,7 +359,7 @@ type publicFeedEntryBookmarks struct {
 
 var selectBookmarks = middlewares.SelectEndpoint(
 	"bookmarks",
-	func() interface{} { return &[]publicFeedEntryBookmarks{} },
+	func() interface{} { return &[]publicFeedEntryBookmark{} },
 	func() interface{} { return &SelectBookmarksParams{} },
 	[]middleware.Middleware{
 		filterUserID,

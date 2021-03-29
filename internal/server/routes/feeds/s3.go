@@ -25,24 +25,28 @@ import (
 )
 
 type FeedMediasURL interface {
-	SetURLs(filePath string, thumbnailPath string)
-	GetURLs() (filePath string, thumbnailPath string)
+	SetURLs(filePath, thumbnailPath string)
+	GetURLs() (filePath, thumbnailPath string)
 }
 
 func loadFeedMediaPublicURLs(fm FeedMediasURL) error {
 	filePath, thumbnailPath := fm.GetURLs()
 	expiry := time.Second * 60 * 60
-	url1, err := storage.Client.PresignedGetObject("feedmedias", filePath, expiry, nil)
-	if err != nil {
-		return err
+	if filePath != "" {
+		url1, err := storage.Client.PresignedGetObject("feedmedias", filePath, expiry, nil)
+		if err != nil {
+			return err
+		}
+		filePath = url1.RequestURI()
 	}
-	filePath = url1.RequestURI()
 
-	url2, err := storage.Client.PresignedGetObject("feedmedias", thumbnailPath, expiry, nil)
-	if err != nil {
-		return err
+	if thumbnailPath != "" {
+		url2, err := storage.Client.PresignedGetObject("feedmedias", thumbnailPath, expiry, nil)
+		if err != nil {
+			return err
+		}
+		thumbnailPath = url2.RequestURI()
 	}
-	thumbnailPath = url2.RequestURI()
 	fm.SetURLs(filePath, thumbnailPath)
 	return nil
 }
