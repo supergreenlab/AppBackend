@@ -156,11 +156,13 @@ func listenFeedMediasAdded() {
 			device = &d
 		}
 
-		if sht21Present, err := kv.GetSHT21PresentForBox(device.Identifier, int(*box.DeviceBox)); !sht21Present || err != nil {
-			if err != nil {
-				logrus.Errorf("getSensorPresentForBox in listenFeedMediasAdded %q - device: %+v box: %+v", err, device, box)
+		if device != nil {
+			if sht21Present, err := kv.GetSHT21PresentForBox(device.Identifier, int(*box.DeviceBox)); !sht21Present || err != nil {
+				if err != nil {
+					logrus.Errorf("getSensorPresentForBox in listenFeedMediasAdded %q - device: %+v box: %+v", err, device, box)
+				}
+				device = nil
 			}
-			device = nil
 		}
 
 		buff := new(bytes.Buffer)
