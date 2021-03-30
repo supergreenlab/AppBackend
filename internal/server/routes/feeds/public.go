@@ -85,7 +85,7 @@ func joinFollows(r *http.Request, selector sqlbuilder.Selector) sqlbuilder.Selec
 	if !userIDExists {
 		return selector
 	}
-	return selector.Columns(db.Raw("(follow.id is not null) as followed")).
+	return selector.Columns(db.Raw("(follows.id is not null) as followed")).
 		Join("follows").On("follows.plantid = plants.id and follows.userid = ?", uid)
 }
 
