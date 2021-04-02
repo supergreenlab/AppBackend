@@ -128,3 +128,28 @@ func SelectOneQuery(factory func() interface{}) func(fn httprouter.Handle) httpr
 		}
 	}
 }
+
+type FilterFn func(p httprouter.Params, selector sqlbuilder.Selector) sqlbuilder.Selector
+
+func Filter(filterFn FilterFn) middleware.Middleware {
+	return func(fn httprouter.Handle) httprouter.Handle {
+		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+			selector := r.Context().Value(SelectorContextKey{}).(sqlbuilder.Selector)
+			selector = filterFn(p, selector)
+			ctx := context.WithValue(r.Context(), SelectorContextKey{}, selector)
+			fn(w, r.WithContext(ctx), p)
+		}
+	}
+}
+
+type SelectorFn func() sqlbuilder.Selector
+
+func Selector(selectorFn SelectorFn) middleware.Middleware {
+	return func(fn httprouter.Handle) httprouter.Handle {
+		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+			selector := selectorFn()
+			ctx := context.WithValue(r.Context(), SelectorContextKey{}, selector)
+			fn(w, r.WithContext(ctx), p)
+		}
+	}
+}

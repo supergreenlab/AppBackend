@@ -57,10 +57,6 @@ type DBEndpointBuilder struct {
 	Output httprouter.Handle
 }
 
-func (dbe *DBEndpointBuilder) AddPre(pre middleware.Middleware) {
-	dbe.Pre = append(dbe.Pre, pre)
-}
-
 func (dbe DBEndpointBuilder) Endpoint() Endpoint {
 	e := NewEndpoint()
 	if dbe.Params != nil {
@@ -145,7 +141,7 @@ type SelectEndpointBuilder struct {
 }
 
 func (dbe SelectEndpointBuilder) Endpoint() Endpoint {
-	dbe.Pre[1] = dbe.Selector
+	dbe.Pre[0] = dbe.Selector
 	e := dbe.DBEndpointBuilder.Endpoint()
 	e.Output = dbe.DBEndpointBuilder.Output
 	return e
@@ -199,7 +195,7 @@ type CountEndpointBuilder struct {
 }
 
 func (dbe CountEndpointBuilder) Endpoint() Endpoint {
-	dbe.Pre[1] = dbe.Selector
+	dbe.Pre[0] = dbe.Selector
 	e := dbe.DBEndpointBuilder.Endpoint()
 	e.Output = dbe.DBEndpointBuilder.Output
 	return e

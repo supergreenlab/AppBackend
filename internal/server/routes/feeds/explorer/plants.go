@@ -49,9 +49,9 @@ func fetchPublicPlants(makeSelector func(sess sqlbuilder.Database, w http.Respon
 		}
 
 		for i, p := range results {
-			err := loadFeedMediaPublicURLs(&p)
+			err := explorer.LoadFeedMediaPublicURLs(&p)
 			if err != nil {
-				logrus.Errorf("loadFeedMediaPublicURLs in fetchPublicPlants %q - p: %+v", err, p)
+				logrus.Errorf("tools.LoadFeedMediaPublicURLs in fetchPublicPlants %q - p: %+v", err, p)
 				continue
 			}
 			results[i] = p

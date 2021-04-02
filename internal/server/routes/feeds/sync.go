@@ -30,6 +30,7 @@ import (
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	cmiddlewares "github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	fmiddlewares "github.com/SuperGreenLab/AppBackend/internal/server/routes/feeds/middlewares"
+	"github.com/SuperGreenLab/AppBackend/internal/server/tools"
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
@@ -115,9 +116,9 @@ var syncFeedMediasHandler = syncCollection("feedmedias", "feedmediaid", func() i
 			feedMedias := r.Context().Value(middlewares.ObjectContextKey{}).(*[]FeedMediaWithArchived)
 			for i, fm := range *feedMedias {
 				if fm.Deleted == false && fm.PlantArchived.Bool == false && fm.BoxArchived.Bool == false {
-					err = loadFeedMediaPublicURLs(&fm.FeedMedia)
+					err = tools.LoadFeedMediaPublicURLs(&fm.FeedMedia)
 					if err != nil {
-						logrus.Errorf("loadFeedMediaPublicURLs in syncFeedMediasHandler %q - fm: %+v", err, fm)
+						logrus.Errorf("tools.LoadFeedMediaPublicURLs in syncFeedMediasHandler %q - fm: %+v", err, fm)
 						http.Error(w, err.Error(), http.StatusInternalServerError)
 						return
 					}

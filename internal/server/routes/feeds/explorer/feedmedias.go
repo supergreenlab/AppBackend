@@ -24,6 +24,7 @@ import (
 
 	sgldb "github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
+	"github.com/SuperGreenLab/AppBackend/internal/server/tools"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
 	"upper.io/db.v3/lib/sqlbuilder"
@@ -48,9 +49,9 @@ func fetchPublicFeedMedias(w http.ResponseWriter, r *http.Request, p httprouter.
 
 	var err error
 	for i, fm := range feedMedias {
-		err = loadFeedMediaPublicURLs(&fm)
+		err = tools.LoadFeedMediaPublicURLs(&fm)
 		if err != nil {
-			logrus.Errorf("loadFeedMediaPublicURLs in fetchPublicFeedMedias %q - %+v", err, fm)
+			logrus.Errorf("tools.LoadFeedMediaPublicURLs in fetchPublicFeedMedias %q - %+v", err, fm)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

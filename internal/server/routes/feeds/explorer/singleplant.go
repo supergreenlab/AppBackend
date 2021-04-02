@@ -23,6 +23,7 @@ import (
 	"net/http"
 
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
+	"github.com/SuperGreenLab/AppBackend/internal/server/tools"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
 	"upper.io/db.v3/lib/sqlbuilder"
@@ -47,9 +48,9 @@ func fetchPublicPlant(w http.ResponseWriter, r *http.Request, p httprouter.Param
 		return
 	}
 
-	err := loadFeedMediaPublicURLs(&plant)
+	err := tools.LoadFeedMediaPublicURLs(&plant)
 	if err != nil {
-		logrus.Errorf("loadFeedMediaPublicURLs in fetchPublicPlant %q - plant: %+v", err, plant)
+		logrus.Errorf("tools.LoadFeedMediaPublicURLs in fetchPublicPlant %q - plant: %+v", err, plant)
 	}
 
 	if err := json.NewEncoder(w).Encode(plant); err != nil {

@@ -19,20 +19,18 @@
 package explorer
 
 import (
-	"net/http"
-
-	"github.com/julienschmidt/httprouter"
-	"github.com/sirupsen/logrus"
+	"github.com/rileyr/middleware"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
-var fetchLatestLikedFeedEntries = fetchPublicFeedEntries(func(sess sqlbuilder.Database, w http.ResponseWriter, r *http.Request, p httprouter.Params) sqlbuilder.Selector {
-	selector := sess.Select("fe.*", "comments.text as comment", "comments.id as commentid").From("likes").
-		LeftJoin("comments").On("comments.id = likes.commentid").
-		Join("feedentries fe").On("fe.id = likes.feedentryid or fe.id = comments.feedentryid").
-		OrderBy("likes.cat DESC")
-	selector = joinLatestFeedMediaForFeedEntry(sess, selector)
-	selector = joinPlantForFeedEntry(selector)
-	logrus.Info(selector.String())
-	return selector
-})
+var fetchLatestLikedFeedEntries = NewSelectFeedEntriesEndpointBuilderWithSelector(
+	func() sqlbuilder.Selector {
+		return sess.Select("fe.*", "comments.text as comment", "comments.id as commentid").From("likes").
+			LeftJoin("comments").On("comments.id = likes.commentid").
+			Join("feedentries fe").On("fe.id = likes.feedentryid or fe.id = comments.feedentryid").
+			OrderBy("likes.cat DESC")
+	},
+	[]middleware.Middleware{
+		joinLatestFeedMediaForFeedEntry,
+		joinPlantForFeedEntry,
+	}).Endpoint().Handle()

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package feeds
+package tools
 
 import (
 	"time"
@@ -29,7 +29,7 @@ type FeedMediasURL interface {
 	GetURLs() (filePath, thumbnailPath string)
 }
 
-func loadFeedMediaPublicURLs(fm FeedMediasURL) error {
+func LoadFeedMediaPublicURLs(fm FeedMediasURL) error {
 	filePath, thumbnailPath := fm.GetURLs()
 	expiry := time.Second * 60 * 60
 	if filePath != "" {

@@ -19,14 +19,13 @@
 package explorer
 
 import (
-	"net/http"
-
 	"github.com/julienschmidt/httprouter"
+	"github.com/rileyr/middleware"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
-var fetchPublicPlantFeedEntries = fetchPublicFeedEntries(func(sess sqlbuilder.Database, w http.ResponseWriter, r *http.Request, p httprouter.Params) sqlbuilder.Selector {
-	return sess.Select("fe.*").From("feedentries fe").
-		Where("p.id = ?", p.ByName("id")).
-		OrderBy("fe.createdat DESC")
-})
+var fetchPublicPlantFeedEntries = NewSelectFeedEntriesEndpointBuilder([]middleware.Middleware{
+	Filter(func(p httprouter.Params, selector sqlbuilder.Selector) sqlbuilder.Selector {
+		return selector.Where("p.id = ?", p.ByName("id"))
+	}),
+}).Endpoint().Handle()
