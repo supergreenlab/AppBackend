@@ -19,13 +19,14 @@
 package explorer
 
 import (
+	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
 var fetchPublicPlantFeedEntries = NewSelectFeedEntriesEndpointBuilder([]middleware.Middleware{
-	Filter(func(p httprouter.Params, selector sqlbuilder.Selector) sqlbuilder.Selector {
+	middlewares.Filter(func(p httprouter.Params, selector sqlbuilder.Selector) sqlbuilder.Selector {
 		return selector.Where("p.id = ?", p.ByName("id"))
 	}),
 }).Endpoint().Handle()

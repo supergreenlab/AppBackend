@@ -19,17 +19,19 @@
 package explorer
 
 import (
-	"net/http"
-
+	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/julienschmidt/httprouter"
+	"github.com/rileyr/middleware"
+	udb "upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
-var fetchLatestCommentedFeedEntries = fetchPublicFeedEntries(func(sess sqlbuilder.Database, w http.ResponseWriter, r *http.Request, p httprouter.Params) sqlbuilder.Selector {
-	selector := sess.Select("fe.*", "comments.text as comment").From("feedentries fe").
-		Join("comments").On("comments.feedentryid = fe.id").
-		OrderBy("comments.cat DESC")
-	selector = joinLatestFeedMediaForFeedEntry(sess, selector)
-	selector = joinPlantForFeedEntry(selector)
-	return selector
-})
+var fetchLatestCommentedFeedEntries = NewSelectFeedEntriesEndpointBuilder([]middleware.Middleware{
+	middlewares.Filter(func(p httprouter.Params, selector sqlbuilder.Selector) sqlbuilder.Selector {
+		return selector.Columns(udb.Raw("comments.text as comment")).
+			Join("comments").On("comments.feedentryid = fe.id").
+			OrderBy("comments.cat DESC")
+	}),
+	joinLatestFeedMediaForFeedEntry,
+	joinPlantForFeedEntry,
+}).Endpoint().Handle()

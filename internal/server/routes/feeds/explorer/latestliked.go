@@ -19,18 +19,20 @@
 package explorer
 
 import (
+	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/rileyr/middleware"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
 var fetchLatestLikedFeedEntries = NewSelectFeedEntriesEndpointBuilderWithSelector(
-	func() sqlbuilder.Selector {
+	middlewares.Selector(func() sqlbuilder.Selector {
 		return sess.Select("fe.*", "comments.text as comment", "comments.id as commentid").From("likes").
 			LeftJoin("comments").On("comments.id = likes.commentid").
 			Join("feedentries fe").On("fe.id = likes.feedentryid or fe.id = comments.feedentryid").
 			OrderBy("likes.cat DESC")
-	},
+	}),
 	[]middleware.Middleware{
 		joinLatestFeedMediaForFeedEntry,
 		joinPlantForFeedEntry,
-	}).Endpoint().Handle()
+	},
+).Endpoint().Handle()

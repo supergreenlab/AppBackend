@@ -51,17 +51,17 @@ func NewSelectFeedEntriesEndpointBuilder(pre []middleware.Middleware) SelectFeed
 	defaultSelector := func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
-			params := r.Context().Value(middlewares.QueryObjectContextKey{}).(SelectParams)
-			selector := sess.Select("fe.*").From("feedentries")
+			params := r.Context().Value(middlewares.QueryObjectContextKey{}).(SelectFeedEntriesParams)
+			selector := sess.Select("fe.*").From("feedentries fe")
 			selector = selector.OrderBy("fe.createdat DESC").Offset(params.GetOffset()).Limit(params.GetLimit())
 			ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
 			fn(w, r.WithContext(ctx), p)
 		}
 	}
-	return NewSelectFeedEntriesEndpointBuilderWithSelector(selector, pre)
+	return NewSelectFeedEntriesEndpointBuilderWithSelector(defaultSelector, pre)
 }
 
-func NewSelectFeedEntriesEndpointBuilderWithSelector(selector sqlbuilder.Selector, pre []middleware.Middleware) SelectFeedEntriesEndpointBuilder {
+func NewSelectFeedEntriesEndpointBuilderWithSelector(selector middleware.Middleware, pre []middleware.Middleware) SelectFeedEntriesEndpointBuilder {
 	pre = append([]middleware.Middleware{
 		selector,
 		joinFeedEntrySocialSelector,
