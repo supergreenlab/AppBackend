@@ -24,9 +24,34 @@ import (
 
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/julienschmidt/httprouter"
+	"github.com/rileyr/middleware"
 	"github.com/sirupsen/logrus"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
+
+type SelectFeedEntriesEndpointBuilder struct {
+	middlewares.DBEndpointBuilder
+
+	Selector middleware.Middleware
+
+	Collection string
+}
+
+func (dbe SelectFeedEntriesEndpointBuilder) Endpoint() middlewares.Endpoint {
+	dbe.Pre[1] = dbe.Selector
+	e := dbe.DBEndpointBuilder.Endpoint()
+	e.Output = dbe.DBEndpointBuilder.Output
+	return e
+}
+
+func NewSelectFeedEntriesEndpointBuilder(collection string) SelectFeedEntriesEndpointBuilder {
+	e := SelectFeedEntriesEndpointBuilder{
+		DBEndpointBuilder: middlewares.NewDBEndpointBuilder(param, nil, nil, nil, middlewares.SelectQuery(factory)),
+		Collection:        collection,
+	}
+	e.Output = middlewares.OutputResult("feedentries")
+	return e
+}
 
 func fetchPublicFeedEntries(makeSelector func(sess sqlbuilder.Database, w http.ResponseWriter, r *http.Request, p httprouter.Params) sqlbuilder.Selector) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {

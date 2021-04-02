@@ -49,9 +49,12 @@ func NewEndpoint() Endpoint {
 type Factory func() interface{}
 
 type DBEndpointBuilder struct {
-	Pre  []middleware.Middleware
-	DBFn middleware.Middleware
-	Post []middleware.Middleware
+	Params middleware.Middleware
+	Input  middleware.Middleware
+	Pre    []middleware.Middleware
+	DBFn   middleware.Middleware
+	Post   []middleware.Middleware
+	Output httprouter.Handle
 }
 
 func (dbe *DBEndpointBuilder) AddPre(pre middleware.Middleware) {
@@ -60,21 +63,28 @@ func (dbe *DBEndpointBuilder) AddPre(pre middleware.Middleware) {
 
 func (dbe DBEndpointBuilder) Endpoint() Endpoint {
 	e := NewEndpoint()
+	if dbe.Params != nil {
+		e.Middlewares = append(e.Middlewares, dbe.Params)
+	}
+	if dbe.Input != nil {
+		e.Middlewares = append(e.Middlewares, dbe.Input)
+	}
 	e.Middlewares = append(e.Middlewares, dbe.Pre...)
 	e.Middlewares = append(e.Middlewares, dbe.DBFn)
 	e.Middlewares = append(e.Middlewares, dbe.Post...)
+	e.Output = dbe.Output
 	return e
 }
 
-func NewDBEndpointBuilder(param Factory, input Factory, pre, post []middleware.Middleware, dbfn middleware.Middleware) DBEndpointBuilder {
-	e := DBEndpointBuilder{DBFn: dbfn}
-	e.Pre = []middleware.Middleware{}
+func NewDBEndpointBuilder(param Factory, input Factory, pre, post []middleware.Middleware, dbfn middleware.Middleware, output httprouter.Handle) DBEndpointBuilder {
+	e := DBEndpointBuilder{DBFn: dbfn, Output: output}
 	if param != nil {
-		e.Pre = append(e.Pre, DecodeQuery(param))
+		e.Params = DecodeQuery(param)
 	}
 	if input != nil {
-		e.Pre = append(e.Pre, DecodeJSON(input))
+		e.Input = DecodeJSON(input)
 	}
+	e.Pre = []middleware.Middleware{}
 	if pre != nil {
 		e.Pre = append(e.Pre, pre...)
 	}
@@ -94,13 +104,13 @@ type InsertEndpointBuilder struct {
 func (dbe InsertEndpointBuilder) Endpoint() Endpoint {
 	e := dbe.DBEndpointBuilder.Endpoint()
 	e.Middlewares = append(e.Middlewares, PublishInsert(dbe.Collection))
-	e.Output = OutputObjectID
+	e.Output = dbe.DBEndpointBuilder.Output
 	return e
 }
 
 func NewInsertEndpointBuilder(collection string, input Factory, pre, post []middleware.Middleware) InsertEndpointBuilder {
 	e := InsertEndpointBuilder{
-		DBEndpointBuilder: NewDBEndpointBuilder(nil, input, pre, post, InsertObject(collection)),
+		DBEndpointBuilder: NewDBEndpointBuilder(nil, input, pre, post, InsertObject(collection), OutputObjectID),
 		Collection:        collection,
 	}
 	return e
@@ -114,13 +124,13 @@ type UpdateEndpointBuilder struct {
 
 func (dbe UpdateEndpointBuilder) Endpoint() Endpoint {
 	e := dbe.DBEndpointBuilder.Endpoint()
-	e.Output = OutputOK
+	e.Output = dbe.DBEndpointBuilder.Output
 	return e
 }
 
 func NewUpdateEndpointBuilder(collection string, input Factory, pre, post []middleware.Middleware) UpdateEndpointBuilder {
 	e := UpdateEndpointBuilder{
-		DBEndpointBuilder: NewDBEndpointBuilder(nil, input, pre, post, UpdateObject(collection)),
+		DBEndpointBuilder: NewDBEndpointBuilder(nil, input, pre, post, UpdateObject(collection), OutputOK),
 		Collection:        collection,
 	}
 	return e
@@ -137,7 +147,7 @@ type SelectEndpointBuilder struct {
 func (dbe SelectEndpointBuilder) Endpoint() Endpoint {
 	dbe.Pre[1] = dbe.Selector
 	e := dbe.DBEndpointBuilder.Endpoint()
-	e.Output = OutputSelectResult(dbe.Collection)
+	e.Output = dbe.DBEndpointBuilder.Output
 	return e
 }
 
@@ -153,7 +163,7 @@ func NewSelectEndpointBuilder(collection string, param, factory Factory, pre, po
 		}
 	}
 	e := SelectEndpointBuilder{
-		DBEndpointBuilder: NewDBEndpointBuilder(param, nil, append([]middleware.Middleware{defaultSelector}, pre...), post, SelectQuery(factory)),
+		DBEndpointBuilder: NewDBEndpointBuilder(param, nil, append([]middleware.Middleware{defaultSelector}, pre...), post, SelectQuery(factory), OutputSelectResult(collection)),
 		Collection:        collection,
 	}
 	e.Selector = defaultSelector
@@ -168,13 +178,13 @@ type SelectOneEndpointBuilder struct {
 
 func (dbe SelectOneEndpointBuilder) Endpoint() Endpoint {
 	e := dbe.DBEndpointBuilder.Endpoint()
-	e.Output = OutputSelectOneResult(dbe.Collection)
+	e.Output = dbe.DBEndpointBuilder.Output
 	return e
 }
 
 func NewSelectOneEndpointBuilder(collection string, param, factory Factory, pre, post []middleware.Middleware) SelectOneEndpointBuilder {
 	e := SelectOneEndpointBuilder{
-		DBEndpointBuilder: NewDBEndpointBuilder(param, nil, pre, post, SelectOneQuery(factory)),
+		DBEndpointBuilder: NewDBEndpointBuilder(param, nil, pre, post, SelectOneQuery(factory), OutputSelectOneResult(collection)),
 		Collection:        collection,
 	}
 	return e
@@ -191,7 +201,7 @@ type CountEndpointBuilder struct {
 func (dbe CountEndpointBuilder) Endpoint() Endpoint {
 	dbe.Pre[1] = dbe.Selector
 	e := dbe.DBEndpointBuilder.Endpoint()
-	e.Output = OutputSelectOneResult(dbe.Collection)
+	e.Output = dbe.DBEndpointBuilder.Output
 	return e
 }
 
@@ -206,7 +216,7 @@ func NewCountEndpointBuilder(collection string, param Factory, pre, post []middl
 	}
 	factory := func() interface{} { return &Count{} }
 	e := CountEndpointBuilder{
-		DBEndpointBuilder: NewDBEndpointBuilder(param, nil, append([]middleware.Middleware{defaultSelector}, pre...), post, SelectOneQuery(factory)),
+		DBEndpointBuilder: NewDBEndpointBuilder(param, nil, append([]middleware.Middleware{defaultSelector}, pre...), post, SelectOneQuery(factory), OutputSelectOneResult(collection)),
 		Collection:        collection,
 	}
 	e.Selector = defaultSelector

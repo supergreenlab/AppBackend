@@ -78,6 +78,7 @@ func joinLatestFeedMedia(fn httprouter.Handle) httprouter.Handle {
 			Join(db.Raw(fmt.Sprintf("(%s) latestfm", lastFeedMediaSelector.String()))).Using("feedid").
 			Join("feedentries").On("feedentries.cat = latestfe.cat").And("feedentries.feedid = plants.feedid").
 			Join("feedmedias").On("feedmedias.cat = latestfm.cat").And("latestfm.feedid = plants.feedid")
+
 		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
 		fn(w, r.WithContext(ctx), p)
 	}
