@@ -18,6 +18,13 @@
 
 package feeds
 
+import (
+	"time"
+
+	sgldb "github.com/SuperGreenLab/AppBackend/internal/data/db"
+	"github.com/gofrs/uuid"
+)
+
 type publicPlantResult struct {
 	ID            string `db:"id" json:"id"`
 	Name          string `db:"name" json:"name"`
@@ -42,4 +49,47 @@ func (r publicPlantResult) GetURLs() (filePath string, thumbnailPath string) {
 
 type publicPlantsResult struct {
 	Plants []publicPlantResult `json:"plants"`
+}
+
+type publicFeedEntry struct {
+	sgldb.FeedEntry
+
+	Liked      bool `db:"liked" json:"liked"`
+	Bookmarked bool `db:"bookmarked" json:"bookmarked"`
+	NComments  int  `db:"ncomments" json:"nComments"`
+	NLikes     int  `db:"nlikes" json:"nLikes"`
+
+	// TODO make an interface based middleware to unify the select* middlewares
+	PlantID       uuid.NullUUID `db:"plantid,omitempty" json:"plantID,omitempty"`
+	PlantName     string        `db:"name,omitempty" json:"plantName,omitempty"`
+	CommentID     uuid.NullUUID `db:"commentid,omitempty" json:"commentID,omitempty"`
+	Comment       *string       `db:"comment,omitempty" json:"comment,omitempty"`
+	LikeDate      *time.Time    `db:"likecat,omitempty" json:"likeDate,omitempty"`
+	ThumbnailPath *string       `db:"thumbnailpath,omitempty" json:"thumbnailpath,omitempty"`
+}
+
+func (r *publicFeedEntry) SetURLs(_, thumbnailPath string) {
+	if thumbnailPath != "" {
+		*r.ThumbnailPath = thumbnailPath
+	}
+}
+
+func (r publicFeedEntry) GetURLs() (filePath, thumbnailPath string) {
+	filePath, thumbnailPath = "", ""
+	if r.ThumbnailPath != nil {
+		thumbnailPath = *r.ThumbnailPath
+	}
+	return
+}
+
+type publicFeedEntriesResult struct {
+	Entries []publicFeedEntry `json:"entries"`
+}
+
+type publicFeedEntryResult struct {
+	Entry publicFeedEntry `json:"entry"`
+}
+
+type publicFeedMediasResult struct {
+	Medias []sgldb.FeedMedia `json:"medias"`
 }

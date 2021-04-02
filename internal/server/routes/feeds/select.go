@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
+	sgldb "github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/gofrs/uuid"
@@ -297,13 +298,13 @@ type FeedEntrySocial struct {
 
 func feedEntrySocialSelect(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		feid := p.ByName("id")
 		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
-
 		uid, userIDExists := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
 
-		selector := sess.Select()
+		feid := p.ByName("id")
 
+		selector := sess.Select()
+		// TODO DRY this with explorer middleware
 		if userIDExists {
 			selector = selector.Columns(udb.Raw("exists(select * from likes l where l.userid = ? and l.feedentryid = ?) as liked", uid, feid)).
 				Columns(udb.Raw("exists(select * from bookmarks b where b.userid = ? and b.feedentryid = ?) as bookmarked", uid, feid))
@@ -352,7 +353,12 @@ func joinFeedEntry(fn httprouter.Handle) httprouter.Handle {
 }
 
 type publicFeedEntryBookmark struct {
-	publicFeedEntry
+	sgldb.FeedEntry
+
+	Liked      bool `db:"liked" json:"liked"`
+	Bookmarked bool `db:"bookmarked" json:"bookmarked"`
+	NComments  int  `db:"ncomments" json:"nComments"`
+	NLikes     int  `db:"nlikes" json:"nLikes"`
 
 	PlantID string `db:"plantid" json:"plantID"`
 }
