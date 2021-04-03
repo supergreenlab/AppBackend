@@ -22,4 +22,4 @@ import (
 	"github.com/rileyr/middleware"
 )
 
-var fetchLatestUpdatedPublicPlants = NewSelectPlantsEndpointBuilder([]middleware.Middleware{})
+var fetchLatestUpdatedPublicPlants = NewSelectPlantsEndpointBuilder([]middleware.Middleware{}).Endpoint().Handle()

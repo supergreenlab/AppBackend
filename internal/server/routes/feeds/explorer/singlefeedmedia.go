@@ -29,4 +29,4 @@ var fetchPublicFeedMedia = NewSelectFeedMediaEndpointBuilder([]middleware.Middle
 	middlewares.Filter(func(p httprouter.Params, selector sqlbuilder.Selector) sqlbuilder.Selector {
 		return selector.Where("fm.id = ?", p.ByName("id"))
 	}),
-})
+}).Endpoint().Handle()

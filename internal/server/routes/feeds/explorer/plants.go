@@ -63,7 +63,7 @@ func NewSelectPlantsEndpointBuilderWithSelector(selector middleware.Middleware, 
 	pre = append([]middleware.Middleware{
 		selector,
 		publicPlantsOnly,
-		joinLatestFeedMedia,
+		joinLatestPlantFeedMedia,
 		joinBoxSettings,
 		joinFollows,
 		pageOffsetLimit,
@@ -97,7 +97,7 @@ func NewSelectPlantEndpointBuilder(pre []middleware.Middleware) SelectPlantsEndp
 	pre = append([]middleware.Middleware{
 		defaultSelector,
 		publicPlantsOnly,
-		joinLatestFeedMedia,
+		joinLatestPlantFeedMedia,
 		joinBoxSettings,
 		joinFollows,
 	}, pre...)
@@ -110,7 +110,7 @@ func NewSelectPlantEndpointBuilder(pre []middleware.Middleware) SelectPlantsEndp
 			nil, nil,
 			pre, post,
 			middlewares.SelectOneQuery(factory),
-			middlewares.OutputSelectOneResult),
+			middlewares.OutputSelectOneResult()),
 		Selector: defaultSelector,
 	}
 	return e

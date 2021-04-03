@@ -25,7 +25,7 @@ import (
 )
 
 var fetchLatestLikedFeedEntries = NewSelectFeedEntriesEndpointBuilderWithSelector(
-	middlewares.Selector(func() sqlbuilder.Selector {
+	middlewares.Selector(func(sess sqlbuilder.Database) sqlbuilder.Selector {
 		return sess.Select("fe.*", "comments.text as comment", "comments.id as commentid").From("likes").
 			LeftJoin("comments").On("comments.id = likes.commentid").
 			Join("feedentries fe").On("fe.id = likes.feedentryid or fe.id = comments.feedentryid").

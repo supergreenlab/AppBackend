@@ -142,12 +142,13 @@ func Filter(filterFn FilterFn) middleware.Middleware {
 	}
 }
 
-type SelectorFn func() sqlbuilder.Selector
+type SelectorFn func(sqlbuilder.Database) sqlbuilder.Selector
 
 func Selector(selectorFn SelectorFn) middleware.Middleware {
 	return func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-			selector := selectorFn()
+			sess := r.Context().Value(SessContextKey{}).(sqlbuilder.Database)
+			selector := selectorFn(sess)
 			ctx := context.WithValue(r.Context(), SelectorContextKey{}, selector)
 			fn(w, r.WithContext(ctx), p)
 		}

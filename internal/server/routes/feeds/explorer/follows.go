@@ -24,4 +24,4 @@ import (
 
 var fetchLatestUpdatedFollowedPublicPlants = NewSelectPlantsEndpointBuilder([]middleware.Middleware{
 	followedPlantsOnly,
-})
+}).Endpoint().Handle()

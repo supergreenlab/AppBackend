@@ -57,7 +57,7 @@ func pageOffsetLimit(fn httprouter.Handle) httprouter.Handle {
 	}
 }
 
-func joinPlantLatestFeedMedia(fn httprouter.Handle) httprouter.Handle {
+func joinLatestPlantFeedMedia(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
 		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
@@ -102,8 +102,10 @@ func joinFollows(fn httprouter.Handle) httprouter.Handle {
 		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
 		uid, userIDExists := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
 		if !userIDExists {
-			return selector
+			fn(w, r, p)
+			return
 		}
+
 		selector = selector.Columns(db.Raw("(follows.id is not null) as followed")).
 			Join("follows").On("follows.plantid = plants.id and follows.userid = ?", uid)
 
@@ -188,6 +190,7 @@ func publicFeedMediasOnly(fn httprouter.Handle) httprouter.Handle {
 
 func joinLatestFeedMediaForFeedEntry(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
 		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
 
 		lastFeedMediaSelector := sess.Select("feedentryid", udb.Raw("max(feedmedias.cat) as cat")).
