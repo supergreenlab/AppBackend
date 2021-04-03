@@ -76,8 +76,8 @@ func joinLatestPlantFeedMedia(fn httprouter.Handle) httprouter.Handle {
 		selector = selector.Columns("feedmedias.filepath", "feedmedias.thumbnailpath").
 			Join(db.Raw(fmt.Sprintf("(%s) latestfe", lastFeedEntrySelector.String()))).Using("feedid").
 			Join(db.Raw(fmt.Sprintf("(%s) latestfm", lastFeedMediaSelector.String()))).Using("feedid").
-			Join("feedentries").On("feedentries.cat = latestfe.cat").And("feedentries.feedid = plants.feedid").
-			Join("feedmedias").On("feedmedias.cat = latestfm.cat").And("latestfm.feedid = plants.feedid").
+			Join("feedentries").On("feedentries.cat = latestfe.cat").And("feedentries.feedid = p.feedid").
+			Join("feedmedias").On("feedmedias.cat = latestfm.cat").And("latestfm.feedid = p.feedid").
 			OrderBy("latestfm.cat desc")
 
 		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
@@ -90,7 +90,7 @@ func joinBoxSettings(fn httprouter.Handle) httprouter.Handle {
 		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
 
 		selector = selector.Columns("boxes.settings as boxsettings").
-			Join("boxes").On("boxes.id = plants.boxid")
+			Join("boxes").On("boxes.id = p.boxid")
 
 		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
 		fn(w, r.WithContext(ctx), p)
@@ -107,7 +107,7 @@ func joinFollows(fn httprouter.Handle) httprouter.Handle {
 		}
 
 		selector = selector.Columns(db.Raw("(follows.id is not null) as followed")).
-			Join("follows").On("follows.plantid = plants.id and follows.userid = ?", uid)
+			LeftJoin("follows").On("follows.plantid = p.id and follows.userid = ?", uid)
 
 		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
 		fn(w, r.WithContext(ctx), p)
@@ -148,9 +148,8 @@ func publicPlantsOnly(fn httprouter.Handle) httprouter.Handle {
 func followedPlantsOnly(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
-		uid := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
 
-		selector = selector.Join("follows").On("follows.plantid = p.id and userid = ?", uid)
+		selector = selector.Where("follows.id is not null")
 
 		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
 		fn(w, r.WithContext(ctx), p)
@@ -211,8 +210,8 @@ func joinPlantForFeedEntry(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
 
-		selector = selector.Columns("plants.name", "plants.id as plantid").
-			Join("plants").On("plants.feedid = fe.feedid")
+		selector = selector.Columns("p.name", "p.id as plantid").
+			Join("plants p").On("p.feedid = fe.feedid")
 
 		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
 		fn(w, r.WithContext(ctx), p)

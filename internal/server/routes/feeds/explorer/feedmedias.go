@@ -22,7 +22,6 @@ import (
 	"context"
 	"net/http"
 
-	sgldb "github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
@@ -69,13 +68,13 @@ func NewSelectFeedMediasEndpointBuilderWithSelector(selector middleware.Middlewa
 	post := []middleware.Middleware{
 		loadFeedMedias,
 	}
-	factory := func() interface{} { return &[]*sgldb.FeedMedia{} }
+	factory := func() interface{} { return &publicFeedMedias{} }
 	e := SelectFeedMediasEndpointBuilder{
 		DBEndpointBuilder: middlewares.NewDBEndpointBuilder(
-			func() interface{} { return SelectFeedMediasParams{} }, nil,
+			func() interface{} { return &SelectFeedMediasParams{} }, nil,
 			pre, post,
 			middlewares.SelectQuery(factory),
-			middlewares.OutputResult("feedentries")),
+			middlewares.OutputResult("medias")),
 		Selector: selector,
 	}
 	return e
@@ -98,7 +97,7 @@ func NewSelectFeedMediaEndpointBuilder(pre []middleware.Middleware) SelectFeedMe
 	post := []middleware.Middleware{
 		loadFeedMedia,
 	}
-	factory := func() interface{} { return &sgldb.FeedMedia{} }
+	factory := func() interface{} { return &publicFeedMedia{} }
 	e := SelectFeedMediasEndpointBuilder{
 		DBEndpointBuilder: middlewares.NewDBEndpointBuilder(
 			nil, nil,

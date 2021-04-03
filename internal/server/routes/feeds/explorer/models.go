@@ -26,7 +26,7 @@ import (
 	"github.com/gofrs/uuid"
 )
 
-type publicPlantResult struct {
+type publicPlant struct {
 	ID            string `db:"id" json:"id"`
 	Name          string `db:"name" json:"name"`
 	FilePath      string `db:"filepath" json:"filePath"`
@@ -38,14 +38,24 @@ type publicPlantResult struct {
 	BoxSettings string `db:"boxsettings" json:"boxSettings"`
 }
 
-func (r *publicPlantResult) SetURLs(filePath string, thumbnailPath string) {
+func (r *publicPlant) SetURLs(filePath string, thumbnailPath string) {
 	r.FilePath = filePath
 	r.ThumbnailPath = thumbnailPath
 }
 
-func (r publicPlantResult) GetURLs() (filePath string, thumbnailPath string) {
+func (r publicPlant) GetURLs() (filePath string, thumbnailPath string) {
 	filePath, thumbnailPath = r.FilePath, r.ThumbnailPath
 	return
+}
+
+type publicPlants []*publicPlant
+
+func (pfe *publicPlants) AsFeedMediasArray() []tools.FeedMediasURL {
+	res := make([]tools.FeedMediasURL, len(*pfe))
+	for i, fe := range *pfe {
+		res[i] = fe
+	}
+	return res
 }
 
 type publicFeedEntry struct {
@@ -82,6 +92,20 @@ func (r publicFeedEntry) GetURLs() (filePath, thumbnailPath string) {
 type publicFeedEntries []*publicFeedEntry
 
 func (pfe *publicFeedEntries) AsFeedMediasArray() []tools.FeedMediasURL {
+	res := make([]tools.FeedMediasURL, len(*pfe))
+	for i, fe := range *pfe {
+		res[i] = fe
+	}
+	return res
+}
+
+type publicFeedMedia struct {
+	sgldb.FeedMedia
+}
+
+type publicFeedMedias []*publicFeedMedia
+
+func (pfe *publicFeedMedias) AsFeedMediasArray() []tools.FeedMediasURL {
 	res := make([]tools.FeedMediasURL, len(*pfe))
 	for i, fe := range *pfe {
 		res[i] = fe

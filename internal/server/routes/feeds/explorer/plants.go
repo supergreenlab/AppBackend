@@ -49,7 +49,7 @@ func NewSelectPlantsEndpointBuilder(pre []middleware.Middleware) SelectPlantsEnd
 	defaultSelector := func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
-			params := r.Context().Value(middlewares.QueryObjectContextKey{}).(SelectPlantsParams)
+			params := r.Context().Value(middlewares.QueryObjectContextKey{}).(*SelectPlantsParams)
 			selector := sess.Select("p.id", "p.name", "p.settings").From("plants p").
 				Offset(params.GetOffset()).Limit(params.GetLimit())
 			ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
@@ -71,10 +71,10 @@ func NewSelectPlantsEndpointBuilderWithSelector(selector middleware.Middleware, 
 	post := []middleware.Middleware{
 		loadFeedMedias,
 	}
-	factory := func() interface{} { return &[]*publicPlantResult{} }
+	factory := func() interface{} { return &publicPlants{} }
 	e := SelectPlantsEndpointBuilder{
 		DBEndpointBuilder: middlewares.NewDBEndpointBuilder(
-			func() interface{} { return SelectPlantsParams{} }, nil,
+			func() interface{} { return &SelectPlantsParams{} }, nil,
 			pre, post,
 			middlewares.SelectQuery(factory),
 			middlewares.OutputResult("plants")),
@@ -104,7 +104,7 @@ func NewSelectPlantEndpointBuilder(pre []middleware.Middleware) SelectPlantsEndp
 	post := []middleware.Middleware{
 		loadFeedMedia,
 	}
-	factory := func() interface{} { return &publicPlantResult{} }
+	factory := func() interface{} { return &publicPlant{} }
 	e := SelectPlantsEndpointBuilder{
 		DBEndpointBuilder: middlewares.NewDBEndpointBuilder(
 			nil, nil,

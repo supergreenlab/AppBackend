@@ -105,7 +105,7 @@ func NewSelectFeedEntryEndpointBuilder(pre []middleware.Middleware) SelectFeedEn
 			nil, nil,
 			pre, post,
 			middlewares.SelectOneQuery(factory),
-			middlewares.OutputResult("entry")),
+			middlewares.OutputResult("entry")), // TODO: fix inconsistency with other explorer endpoints
 		Selector: defaultSelector,
 	}
 	return e
