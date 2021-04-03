@@ -29,6 +29,10 @@ type FeedMediasURL interface {
 	GetURLs() (filePath, thumbnailPath string)
 }
 
+type FeedMediasURLs interface {
+	AsFeedMediasArray() []FeedMediasURL
+}
+
 func LoadFeedMediaPublicURLs(fm FeedMediasURL) error {
 	filePath, thumbnailPath := fm.GetURLs()
 	expiry := time.Second * 60 * 60

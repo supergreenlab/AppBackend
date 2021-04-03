@@ -22,6 +22,7 @@ import (
 	"time"
 
 	sgldb "github.com/SuperGreenLab/AppBackend/internal/data/db"
+	"github.com/SuperGreenLab/AppBackend/internal/server/tools"
 	"github.com/gofrs/uuid"
 )
 
@@ -78,14 +79,12 @@ func (r publicFeedEntry) GetURLs() (filePath, thumbnailPath string) {
 	return
 }
 
-type publicFeedEntriesResult struct {
-	Entries []publicFeedEntry `json:"entries"`
-}
+type publicFeedEntries []*publicFeedEntry
 
-type publicFeedEntryResult struct {
-	Entry publicFeedEntry `json:"entry"`
-}
-
-type publicFeedMediasResult struct {
-	Medias []sgldb.FeedMedia `json:"medias"`
+func (pfe *publicFeedEntries) AsFeedMediasArray() []tools.FeedMediasURL {
+	res := make([]tools.FeedMediasURL, len(*pfe))
+	for i, fe := range *pfe {
+		res[i] = fe
+	}
+	return res
 }

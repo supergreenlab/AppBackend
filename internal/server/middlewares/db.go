@@ -102,7 +102,6 @@ func SelectQuery(factory func() interface{}) func(fn httprouter.Handle) httprout
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			selector := r.Context().Value(SelectorContextKey{}).(sqlbuilder.Selector)
 			results := factory()
-			logrus.Info(selector.String())
 			if err := selector.All(results); err != nil {
 				logrus.Errorf("All in SelectQuery %q", err)
 				http.Error(w, err.Error(), http.StatusInternalServerError)

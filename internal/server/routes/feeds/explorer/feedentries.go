@@ -69,7 +69,7 @@ func NewSelectFeedEntriesEndpointBuilderWithSelector(selector middleware.Middlew
 	post := []middleware.Middleware{
 		loadFeedMedias,
 	}
-	factory := func() interface{} { return &[]*publicFeedEntry{} }
+	factory := func() interface{} { return &publicFeedEntries{} }
 	e := SelectFeedEntriesEndpointBuilder{
 		DBEndpointBuilder: middlewares.NewDBEndpointBuilder(
 			func() interface{} { return &SelectFeedEntriesParams{} }, nil,
