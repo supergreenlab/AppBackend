@@ -55,7 +55,7 @@ func OutputResult(name string) httprouter.Handle {
 
 // OutputSelectResult - returns the list of data
 func OutputSelectResult(collection string) httprouter.Handle {
-	return OutputSelectResult(collection)
+	return OutputResult(collection)
 }
 
 // OutputSelectOneResult - returns the data
