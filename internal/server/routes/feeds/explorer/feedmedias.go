@@ -19,50 +19,93 @@
 package explorer
 
 import (
-	"encoding/json"
+	"context"
 	"net/http"
 
 	sgldb "github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
-	"github.com/SuperGreenLab/AppBackend/internal/server/tools"
 	"github.com/julienschmidt/httprouter"
-	"github.com/sirupsen/logrus"
+	"github.com/rileyr/middleware"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
-func fetchPublicFeedMedias(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+type SelectFeedMediasParams struct {
+	middlewares.SelectParamsOffsetLimit
+}
 
-	feedMedias := []sgldb.FeedMedia{}
-	selector := sess.Select("fm.*").From("feedmedias fm").
-		Join("feedentries fe").On("fm.feedentryid = fe.id").
-		Join("feeds f").On("fe.feedid = f.id").
-		Join("plants p").On("p.feedid = f.id").
-		Where("p.is_public = ?", true).
-		And("fe.id = ?", p.ByName("id")).
-		And("fm.deleted = ?", false)
-	if err := selector.All(&feedMedias); err != nil {
-		logrus.Errorf("selector.All in fetchPublicFeedMedias %q - id: %s", err, p.ByName("id"))
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+type SelectFeedMediasEndpointBuilder struct {
+	middlewares.DBEndpointBuilder
 
-	var err error
-	for i, fm := range feedMedias {
-		err = tools.LoadFeedMediaPublicURLs(&fm)
-		if err != nil {
-			logrus.Errorf("tools.LoadFeedMediaPublicURLs in fetchPublicFeedMedias %q - %+v", err, fm)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+	Selector middleware.Middleware
+}
+
+func (dbe SelectFeedMediasEndpointBuilder) Endpoint() middlewares.Endpoint {
+	dbe.Pre[0] = dbe.Selector
+	e := dbe.DBEndpointBuilder.Endpoint()
+	e.Output = dbe.DBEndpointBuilder.Output
+	return e
+}
+
+func NewSelectFeedMediasEndpointBuilder(pre []middleware.Middleware) SelectFeedMediasEndpointBuilder {
+	defaultSelector := func(fn httprouter.Handle) httprouter.Handle {
+		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+			sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+			params := r.Context().Value(middlewares.QueryObjectContextKey{}).(SelectFeedMediasParams)
+			selector := sess.Select("fm.*").From("feedmedias fm")
+			selector = selector.OrderBy("fe.createdat DESC").Offset(params.GetOffset()).Limit(params.GetLimit())
+			ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
+			fn(w, r.WithContext(ctx), p)
 		}
-		// might not be useful anymore
-		feedMedias[i] = fm
+	}
+	return NewSelectFeedMediasEndpointBuilderWithSelector(defaultSelector, pre)
+}
+
+func NewSelectFeedMediasEndpointBuilderWithSelector(selector middleware.Middleware, pre []middleware.Middleware) SelectFeedMediasEndpointBuilder {
+	pre = append([]middleware.Middleware{
+		selector,
+		publicFeedMediasOnly,
+		pageOffsetLimit,
+	}, pre...)
+	post := []middleware.Middleware{
+		loadFeedMedias,
+	}
+	factory := func() interface{} { return &[]*sgldb.FeedMedia{} }
+	e := SelectFeedMediasEndpointBuilder{
+		DBEndpointBuilder: middlewares.NewDBEndpointBuilder(
+			func() interface{} { return SelectFeedMediasParams{} }, nil,
+			pre, post,
+			middlewares.SelectQuery(factory),
+			middlewares.OutputResult("feedentries")),
+		Selector: selector,
+	}
+	return e
+}
+
+func NewSelectFeedMediaEndpointBuilder(pre []middleware.Middleware) SelectFeedMediasEndpointBuilder {
+	defaultSelector := func(fn httprouter.Handle) httprouter.Handle {
+		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+			sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+			selector := sess.Select("fm.*").From("feedmedias fm")
+			ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
+			fn(w, r.WithContext(ctx), p)
+		}
 	}
 
-	result := publicFeedMediasResult{feedMedias}
-	if err := json.NewEncoder(w).Encode(result); err != nil {
-		logrus.Errorf("json.NewEncoder in fetchPublicFeedMedias %q - %+v", err, result)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	pre = append([]middleware.Middleware{
+		defaultSelector,
+		publicFeedMediasOnly,
+	}, pre...)
+	post := []middleware.Middleware{
+		loadFeedMedia,
 	}
+	factory := func() interface{} { return &sgldb.FeedMedia{} }
+	e := SelectFeedMediasEndpointBuilder{
+		DBEndpointBuilder: middlewares.NewDBEndpointBuilder(
+			nil, nil,
+			pre, post,
+			middlewares.SelectOneQuery(factory),
+			middlewares.OutputSelectOneResult()),
+		Selector: defaultSelector,
+	}
+	return e
 }

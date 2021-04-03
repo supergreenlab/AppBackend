@@ -23,10 +23,8 @@ import (
 	"net/http"
 
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
-	"github.com/SuperGreenLab/AppBackend/internal/server/tools"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
-	"github.com/sirupsen/logrus"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
@@ -69,30 +67,46 @@ func NewSelectFeedEntriesEndpointBuilderWithSelector(selector middleware.Middlew
 		pageOffsetLimit,
 	}, pre...)
 	post := []middleware.Middleware{
-		func(fn httprouter.Handle) httprouter.Handle {
-			return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-				feedEntries := r.Context().Value(middlewares.SelectResultContextKey{}).(*[]publicFeedEntry)
-				for i, p := range *feedEntries {
-					err := tools.LoadFeedMediaPublicURLs(&p)
-					if err != nil {
-						logrus.Errorf("tools.LoadFeedMediaPublicURLs in fetchPublicFeedEntries %q - p: %+v", err, p)
-						continue
-					}
-					(*feedEntries)[i] = p
-				}
-				ctx := context.WithValue(r.Context(), middlewares.SelectResultContextKey{}, feedEntries)
-				fn(w, r.WithContext(ctx), p)
-			}
-		},
+		loadFeedMedias,
 	}
-	factory := func() interface{} { return &[]publicFeedEntry{} }
+	factory := func() interface{} { return &[]*publicFeedEntry{} }
 	e := SelectFeedEntriesEndpointBuilder{
 		DBEndpointBuilder: middlewares.NewDBEndpointBuilder(
-			func() interface{} { return SelectFeedEntriesParams{} },
-			nil,
+			func() interface{} { return SelectFeedEntriesParams{} }, nil,
 			pre, post,
 			middlewares.SelectQuery(factory),
 			middlewares.OutputResult("feedentries")),
+		Selector: selector,
+	}
+	return e
+}
+
+func NewSelectFeedEntryEndpointBuilder(pre []middleware.Middleware) SelectFeedEntriesEndpointBuilder {
+	defaultSelector := func(fn httprouter.Handle) httprouter.Handle {
+		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+			sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+			selector := sess.Select("fe.*").From("feedentries fe")
+			ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
+			fn(w, r.WithContext(ctx), p)
+		}
+	}
+
+	pre = append([]middleware.Middleware{
+		defaultSelector,
+		joinFeedEntrySocialSelector,
+		publicFeedEntriesOnly,
+	}, pre...)
+	post := []middleware.Middleware{
+		loadFeedMedia,
+	}
+	factory := func() interface{} { return &publicFeedEntry{} }
+	e := SelectFeedEntriesEndpointBuilder{
+		DBEndpointBuilder: middlewares.NewDBEndpointBuilder(
+			nil, nil,
+			pre, post,
+			middlewares.SelectOneQuery(factory),
+			middlewares.OutputResult("entry")),
+		Selector: defaultSelector,
 	}
 	return e
 }

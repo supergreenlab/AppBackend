@@ -19,14 +19,7 @@
 package explorer
 
 import (
-	"net/http"
-
-	"github.com/julienschmidt/httprouter"
-	"upper.io/db.v3/lib/sqlbuilder"
+	"github.com/rileyr/middleware"
 )
 
-var fetchLatestUpdatedPublicPlants = fetchPublicPlants(func(sess sqlbuilder.Database, w http.ResponseWriter, r *http.Request, p httprouter.Params) sqlbuilder.Selector {
-	return sess.Select("plants.id", "plants.name", "plants.settings").
-		From("plants").
-		OrderBy("latestfm.cat desc")
-})
+var fetchLatestUpdatedPublicPlants = NewSelectPlantsEndpointBuilder([]middleware.Middleware{})

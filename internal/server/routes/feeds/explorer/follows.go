@@ -19,18 +19,9 @@
 package explorer
 
 import (
-	"net/http"
-
-	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
-	"github.com/gofrs/uuid"
-	"github.com/julienschmidt/httprouter"
-	"upper.io/db.v3/lib/sqlbuilder"
+	"github.com/rileyr/middleware"
 )
 
-var fetchLatestUpdatedFollowedPublicPlants = fetchPublicPlants(func(sess sqlbuilder.Database, w http.ResponseWriter, r *http.Request, p httprouter.Params) sqlbuilder.Selector {
-	uid := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
-	return sess.Select("plants.id", "plants.name", "plants.settings").
-		From("plants").
-		Join("follows").On("follows.plantid = plants.id and userid = ?", uid).
-		OrderBy("latestfm.cat desc")
+var fetchLatestUpdatedFollowedPublicPlants = NewSelectPlantsEndpointBuilder([]middleware.Middleware{
+	followedPlantsOnly,
 })

@@ -19,43 +19,14 @@
 package explorer
 
 import (
-	"encoding/json"
-	"net/http"
-
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
-	"github.com/SuperGreenLab/AppBackend/internal/server/tools"
 	"github.com/julienschmidt/httprouter"
-	"github.com/sirupsen/logrus"
+	"github.com/rileyr/middleware"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
-func fetchPublicPlant(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
-
-	plant := publicPlantResult{}
-	selector := sess.Select("plants.id", "plants.name", "plants.settings").
-		From("plants").
-		Where("plants.is_public = ?", true).
-		And("plants.deleted = ?", false).
-		And("plants.id = ?", p.ByName("id"))
-
-	selector = joinLatestFeedMedia(sess, selector)
-	selector = joinBoxSettings(selector)
-
-	if err := selector.One(&plant); err != nil {
-		logrus.Errorf("sess.Select('plants') in fetchPublicPlant %q - id: %s", err, p.ByName("id"))
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	err := tools.LoadFeedMediaPublicURLs(&plant)
-	if err != nil {
-		logrus.Errorf("tools.LoadFeedMediaPublicURLs in fetchPublicPlant %q - plant: %+v", err, plant)
-	}
-
-	if err := json.NewEncoder(w).Encode(plant); err != nil {
-		logrus.Errorf("json.NewEncoder in fetchPublicPlant %q - plant: %+v", err, plant)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
+var fetchPublicPlant = NewSelectPlantEndpointBuilder([]middleware.Middleware{
+	middlewares.Filter(func(p httprouter.Params, selector sqlbuilder.Selector) sqlbuilder.Selector {
+		return selector.Where("p.id = ?", p.ByName("id"))
+	}),
+})

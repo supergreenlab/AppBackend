@@ -19,44 +19,14 @@
 package explorer
 
 import (
-	"encoding/json"
-	"net/http"
-
-	sgldb "github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
-	"github.com/SuperGreenLab/AppBackend/internal/server/tools"
 	"github.com/julienschmidt/httprouter"
-	"github.com/sirupsen/logrus"
+	"github.com/rileyr/middleware"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
-func fetchPublicFeedMedia(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
-
-	feedMedia := sgldb.FeedMedia{}
-	selector := sess.Select("fm.*").From("feedmedias fm").
-		Join("feedentries fe").On("fm.feedentryid = fe.id").
-		Join("feeds f").On("fe.feedid = f.id").
-		Join("plants p").On("p.feedid = f.id").
-		Where("p.is_public = ?", true).
-		And("fm.id = ?", p.ByName("id")).
-		And("fm.deleted = ?", false)
-	if err := selector.One(&feedMedia); err != nil {
-		logrus.Errorf("selector.One in fetchPublicFeedMedia %q - id: %s", err, p.ByName("id"))
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	var err error
-	err = tools.LoadFeedMediaPublicURLs(&feedMedia)
-	if err != nil {
-		logrus.Errorf("tools.LoadFeedMediaPublicURLs in fetchPublicFeedMedia %q - %+v", err, feedMedia)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if err := json.NewEncoder(w).Encode(feedMedia); err != nil {
-		logrus.Errorf("json.NewEncoder in fetchPublicFeedMedia %q - %+v", err, feedMedia)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
+var fetchPublicFeedMedia = NewSelectFeedMediaEndpointBuilder([]middleware.Middleware{
+	middlewares.Filter(func(p httprouter.Params, selector sqlbuilder.Selector) sqlbuilder.Selector {
+		return selector.Where("fm.id = ?", p.ByName("id"))
+	}),
+})

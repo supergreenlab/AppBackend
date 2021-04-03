@@ -19,34 +19,14 @@
 package explorer
 
 import (
-	"encoding/json"
-	"net/http"
-
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/julienschmidt/httprouter"
-	"github.com/sirupsen/logrus"
+	"github.com/rileyr/middleware"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
-func fetchPublicFeedEntry(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
-
-	feedEntry := publicFeedEntry{}
-	selector := sess.Select("fe.*").From("feedentries fe").
-		Where("fe.id = ?", p.ByName("id"))
-
-	selector = joinFeedEntrySocialSelector(r, selector)
-	selector = publicFeedEntriesOnly(selector)
-
-	if err := selector.One(&feedEntry); err != nil {
-		logrus.Errorf("selector.One in fetchPublicFeedEntry %q - id: %s", err, p.ByName("id"))
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	result := publicFeedEntryResult{feedEntry}
-	if err := json.NewEncoder(w).Encode(result); err != nil {
-		logrus.Errorf("json.NewEncoder in fetchPublicFeedEntry %q - %+v", err, result)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
+var fetchPublicFeedEntry = NewSelectFeedEntryEndpointBuilder([]middleware.Middleware{
+	middlewares.Filter(func(p httprouter.Params, selector sqlbuilder.Selector) sqlbuilder.Selector {
+		return selector.Where("fe.id = ?", p.ByName("id"))
+	}),
+}).Endpoint().Handle()

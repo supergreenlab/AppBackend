@@ -59,7 +59,7 @@ func OutputSelectResult(collection string) httprouter.Handle {
 }
 
 // OutputSelectOneResult - returns the data
-func OutputSelectOneResult(collection string) httprouter.Handle {
+func OutputSelectOneResult() httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		result := r.Context().Value(SelectResultContextKey{}).(interface{})
 		if err := json.NewEncoder(w).Encode(result); err != nil {

@@ -57,7 +57,7 @@ func pageOffsetLimit(fn httprouter.Handle) httprouter.Handle {
 	}
 }
 
-func joinLatestFeedMedia(fn httprouter.Handle) httprouter.Handle {
+func joinPlantLatestFeedMedia(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
 		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
@@ -77,7 +77,8 @@ func joinLatestFeedMedia(fn httprouter.Handle) httprouter.Handle {
 			Join(db.Raw(fmt.Sprintf("(%s) latestfe", lastFeedEntrySelector.String()))).Using("feedid").
 			Join(db.Raw(fmt.Sprintf("(%s) latestfm", lastFeedMediaSelector.String()))).Using("feedid").
 			Join("feedentries").On("feedentries.cat = latestfe.cat").And("feedentries.feedid = plants.feedid").
-			Join("feedmedias").On("feedmedias.cat = latestfm.cat").And("latestfm.feedid = plants.feedid")
+			Join("feedmedias").On("feedmedias.cat = latestfm.cat").And("latestfm.feedid = plants.feedid").
+			OrderBy("latestfm.cat desc")
 
 		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
 		fn(w, r.WithContext(ctx), p)
@@ -130,6 +131,30 @@ func joinFeedEntrySocialSelector(fn httprouter.Handle) httprouter.Handle {
 	}
 }
 
+func publicPlantsOnly(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
+
+		selector = selector.Where("p.is_public = ?", true).
+			And("p.deleted = ?", false)
+
+		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
+		fn(w, r.WithContext(ctx), p)
+	}
+}
+
+func followedPlantsOnly(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
+		uid := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
+
+		selector = selector.Join("follows").On("follows.plantid = p.id and userid = ?", uid)
+
+		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
+		fn(w, r.WithContext(ctx), p)
+	}
+}
+
 func publicFeedEntriesOnly(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
@@ -140,6 +165,21 @@ func publicFeedEntriesOnly(fn httprouter.Handle) httprouter.Handle {
 			And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')").
 			And("fe.deleted = ?", false).
 			And("p.deleted = ?", false)
+
+		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
+		fn(w, r.WithContext(ctx), p)
+	}
+}
+
+func publicFeedMediasOnly(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
+
+		selector = selector.Join("feedentries fe").On("fm.feedentryid = fe.id").
+			Join("feeds f").On("fe.feedid = f.id").
+			Join("plants p").On("p.feedid = f.id").
+			Where("p.is_public = ?", true).
+			And("fm.deleted = ?", false)
 
 		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
 		fn(w, r.WithContext(ctx), p)

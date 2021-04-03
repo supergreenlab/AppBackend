@@ -132,6 +132,24 @@ func NewUpdateEndpointBuilder(collection string, input Factory, pre, post []midd
 	return e
 }
 
+type SelectParams interface {
+	GetOffset() int
+	GetLimit() int
+}
+
+type SelectParamsOffsetLimit struct {
+	Offset int
+	Limit  int
+}
+
+func (p *SelectParamsOffsetLimit) GetOffset() int {
+	return p.Offset
+}
+
+func (p *SelectParamsOffsetLimit) GetLimit() int {
+	return p.Limit
+}
+
 type SelectEndpointBuilder struct {
 	DBEndpointBuilder
 
@@ -161,8 +179,8 @@ func NewSelectEndpointBuilder(collection string, param, factory Factory, pre, po
 	e := SelectEndpointBuilder{
 		DBEndpointBuilder: NewDBEndpointBuilder(param, nil, append([]middleware.Middleware{defaultSelector}, pre...), post, SelectQuery(factory), OutputSelectResult(collection)),
 		Collection:        collection,
+		Selector:          defaultSelector,
 	}
-	e.Selector = defaultSelector
 	return e
 }
 
@@ -180,7 +198,7 @@ func (dbe SelectOneEndpointBuilder) Endpoint() Endpoint {
 
 func NewSelectOneEndpointBuilder(collection string, param, factory Factory, pre, post []middleware.Middleware) SelectOneEndpointBuilder {
 	e := SelectOneEndpointBuilder{
-		DBEndpointBuilder: NewDBEndpointBuilder(param, nil, pre, post, SelectOneQuery(factory), OutputSelectOneResult(collection)),
+		DBEndpointBuilder: NewDBEndpointBuilder(param, nil, pre, post, SelectOneQuery(factory), OutputSelectOneResult()),
 		Collection:        collection,
 	}
 	return e
@@ -212,7 +230,7 @@ func NewCountEndpointBuilder(collection string, param Factory, pre, post []middl
 	}
 	factory := func() interface{} { return &Count{} }
 	e := CountEndpointBuilder{
-		DBEndpointBuilder: NewDBEndpointBuilder(param, nil, append([]middleware.Middleware{defaultSelector}, pre...), post, SelectOneQuery(factory), OutputSelectOneResult(collection)),
+		DBEndpointBuilder: NewDBEndpointBuilder(param, nil, append([]middleware.Middleware{defaultSelector}, pre...), post, SelectOneQuery(factory), OutputSelectOneResult()),
 		Collection:        collection,
 	}
 	e.Selector = defaultSelector
@@ -237,24 +255,6 @@ func UpdateEndpoint(
 	post []middleware.Middleware,
 ) httprouter.Handle {
 	return NewUpdateEndpointBuilder(collection, factory, pre, post).Endpoint().Handle()
-}
-
-type SelectParams interface {
-	GetOffset() int
-	GetLimit() int
-}
-
-type SelectParamsOffsetLimit struct {
-	Offset int
-	Limit  int
-}
-
-func (p *SelectParamsOffsetLimit) GetOffset() int {
-	return p.Offset
-}
-
-func (p *SelectParamsOffsetLimit) GetLimit() int {
-	return p.Limit
 }
 
 // SelectEndpoint - select objects

@@ -47,10 +47,6 @@ func (r publicPlantResult) GetURLs() (filePath string, thumbnailPath string) {
 	return
 }
 
-type publicPlantsResult struct {
-	Plants []publicPlantResult `json:"plants"`
-}
-
 type publicFeedEntry struct {
 	sgldb.FeedEntry
 

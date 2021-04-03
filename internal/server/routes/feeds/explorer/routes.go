@@ -36,6 +36,6 @@ func Init(router *httprouter.Router) {
 	router.GET("/public/feedentries/commented", optionalAuth.Wrap(fetchLatestCommentedFeedEntries))
 	router.GET("/public/liked", optionalAuth.Wrap(fetchLatestLikedFeedEntries))
 	router.GET("/public/feedEntry/:id", optionalAuth.Wrap(fetchPublicFeedEntry))
-	router.GET("/public/feedEntry/:id/feedMedias", optionalAuth.Wrap(fetchPublicFeedMedias))
+	router.GET("/public/feedEntry/:id/feedMedias", optionalAuth.Wrap(fetchPublicEntryFeedMedias))
 	router.GET("/public/feedMedia/:id", optionalAuth.Wrap(fetchPublicFeedMedia))
 }
