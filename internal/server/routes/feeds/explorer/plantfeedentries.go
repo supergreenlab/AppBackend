@@ -27,6 +27,6 @@ import (
 
 var fetchPublicPlantFeedEntries = NewSelectFeedEntriesEndpointBuilder([]middleware.Middleware{
 	middlewares.Filter(func(p httprouter.Params, selector sqlbuilder.Selector) sqlbuilder.Selector {
-		return selector.Where("p.id = ?", p.ByName("id"))
+		return selector.Where("pfeo.id = ?", p.ByName("id"))
 	}),
 }).Endpoint().Handle()

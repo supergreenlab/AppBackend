@@ -49,7 +49,7 @@ func NewSelectFeedEntriesEndpointBuilder(pre []middleware.Middleware) SelectFeed
 	defaultSelector := func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
-			params := r.Context().Value(middlewares.QueryObjectContextKey{}).(SelectFeedEntriesParams)
+			params := r.Context().Value(middlewares.QueryObjectContextKey{}).(*SelectFeedEntriesParams)
 			selector := sess.Select("fe.*").From("feedentries fe")
 			selector = selector.OrderBy("fe.createdat DESC").Offset(params.GetOffset()).Limit(params.GetLimit())
 			ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
@@ -75,7 +75,7 @@ func NewSelectFeedEntriesEndpointBuilderWithSelector(selector middleware.Middlew
 			func() interface{} { return &SelectFeedEntriesParams{} }, nil,
 			pre, post,
 			middlewares.SelectQuery(factory),
-			middlewares.OutputResult("feedentries")),
+			middlewares.OutputResult("entries")),
 		Selector: selector,
 	}
 	return e

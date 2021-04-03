@@ -49,7 +49,7 @@ func NewSelectFeedMediasEndpointBuilder(pre []middleware.Middleware) SelectFeedM
 	defaultSelector := func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
-			params := r.Context().Value(middlewares.QueryObjectContextKey{}).(SelectFeedMediasParams)
+			params := r.Context().Value(middlewares.QueryObjectContextKey{}).(*SelectFeedMediasParams)
 			selector := sess.Select("fm.*").From("feedmedias fm")
 			selector = selector.OrderBy("fe.createdat DESC").Offset(params.GetOffset()).Limit(params.GetLimit())
 			ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)

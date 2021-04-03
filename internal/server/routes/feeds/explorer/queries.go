@@ -161,11 +161,11 @@ func publicFeedEntriesOnly(fn httprouter.Handle) httprouter.Handle {
 		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
 
 		selector = selector.Join("feeds f").On("fe.feedid = f.id").
-			Join("plants p").On("p.feedid = f.id").
-			Where("p.is_public = true").
+			Join("plants pfeo").On("pfeo.feedid = f.id").
+			Where("pfeo.is_public = true").
 			And("fe.etype not in ('FE_TOWELIE_INFO', 'FE_PRODUCTS')").
 			And("fe.deleted = false").
-			And("p.deleted = false")
+			And("pfeo.deleted = false")
 
 		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
 		fn(w, r.WithContext(ctx), p)
@@ -178,8 +178,8 @@ func publicFeedMediasOnly(fn httprouter.Handle) httprouter.Handle {
 
 		selector = selector.Join("feedentries fe").On("fm.feedentryid = fe.id").
 			Join("feeds f").On("fe.feedid = f.id").
-			Join("plants p").On("p.feedid = f.id").
-			Where("p.is_public = true").
+			Join("plants pfmo").On("pfmo.feedid = f.id").
+			Where("pfmo.is_public = true").
 			And("fm.deleted = false")
 
 		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
@@ -210,8 +210,8 @@ func joinPlantForFeedEntry(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
 
-		selector = selector.Columns("p.name", "p.id as plantid").
-			Join("plants p").On("p.feedid = fe.feedid")
+		selector = selector.Columns("jpfe.name as plantname", "jpfe.id as plantid").
+			Join("plants jpfe").On("jpfe.feedid = fe.feedid")
 
 		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
 		fn(w, r.WithContext(ctx), p)

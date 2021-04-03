@@ -68,7 +68,7 @@ type publicFeedEntry struct {
 
 	// Split model?
 	PlantID       *uuid.NullUUID `db:"plantid,omitempty" json:"plantID,omitempty"`
-	PlantName     *string        `db:"name,omitempty" json:"plantName,omitempty"`
+	PlantName     *string        `db:"plantname,omitempty" json:"plantName,omitempty"`
 	CommentID     *uuid.NullUUID `db:"commentid,omitempty" json:"commentID,omitempty"`
 	Comment       *string        `db:"comment,omitempty" json:"comment,omitempty"`
 	LikeDate      *time.Time     `db:"likecat,omitempty" json:"likeDate,omitempty"`
