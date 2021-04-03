@@ -29,12 +29,12 @@ import (
 
 var fetchLatestLikedFeedEntries = NewSelectFeedEntriesEndpointBuilderWithSelector(
 	middlewares.Selector(func(sess sqlbuilder.Database) sqlbuilder.Selector {
-		commentLikes := sess.Select("fe.*", "comments.text as comment", "comments.id as commentid", "likes.cat as dateLiked").From("likes").
+		commentLikes := sess.Select("fe.*", "comments.text as comment", "comments.id as commentid", "likes.cat as likecat").From("likes").
 			Join("comments").On("comments.id = likes.commentid").
 			Join("feedentries fe").On("fe.id = comments.feedentryid")
-		entryLikes := sess.Select("fe.*", db.Raw("'' as comment"), db.Raw("null as commentid"), "likes.cat as dateLiked").From("likes").
+		entryLikes := sess.Select("fe.*", db.Raw("null as comment"), db.Raw("null as commentid"), "likes.cat as likecat").From("likes").
 			Join("feedentries fe").On("fe.id = likes.feedentryid")
-		return sess.Select("*").From(db.Raw(fmt.Sprintf("(%s union %s) fe", commentLikes.String(), entryLikes.String()))).OrderBy("dateLiked desc")
+		return sess.Select("*").From(db.Raw(fmt.Sprintf("(%s union %s) fe", commentLikes.String(), entryLikes.String()))).OrderBy("likecat desc")
 	}),
 	[]middleware.Middleware{
 		joinLatestFeedMediaForFeedEntry,

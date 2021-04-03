@@ -56,13 +56,13 @@ type publicFeedEntry struct {
 	NComments  int  `db:"ncomments" json:"nComments"`
 	NLikes     int  `db:"nlikes" json:"nLikes"`
 
-	// TODO make an interface based middleware to unify the select* middlewares
-	PlantID       uuid.NullUUID `db:"plantid,omitempty" json:"plantID,omitempty"`
-	PlantName     *string       `db:"name,omitempty" json:"plantName,omitempty"`
-	CommentID     uuid.NullUUID `db:"commentid,omitempty" json:"commentID,omitempty"`
-	Comment       *string       `db:"comment,omitempty" json:"comment,omitempty"`
-	LikeDate      *time.Time    `db:"likecat,omitempty" json:"likeDate,omitempty"`
-	ThumbnailPath *string       `db:"thumbnailpath,omitempty" json:"thumbnailpath,omitempty"`
+	// Split model?
+	PlantID       *uuid.NullUUID `db:"plantid,omitempty" json:"plantID,omitempty"`
+	PlantName     *string        `db:"name,omitempty" json:"plantName,omitempty"`
+	CommentID     *uuid.NullUUID `db:"commentid,omitempty" json:"commentID,omitempty"`
+	Comment       *string        `db:"comment,omitempty" json:"comment,omitempty"`
+	LikeDate      *time.Time     `db:"likecat,omitempty" json:"likeDate,omitempty"`
+	ThumbnailPath *string        `db:"thumbnailpath,omitempty" json:"thumbnailpath,omitempty"`
 }
 
 func (r *publicFeedEntry) SetURLs(_, thumbnailPath string) {
