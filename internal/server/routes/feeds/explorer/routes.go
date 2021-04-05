@@ -29,11 +29,13 @@ func Init(router *httprouter.Router) {
 	auth := cmiddlewares.AuthStack()
 	optionalAuth := cmiddlewares.OptionalAuthStack()
 
-	router.GET("/public/plants", optionalAuth.Wrap(fetchLatestUpdatedPublicPlants))
 	router.GET("/public/plants/followed", auth.Wrap(fetchLatestUpdatedFollowedPublicPlants))
+
+	router.GET("/public/plants", optionalAuth.Wrap(fetchLatestUpdatedPublicPlants))
+	router.GET("/public/feedEntries", optionalAuth.Wrap(fetchLatestPublicFeedEntries))
 	router.GET("/public/plant/:id", optionalAuth.Wrap(fetchPublicPlant))
 	router.GET("/public/plant/:id/feedEntries", optionalAuth.Wrap(fetchPublicPlantFeedEntries))
-	router.GET("/public/feedentries/commented", optionalAuth.Wrap(fetchLatestCommentedFeedEntries))
+	router.GET("/public/feedEntries/commented", optionalAuth.Wrap(fetchLatestCommentedFeedEntries))
 	router.GET("/public/liked", optionalAuth.Wrap(fetchLatestLikedFeedEntries))
 	router.GET("/public/feedEntry/:id", optionalAuth.Wrap(fetchPublicFeedEntry))
 	router.GET("/public/feedEntry/:id/feedMedias", optionalAuth.Wrap(fetchPublicEntryFeedMedias))
