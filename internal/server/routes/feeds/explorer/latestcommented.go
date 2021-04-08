@@ -28,8 +28,18 @@ import (
 
 var fetchLatestCommentedFeedEntries = NewSelectFeedEntriesEndpointBuilder([]middleware.Middleware{
 	middlewares.Filter(func(p httprouter.Params, selector sqlbuilder.Selector) sqlbuilder.Selector {
-		return selector.Columns(udb.Raw("comments.text as comment")).
+		return selector.Columns(
+			udb.Raw("comments.id as commentid"),
+			udb.Raw("comments.text as comment"),
+			udb.Raw("comments.ctype as commenttype"),
+			udb.Raw("comments.cat as commentdate"),
+			udb.Raw("users.nickname as nickname"),
+			udb.Raw("users.pic as pic"),
+			udb.Raw("pfeo.settings as plantsettings"),
+			udb.Raw("boxes.settings as boxsettings")).
+			Join("boxes").On("boxes.id = pfeo.boxid").
 			Join("comments").On("comments.feedentryid = fe.id").
+			Join("users").On("users.id = comments.userid").
 			OrderBy("comments.cat DESC")
 	}),
 	joinLatestFeedMediaForFeedEntry,

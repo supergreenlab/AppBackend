@@ -35,14 +35,27 @@ type SelectFeedEntriesParams struct {
 type SelectFeedEntriesEndpointBuilder struct {
 	middlewares.DBEndpointBuilder
 
+	Cache    middleware.Middleware
 	Selector middleware.Middleware
 }
 
 func (dbe SelectFeedEntriesEndpointBuilder) Endpoint() middlewares.Endpoint {
-	dbe.Pre[0] = dbe.Selector
+	if dbe.Cache != nil {
+		dbe.Pre = append([]middleware.Middleware{dbe.Cache}, dbe.Pre...)
+		dbe.Pre[1] = dbe.Selector
+	} else {
+		dbe.Pre[0] = dbe.Selector
+	}
 	e := dbe.DBEndpointBuilder.Endpoint()
 	e.Output = dbe.DBEndpointBuilder.Output
 	return e
+}
+
+func (dbe SelectFeedEntriesEndpointBuilder) EnableCache(name string) SelectFeedEntriesEndpointBuilder {
+	dbe.Cache = middlewares.SelectCacheResult(func(r *http.Request, p httprouter.Params) string {
+		return name
+	})
+	return dbe
 }
 
 func NewSelectFeedEntriesEndpointBuilder(pre []middleware.Middleware) SelectFeedEntriesEndpointBuilder {

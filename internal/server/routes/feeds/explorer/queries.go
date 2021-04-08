@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/gofrs/uuid"
@@ -57,33 +56,49 @@ func pageOffsetLimit(fn httprouter.Handle) httprouter.Handle {
 	}
 }
 
-func joinLatestPlantFeedMedia(fn httprouter.Handle) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
-		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
+func createJoinLatestPlantFeedMedia(optional, order bool, columns []interface{}) func(httprouter.Handle) httprouter.Handle {
+	return func(fn httprouter.Handle) httprouter.Handle {
+		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+			sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+			selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
 
-		lastFeedEntrySelector := sess.Select("feedid", udb.Raw("max(cat) as cat")).
-			From("feedentries").
-			Where("deleted = false").
-			And(fmt.Sprintf("etype in ('%s')", strings.Join([]string{"FE_MEDIA", "FE_BENDING", "FE_DEFOLATION", "FE_TRANSPLANT", "FE_FIMMING", "FE_TOPPING", "FE_MEASURE"}, "', '"))).
-			GroupBy("feedid")
-		lastFeedMediaSelector := sess.Select("feedid", udb.Raw("max(feedmedias.cat) as cat")).
-			From("feedmedias").
-			Join("feedentries").On("feedentries.id = feedmedias.feedentryid").
-			Where("feedmedias.deleted = false").
-			GroupBy("feedid")
+			lastFeedEntrySelector := sess.Select("feedid", udb.Raw("max(cat) as cat")).
+				From("feedentries").
+				Where("deleted = false").
+				//And(fmt.Sprintf("etype in ('%s')", strings.Join([]string{"FE_MEDIA", "FE_BENDING", "FE_DEFOLATION", "FE_TRANSPLANT", "FE_FIMMING", "FE_TOPPING", "FE_MEASURE"}, "', '"))).
+				GroupBy("feedid")
+			lastFeedMediaSelector := sess.Select("feedid", udb.Raw("max(feedmedias.cat) as cat")).
+				From("feedmedias").
+				Join("feedentries").On("feedentries.id = feedmedias.feedentryid").
+				Where("feedmedias.deleted = false").
+				GroupBy("feedid")
 
-		selector = selector.Columns("feedmedias.filepath", "feedmedias.thumbnailpath").
-			Join(db.Raw(fmt.Sprintf("(%s) latestfe", lastFeedEntrySelector.String()))).Using("feedid").
-			Join(db.Raw(fmt.Sprintf("(%s) latestfm", lastFeedMediaSelector.String()))).Using("feedid").
-			Join("feedentries").On("feedentries.cat = latestfe.cat").And("feedentries.feedid = p.feedid").
-			Join("feedmedias").On("feedmedias.cat = latestfm.cat").And("latestfm.feedid = p.feedid").
-			OrderBy("latestfm.cat desc")
+			selector = selector.Columns(columns...).
+				Join(db.Raw(fmt.Sprintf("(%s) latestfe", lastFeedEntrySelector.String()))).On("latestfe.feedid = p.feedid")
+			if optional {
+				selector = selector.LeftJoin(db.Raw(fmt.Sprintf("(%s) latestfm", lastFeedMediaSelector.String()))).On("latestfm.feedid = p.feedid")
+			} else {
+				selector = selector.Join(db.Raw(fmt.Sprintf("(%s) latestfm", lastFeedMediaSelector.String()))).On("latestfm.feedid = p.feedid")
+			}
+			selector = selector.Join("feedentries latestferow").On("latestferow.cat = latestfe.cat").And("latestferow.feedid = p.feedid")
+			if optional {
+				selector = selector.LeftJoin("feedmedias latestfmrow").On("latestfmrow.cat = latestfm.cat").And("latestfmrow.userid = p.userid")
+			} else {
+				selector = selector.Join("feedmedias latestfmrow").On("latestfmrow.cat = latestfm.cat").And("latestfmrow.userid = p.userid")
+			}
 
-		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
-		fn(w, r.WithContext(ctx), p)
+			if order {
+				selector = selector.OrderBy("latestferow.createdat desc")
+			}
+
+			ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
+			fn(w, r.WithContext(ctx), p)
+		}
 	}
 }
+
+var joinLatestPlantFeedMedia = createJoinLatestPlantFeedMedia(false, true, []interface{}{"latestfmrow.thumbnailpath", "latestferow.createdat as lastupdate"})
+var leftJoinLatestPlantFeedMedia = createJoinLatestPlantFeedMedia(true, false, []interface{}{"latestfmrow.thumbnailpath as plantthumbnailpath", "latestferow.createdat as lastupdate"})
 
 func joinBoxSettings(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -187,31 +202,41 @@ func publicFeedMediasOnly(fn httprouter.Handle) httprouter.Handle {
 	}
 }
 
-func joinLatestFeedMediaForFeedEntry(fn httprouter.Handle) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
-		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
+func createJoinLatestFeedMediaForFeedEntry(optional bool, columns []interface{}) func(fn httprouter.Handle) httprouter.Handle {
+	return func(fn httprouter.Handle) httprouter.Handle {
+		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+			sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
+			selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
 
-		lastFeedMediaSelector := sess.Select("feedentryid", udb.Raw("max(feedmedias.cat) as cat")).
-			From("feedmedias").
-			Where("feedmedias.deleted = false").
-			GroupBy("feedentryid")
+			lastFeedMediaSelector := sess.Select("feedentryid", udb.Raw("max(feedmedias.cat) as cat")).
+				From("feedmedias").
+				Where("feedmedias.deleted = false").
+				GroupBy("feedentryid")
 
-		selector = selector.Columns("feedmedias.filepath", "feedmedias.thumbnailpath").
-			Join(db.Raw(fmt.Sprintf("(%s) latestfm", lastFeedMediaSelector.String()))).On("latestfm.feedentryid = fe.id").
-			Join("feedmedias").On("feedmedias.cat = latestfm.cat").And("latestfm.feedentryid = fe.id")
+			selector = selector.Columns(columns...)
+			if optional {
+				selector = selector.LeftJoin(db.Raw(fmt.Sprintf("(%s) latestfmfe", lastFeedMediaSelector.String()))).On("latestfmfe.feedentryid = fe.id").
+					LeftJoin("feedmedias latestfmferow").On("latestfmferow.cat = latestfmfe.cat").And("latestfmferow.userid = fe.userid")
+			} else {
+				selector = selector.Join(db.Raw(fmt.Sprintf("(%s) latestfmfe", lastFeedMediaSelector.String()))).On("latestfmfe.feedentryid = fe.id").
+					Join("feedmedias latestfmferow").On("latestfmferow.cat = latestfmfe.cat").And("latestfmferow.userid = fe.userid")
+			}
 
-		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
-		fn(w, r.WithContext(ctx), p)
+			ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
+			fn(w, r.WithContext(ctx), p)
+		}
 	}
 }
+
+var joinLatestFeedMediaForFeedEntry = createJoinLatestFeedMediaForFeedEntry(false, []interface{}{"latestfmferow.filepath", "latestfmferow.thumbnailpath"})
+var leftJoinLatestFeedMediaForFeedEntry = createJoinLatestFeedMediaForFeedEntry(true, []interface{}{"latestfmferow.filepath", "latestfmferow.thumbnailpath"})
 
 func joinPlantForFeedEntry(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
 
-		selector = selector.Columns("jpfe.name as plantname", "jpfe.id as plantid").
-			Join("plants jpfe").On("jpfe.feedid = fe.feedid")
+		selector = selector.Columns("p.name as plantname", "p.id as plantid").
+			Join("plants p").On("p.feedid = fe.feedid")
 
 		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
 		fn(w, r.WithContext(ctx), p)

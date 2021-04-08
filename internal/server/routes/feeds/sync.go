@@ -104,6 +104,25 @@ type FeedMediaWithArchived struct {
 	BoxArchived   sql.NullBool `json:"-" db:"box_archived"`
 }
 
+// TODO DRY with explorer/models.go:123
+func (r *FeedMediaWithArchived) SetURLs(paths []string) {
+	r.FilePath = paths[0]
+	r.ThumbnailPath = paths[1]
+}
+
+func (r FeedMediaWithArchived) GetURLs() []tools.S3Path {
+	return []tools.S3Path{
+		tools.S3Path{
+			Path:   &r.FilePath,
+			Bucket: "feedmedias",
+		},
+		tools.S3Path{
+			Path:   &r.ThumbnailPath,
+			Bucket: "feedmedias",
+		},
+	}
+}
+
 var syncFeedMediasHandler = syncCollection("feedmedias", "feedmediaid", func() interface{} { return &[]FeedMediaWithArchived{} }, func(selector sqlbuilder.Selector) sqlbuilder.Selector {
 	selector = selector.Join("feedentries fe").On("fe.id = a.feedentryid")
 	selector = selector.Columns(udb.Raw("p.archived as plant_archived")).LeftJoin("plants p").On("p.feedid = fe.feedid")
@@ -116,7 +135,7 @@ var syncFeedMediasHandler = syncCollection("feedmedias", "feedmediaid", func() i
 			feedMedias := r.Context().Value(middlewares.ObjectContextKey{}).(*[]FeedMediaWithArchived)
 			for i, fm := range *feedMedias {
 				if fm.Deleted == false && fm.PlantArchived.Bool == false && fm.BoxArchived.Bool == false {
-					err = tools.LoadFeedMediaPublicURLs(&fm.FeedMedia)
+					err = tools.LoadFeedMediaPublicURLs(&fm)
 					if err != nil {
 						logrus.Errorf("tools.LoadFeedMediaPublicURLs in syncFeedMediasHandler %q - fm: %+v", err, fm)
 						http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -30,7 +30,7 @@ import (
 
 func loadFeedMedias(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		fmus := r.Context().Value(middlewares.SelectResultContextKey{}).(tools.FeedMediasURLs)
+		fmus := r.Context().Value(middlewares.SelectResultContextKey{}).(tools.S3FileHolders)
 		feedMedias := fmus.AsFeedMediasArray()
 		for i, fm := range feedMedias {
 			err := tools.LoadFeedMediaPublicURLs(fm)
@@ -47,7 +47,7 @@ func loadFeedMedias(fn httprouter.Handle) httprouter.Handle {
 
 func loadFeedMedia(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		feedMedia := r.Context().Value(middlewares.SelectResultContextKey{}).(tools.FeedMediasURL)
+		feedMedia := r.Context().Value(middlewares.SelectResultContextKey{}).(tools.S3FileHolder)
 		err := tools.LoadFeedMediaPublicURLs(feedMedia)
 		if err != nil {
 			logrus.Errorf("tools.LoadFeedMediaPublicURLs in fetchPublicFeedEntries %q - p: %+v", err, p)

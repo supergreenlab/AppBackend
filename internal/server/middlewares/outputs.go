@@ -19,13 +19,20 @@
 package middlewares
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
+	"time"
 
+	"github.com/SuperGreenLab/AppBackend/internal/data/kv"
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
 )
+
+type CacheKeyContextKey struct{}
 
 // OutputObjectID - returns the inserted object ID
 func OutputObjectID(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -42,13 +49,26 @@ func OutputObjectID(w http.ResponseWriter, r *http.Request, p httprouter.Params)
 
 func OutputResult(name string) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		cacheKey, okCache := r.Context().Value(CacheKeyContextKey{}).(string)
 		results := r.Context().Value(SelectResultContextKey{}).(interface{})
+
 		response := map[string]interface{}{}
 		response[name] = results
-		if err := json.NewEncoder(w).Encode(response); err != nil {
+
+		var cacheData bytes.Buffer
+		var mw io.Writer = w
+		if okCache {
+			mw = io.MultiWriter(w, &cacheData)
+		}
+
+		if err := json.NewEncoder(mw).Encode(response); err != nil {
 			logrus.Errorf("json.NewEncoder in OutputResult %q - %+v", err, response)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
+		}
+		if okCache {
+			kv.SetStringWithExpiration(cacheKey, cacheData.String(), 5*time.Second)
+			kv.SetString(fmt.Sprintf("%s.last", cacheKey), cacheData.String())
 		}
 	}
 }

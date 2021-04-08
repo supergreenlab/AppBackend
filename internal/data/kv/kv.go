@@ -79,6 +79,10 @@ func SetString(key, value string) error {
 	return r.Set(key, value, 0).Err()
 }
 
+func SetStringWithExpiration(key, value string, expiration time.Duration) error {
+	return r.Set(key, value, expiration).Err()
+}
+
 func Init() {
 	viper.SetDefault("RedisURL", "redis:6379")
 	r = redis.NewClient(&redis.Options{

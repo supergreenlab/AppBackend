@@ -24,20 +24,25 @@ import (
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/rileyr/middleware"
 	"upper.io/db.v3"
+	udb "upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
 var fetchLatestLikedFeedEntries = NewSelectFeedEntriesEndpointBuilderWithSelector(
 	middlewares.Selector(func(sess sqlbuilder.Database) sqlbuilder.Selector {
-		commentLikes := sess.Select("fe.*", "comments.text as comment", "comments.id as commentid", "likes.cat as likecat").From("likes").
-			Join("comments").On("comments.id = likes.commentid").
-			Join("feedentries fe").On("fe.id = comments.feedentryid")
-		entryLikes := sess.Select("fe.*", db.Raw("null as comment"), db.Raw("null as commentid"), "likes.cat as likecat").From("likes").
+		commentLikes := sess.Select("fe.*", "c.text as comment", "c.id as commentid", "likes.cat as likecat", "likes.userid as likeuserid").From("likes").
+			Join("comments c").On("c.id = likes.commentid").
+			Join("feedentries fe").On("fe.id = c.feedentryid")
+		entryLikes := sess.Select("fe.*", db.Raw("null as comment"), db.Raw("null as commentid"), "likes.cat as likecat", "likes.userid as likeuserid").From("likes").
 			Join("feedentries fe").On("fe.id = likes.feedentryid")
-		return sess.Select("*").From(db.Raw(fmt.Sprintf("(%s union %s) fe", commentLikes.String(), entryLikes.String()))).OrderBy("likecat desc")
+		return sess.Select("fe.*", udb.Raw("users.nickname as nickname"), udb.Raw("users.pic as pic")).
+			From(db.Raw(fmt.Sprintf("(%s union %s) fe", commentLikes.String(), entryLikes.String()))).
+			Join("users").On("users.id = fe.likeuserid").
+			OrderBy("fe.likecat desc")
 	}),
 	[]middleware.Middleware{
-		joinLatestFeedMediaForFeedEntry,
 		joinPlantForFeedEntry,
+		createJoinLatestPlantFeedMedia(false, false, []interface{}{"latestfmrow.thumbnailpath as plantthumbnailpath"}),
+		leftJoinLatestFeedMediaForFeedEntry,
 	},
-).Endpoint().Handle()
+).EnableCache("latestLikedFeedEntries2").Endpoint().Handle()

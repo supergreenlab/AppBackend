@@ -27,10 +27,10 @@ import (
 )
 
 type publicPlant struct {
-	ID            string `db:"id" json:"id"`
-	Name          string `db:"name" json:"name"`
-	FilePath      string `db:"filepath" json:"filePath"`
-	ThumbnailPath string `db:"thumbnailpath" json:"thumbnailPath"`
+	ID            string    `db:"id" json:"id"`
+	Name          string    `db:"name" json:"name"`
+	ThumbnailPath string    `db:"thumbnailpath" json:"thumbnailPath"`
+	LastUpdate    time.Time `db:"lastupdate" json:"lastUpdate"`
 
 	Followed bool `db:"followed" json:"followed"`
 
@@ -38,20 +38,23 @@ type publicPlant struct {
 	BoxSettings string `db:"boxsettings" json:"boxSettings"`
 }
 
-func (r *publicPlant) SetURLs(filePath string, thumbnailPath string) {
-	r.FilePath = filePath
-	r.ThumbnailPath = thumbnailPath
+func (r *publicPlant) SetURLs(paths []string) {
+	r.ThumbnailPath = paths[0]
 }
 
-func (r publicPlant) GetURLs() (filePath string, thumbnailPath string) {
-	filePath, thumbnailPath = r.FilePath, r.ThumbnailPath
-	return
+func (r publicPlant) GetURLs() []tools.S3Path {
+	return []tools.S3Path{
+		tools.S3Path{
+			Path:   &r.ThumbnailPath,
+			Bucket: "feedmedias",
+		},
+	}
 }
 
 type publicPlants []*publicPlant
 
-func (pfe *publicPlants) AsFeedMediasArray() []tools.FeedMediasURL {
-	res := make([]tools.FeedMediasURL, len(*pfe))
+func (pfe *publicPlants) AsFeedMediasArray() []tools.S3FileHolder {
+	res := make([]tools.S3FileHolder, len(*pfe))
 	for i, fe := range *pfe {
 		res[i] = fe
 	}
@@ -67,32 +70,56 @@ type publicFeedEntry struct {
 	NLikes     int  `db:"nlikes" json:"nLikes"`
 
 	// Split model?
-	PlantID       *uuid.NullUUID `db:"plantid,omitempty" json:"plantID,omitempty"`
-	PlantName     *string        `db:"plantname,omitempty" json:"plantName,omitempty"`
-	CommentID     *uuid.NullUUID `db:"commentid,omitempty" json:"commentID,omitempty"`
-	Comment       *string        `db:"comment,omitempty" json:"comment,omitempty"`
-	LikeDate      *time.Time     `db:"likecat,omitempty" json:"likeDate,omitempty"`
-	ThumbnailPath *string        `db:"thumbnailpath,omitempty" json:"thumbnailpath,omitempty"`
+	PlantID            *uuid.NullUUID `db:"plantid,omitempty" json:"plantID,omitempty"`
+	PlantName          *string        `db:"plantname,omitempty" json:"plantName,omitempty"`
+	PlantSettings      *string        `db:"plantsettings,omitempty" json:"plantSettings,omitempty"`
+	PlantThumbnailPath *string        `db:"plantthumbnailpath,omitempty" json:"plantthumbnailpath,omitempty"`
+	BoxSettings        *string        `db:"boxsettings,omitempty" json:"boxSettings,omitempty"`
+
+	Nickname    *string        `db:"nickname" json:"nickname"`
+	Pic         *string        `db:"pic" json:"pic"`
+	CommentID   *uuid.NullUUID `db:"commentid,omitempty" json:"commentID,omitempty"`
+	Comment     *string        `db:"comment,omitempty" json:"comment,omitempty"`
+	CommentType *string        `db:"commenttype,omitempty" json:"commentType,omitempty"`
+	CommentDate *time.Time     `db:"commentdate,omitempty" json:"commentDate,omitempty"`
+
+	LikeDate      *time.Time `db:"likecat,omitempty" json:"likeDate,omitempty"`
+	ThumbnailPath *string    `db:"thumbnailpath,omitempty" json:"thumbnailpath,omitempty"`
 }
 
-func (r *publicFeedEntry) SetURLs(_, thumbnailPath string) {
-	if thumbnailPath != "" {
-		*r.ThumbnailPath = thumbnailPath
+func (r *publicFeedEntry) SetURLs(paths []string) {
+	if paths[0] != "" {
+		*r.ThumbnailPath = paths[0]
+	}
+	if paths[1] != "" {
+		*r.Pic = paths[1]
+	}
+	if paths[2] != "" {
+		*r.PlantThumbnailPath = paths[2]
 	}
 }
 
-func (r publicFeedEntry) GetURLs() (filePath, thumbnailPath string) {
-	filePath, thumbnailPath = "", ""
-	if r.ThumbnailPath != nil {
-		thumbnailPath = *r.ThumbnailPath
+func (r publicFeedEntry) GetURLs() (paths []tools.S3Path) {
+	return []tools.S3Path{
+		tools.S3Path{
+			Path:   r.ThumbnailPath,
+			Bucket: "feedmedias",
+		},
+		tools.S3Path{
+			Path:   r.Pic,
+			Bucket: "users",
+		},
+		tools.S3Path{
+			Path:   r.PlantThumbnailPath,
+			Bucket: "feedmedias",
+		},
 	}
-	return
 }
 
 type publicFeedEntries []*publicFeedEntry
 
-func (pfe *publicFeedEntries) AsFeedMediasArray() []tools.FeedMediasURL {
-	res := make([]tools.FeedMediasURL, len(*pfe))
+func (pfe *publicFeedEntries) AsFeedMediasArray() []tools.S3FileHolder {
+	res := make([]tools.S3FileHolder, len(*pfe))
 	for i, fe := range *pfe {
 		res[i] = fe
 	}
@@ -103,10 +130,28 @@ type publicFeedMedia struct {
 	sgldb.FeedMedia
 }
 
+func (r *publicFeedMedia) SetURLs(paths []string) {
+	r.FilePath = paths[0]
+	r.ThumbnailPath = paths[1]
+}
+
+func (r publicFeedMedia) GetURLs() []tools.S3Path {
+	return []tools.S3Path{
+		tools.S3Path{
+			Path:   &r.FilePath,
+			Bucket: "feedmedias",
+		},
+		tools.S3Path{
+			Path:   &r.ThumbnailPath,
+			Bucket: "feedmedias",
+		},
+	}
+}
+
 type publicFeedMedias []*publicFeedMedia
 
-func (pfe *publicFeedMedias) AsFeedMediasArray() []tools.FeedMediasURL {
-	res := make([]tools.FeedMediasURL, len(*pfe))
+func (pfe *publicFeedMedias) AsFeedMediasArray() []tools.S3FileHolder {
+	res := make([]tools.S3FileHolder, len(*pfe))
 	for i, fe := range *pfe {
 		res[i] = fe
 	}

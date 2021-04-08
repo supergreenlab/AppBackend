@@ -24,33 +24,36 @@ import (
 	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
 )
 
-type FeedMediasURL interface {
-	SetURLs(filePath, thumbnailPath string)
-	GetURLs() (filePath, thumbnailPath string)
+type S3Path struct {
+	Path   *string
+	Bucket string
 }
 
-type FeedMediasURLs interface {
-	AsFeedMediasArray() []FeedMediasURL
+type S3FileHolder interface {
+	SetURLs(paths []string)
+	GetURLs() (paths []S3Path)
 }
 
-func LoadFeedMediaPublicURLs(fm FeedMediasURL) error {
-	filePath, thumbnailPath := fm.GetURLs()
+type S3FileHolders interface {
+	AsFeedMediasArray() []S3FileHolder
+}
+
+func LoadFeedMediaPublicURLs(fm S3FileHolder) error {
+	paths := fm.GetURLs()
 	expiry := time.Second * 60 * 60
-	if filePath != "" {
-		url1, err := storage.Client.PresignedGetObject("feedmedias", filePath, expiry, nil)
-		if err != nil {
-			return err
-		}
-		filePath = url1.RequestURI()
-	}
 
-	if thumbnailPath != "" {
-		url2, err := storage.Client.PresignedGetObject("feedmedias", thumbnailPath, expiry, nil)
+	results := make([]string, len(paths))
+	for i, p := range paths {
+		if p.Path == nil {
+			results[i] = ""
+			continue
+		}
+		url1, err := storage.Client.PresignedGetObject(p.Bucket, *p.Path, expiry, nil)
 		if err != nil {
 			return err
 		}
-		thumbnailPath = url2.RequestURI()
+		results[i] = url1.RequestURI()
 	}
-	fm.SetURLs(filePath, thumbnailPath)
+	fm.SetURLs(results)
 	return nil
 }

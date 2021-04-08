@@ -316,16 +316,6 @@ func (o FeedMedia) GetUserID() uuid.UUID {
 	return o.UserID
 }
 
-func (r *FeedMedia) SetURLs(filePath string, thumbnailPath string) {
-	r.FilePath = filePath
-	r.ThumbnailPath = thumbnailPath
-}
-
-func (r FeedMedia) GetURLs() (filePath string, thumbnailPath string) {
-	filePath, thumbnailPath = r.FilePath, r.ThumbnailPath
-	return
-}
-
 // FeedMedias -
 type FeedMedias []FeedMedia
 
