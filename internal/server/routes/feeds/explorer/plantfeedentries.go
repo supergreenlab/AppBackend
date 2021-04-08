@@ -29,4 +29,4 @@ var fetchPublicPlantFeedEntries = NewSelectFeedEntriesEndpointBuilder([]middlewa
 	middlewares.Filter(func(p httprouter.Params, selector sqlbuilder.Selector) sqlbuilder.Selector {
 		return selector.Where("pfeo.id = ?", p.ByName("id"))
 	}),
-}).Endpoint().Handle()
+}).JoinSocial().Endpoint().Handle()

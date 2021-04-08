@@ -67,7 +67,7 @@ func OutputResult(name string) httprouter.Handle {
 			return
 		}
 		if okCache {
-			kv.SetStringWithExpiration(cacheKey, cacheData.String(), 5*time.Second)
+			kv.SetStringWithExpiration(cacheKey, cacheData.String(), 1*time.Minute)
 			kv.SetString(fmt.Sprintf("%s.last", cacheKey), cacheData.String())
 		}
 	}

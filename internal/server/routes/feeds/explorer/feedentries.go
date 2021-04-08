@@ -58,6 +58,11 @@ func (dbe SelectFeedEntriesEndpointBuilder) EnableCache(name string) SelectFeedE
 	return dbe
 }
 
+func (dbe SelectFeedEntriesEndpointBuilder) JoinSocial() SelectFeedEntriesEndpointBuilder {
+	dbe.Pre = append(dbe.Pre, joinFeedEntrySocialSelector)
+	return dbe
+}
+
 func NewSelectFeedEntriesEndpointBuilder(pre []middleware.Middleware) SelectFeedEntriesEndpointBuilder {
 	defaultSelector := func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -75,7 +80,6 @@ func NewSelectFeedEntriesEndpointBuilder(pre []middleware.Middleware) SelectFeed
 func NewSelectFeedEntriesEndpointBuilderWithSelector(selector middleware.Middleware, pre []middleware.Middleware) SelectFeedEntriesEndpointBuilder {
 	pre = append([]middleware.Middleware{
 		selector,
-		joinFeedEntrySocialSelector,
 		publicFeedEntriesOnly,
 		pageOffsetLimit,
 	}, pre...)
