@@ -20,6 +20,7 @@ package explorer
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
@@ -51,9 +52,10 @@ func (dbe SelectFeedEntriesEndpointBuilder) Endpoint() middlewares.Endpoint {
 	return e
 }
 
-func (dbe SelectFeedEntriesEndpointBuilder) EnableCache(name string) SelectFeedEntriesEndpointBuilder {
+func (dbe SelectFeedEntriesEndpointBuilder) EnableCache(prefix string) SelectFeedEntriesEndpointBuilder {
 	dbe.Cache = middlewares.SelectCacheResult(func(r *http.Request, p httprouter.Params) string {
-		return name
+		params := r.Context().Value(middlewares.QueryObjectContextKey{}).(*SelectFeedEntriesParams)
+		return fmt.Sprintf("%s.%d-%d", prefix, params.Offset, params.Limit)
 	})
 	return dbe
 }

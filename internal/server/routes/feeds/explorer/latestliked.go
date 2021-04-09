@@ -45,4 +45,4 @@ var fetchLatestLikedFeedEntries = NewSelectFeedEntriesEndpointBuilderWithSelecto
 		createJoinLatestPlantFeedMedia(false, false, []interface{}{"latestfmrow.thumbnailpath as plantthumbnailpath"}),
 		leftJoinLatestFeedMediaForFeedEntry,
 	},
-).EnableCache("latestLikedFeedEntries2").Endpoint().Handle()
+).EnableCache("latestLikedFeedEntries").Endpoint().Handle()
