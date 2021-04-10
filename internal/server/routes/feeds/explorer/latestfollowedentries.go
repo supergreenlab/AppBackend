@@ -19,30 +19,23 @@
 package explorer
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
-var fetchLatestCommentedFeedEntries = NewSelectFeedEntriesEndpointBuilder([]middleware.Middleware{
+var fetchLatestFollowedFeedEntries = NewSelectFeedEntriesEndpointBuilder([]middleware.Middleware{
 	middlewares.Filter(func(p httprouter.Params, selector sqlbuilder.Selector) sqlbuilder.Selector {
-		return selector.Columns(
-			"comments.id as commentid",
-			"comments.text as comment",
-			"comments.ctype as commenttype",
-			"comments.cat as commentdate",
-			"comments.replyto as commentreplyto",
-			"users.nickname as nickname",
-			"users.pic as pic",
-			"pfeo.settings as plantsettings",
-			"boxes.settings as boxsettings").
-			Join("boxes").On("boxes.id = pfeo.boxid").
-			Join("comments").On("comments.feedentryid = fe.id").
-			Join("users").On("users.id = comments.userid").
-			OrderBy("comments.cat DESC")
+		return selector.
+			Where(
+				fmt.Sprintf("fe.etype in ('%s')",
+					strings.Join([]string{"FE_MEDIA", "FE_BENDING", "FE_DEFOLATION", "FE_TRANSPLANT", "FE_FIMMING", "FE_TOPPING", "FE_MEASURE"}, "', '")))
 	}),
 	joinPlantForFeedEntry,
-	createJoinLatestPlantFeedMedia(false, false, []interface{}{"latestfmrow.thumbnailpath as plantthumbnailpath"}),
-	leftJoinLatestFeedMediaForFeedEntry,
-}).EnableCache("latestCommentedFeedEntries").Endpoint().Handle()
+	joinBoxSettings,
+	followedFeedEntriesOnly,
+}).JoinSocial().Endpoint().Handle()

@@ -30,10 +30,10 @@ import (
 
 var fetchLatestLikedFeedEntries = NewSelectFeedEntriesEndpointBuilderWithSelector(
 	middlewares.Selector(func(sess sqlbuilder.Database) sqlbuilder.Selector {
-		commentLikes := sess.Select("fe.*", "c.text as comment", "c.id as commentid", "likes.cat as likecat", "likes.userid as likeuserid").From("likes").
+		commentLikes := sess.Select("fe.*", "c.text as comment", "c.id as commentid", "c.replyto as commentreplyto", "likes.cat as likecat", "likes.userid as likeuserid").From("likes").
 			Join("comments c").On("c.id = likes.commentid").
 			Join("feedentries fe").On("fe.id = c.feedentryid")
-		entryLikes := sess.Select("fe.*", db.Raw("null as comment"), db.Raw("null as commentid"), "likes.cat as likecat", "likes.userid as likeuserid").From("likes").
+		entryLikes := sess.Select("fe.*", db.Raw("null as comment"), db.Raw("null as commentid"), db.Raw("null as commentreplyto"), "likes.cat as likecat", "likes.userid as likeuserid").From("likes").
 			Join("feedentries fe").On("fe.id = likes.feedentryid")
 		return sess.Select("fe.*", udb.Raw("users.nickname as nickname"), udb.Raw("users.pic as pic")).
 			From(db.Raw(fmt.Sprintf("(%s union %s) fe", commentLikes.String(), entryLikes.String()))).

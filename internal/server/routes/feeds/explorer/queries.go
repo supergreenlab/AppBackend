@@ -129,6 +129,17 @@ func joinFollows(fn httprouter.Handle) httprouter.Handle {
 	}
 }
 
+func joinNFollows(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
+
+		selector = selector.Columns(db.Raw("(select count(*) from follows where follows.plantid = p.id) as nfollows"))
+
+		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
+		fn(w, r.WithContext(ctx), p)
+	}
+}
+
 func joinFeedEntrySocialSelector(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
@@ -187,6 +198,20 @@ func publicFeedEntriesOnly(fn httprouter.Handle) httprouter.Handle {
 	}
 }
 
+func followedFeedEntriesOnly(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
+		uid := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
+
+		selector = selector.Join("feeds fo").On("fe.feedid = fo.id").
+			Join("plants ffeo").On("ffeo.feedid = fo.id").
+			Join("follows fol").On("fol.plantid = ffeo.id").And("fol.userid = ?", uid)
+
+		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
+		fn(w, r.WithContext(ctx), p)
+	}
+}
+
 func publicFeedMediasOnly(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
@@ -235,7 +260,7 @@ func joinPlantForFeedEntry(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
 
-		selector = selector.Columns("p.name as plantname", "p.id as plantid").
+		selector = selector.Columns("p.name as plantname", "p.id as plantid", "p.settings as plantsettings").
 			Join("plants p").On("p.feedid = fe.feedid")
 
 		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)

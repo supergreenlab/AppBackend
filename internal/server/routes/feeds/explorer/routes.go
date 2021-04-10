@@ -30,6 +30,7 @@ func Init(router *httprouter.Router) {
 	optionalAuth := cmiddlewares.OptionalAuthStack()
 
 	router.GET("/public/plants/followed", auth.Wrap(fetchLatestUpdatedFollowedPublicPlants))
+	router.GET("/public/feedEntries/followed", auth.Wrap(fetchLatestFollowedFeedEntries))
 
 	router.GET("/public/plants", optionalAuth.Wrap(fetchLatestUpdatedPublicPlants))
 	router.GET("/public/feedEntries", optionalAuth.Wrap(fetchLatestPublicFeedEntries))

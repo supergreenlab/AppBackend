@@ -30,6 +30,11 @@ import (
 
 var fetchLatestPublicFeedEntries = NewSelectFeedEntriesEndpointBuilder([]middleware.Middleware{
 	middlewares.Filter(func(p httprouter.Params, selector sqlbuilder.Selector) sqlbuilder.Selector {
-		return selector.Where(fmt.Sprintf("fe.etype in ('%s')", strings.Join([]string{"FE_MEDIA", "FE_BENDING", "FE_DEFOLATION", "FE_TRANSPLANT", "FE_FIMMING", "FE_TOPPING", "FE_MEASURE"}, "', '")))
+		return selector.
+			Where(
+				fmt.Sprintf("fe.etype in ('%s')",
+					strings.Join([]string{"FE_MEDIA", "FE_BENDING", "FE_DEFOLATION", "FE_TRANSPLANT", "FE_FIMMING", "FE_TOPPING", "FE_MEASURE"}, "', '")))
 	}),
+	joinPlantForFeedEntry,
+	joinBoxSettings,
 }).JoinSocial().Endpoint().Handle()

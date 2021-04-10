@@ -33,6 +33,7 @@ type publicPlant struct {
 	LastUpdate    time.Time `db:"lastupdate" json:"lastUpdate"`
 
 	Followed bool `db:"followed" json:"followed"`
+	NFollows int  `db:"nfollows" json:"nFollows"`
 
 	Settings    string `db:"settings" json:"settings"`
 	BoxSettings string `db:"boxsettings" json:"boxSettings"`
@@ -72,19 +73,20 @@ type publicFeedEntry struct {
 	// Split model?
 	PlantID            *uuid.NullUUID `db:"plantid,omitempty" json:"plantID,omitempty"`
 	PlantName          *string        `db:"plantname,omitempty" json:"plantName,omitempty"`
+	PlantThumbnailPath *string        `db:"plantthumbnailpath,omitempty" json:"plantThumbnailPath,omitempty"`
 	PlantSettings      *string        `db:"plantsettings,omitempty" json:"plantSettings,omitempty"`
-	PlantThumbnailPath *string        `db:"plantthumbnailpath,omitempty" json:"plantthumbnailpath,omitempty"`
 	BoxSettings        *string        `db:"boxsettings,omitempty" json:"boxSettings,omitempty"`
 
 	Nickname    *string        `db:"nickname" json:"nickname"`
 	Pic         *string        `db:"pic" json:"pic"`
 	CommentID   *uuid.NullUUID `db:"commentid,omitempty" json:"commentID,omitempty"`
 	Comment     *string        `db:"comment,omitempty" json:"comment,omitempty"`
+	ReplyTo     *string        `db:"commentreplyto,omitempty" json:"commentReplyTo,omitempty"`
 	CommentType *string        `db:"commenttype,omitempty" json:"commentType,omitempty"`
 	CommentDate *time.Time     `db:"commentdate,omitempty" json:"commentDate,omitempty"`
 
 	LikeDate      *time.Time `db:"likecat,omitempty" json:"likeDate,omitempty"`
-	ThumbnailPath *string    `db:"thumbnailpath,omitempty" json:"thumbnailpath,omitempty"`
+	ThumbnailPath *string    `db:"thumbnailpath,omitempty" json:"thumbnailPath,omitempty"`
 }
 
 func (r *publicFeedEntry) SetURLs(paths []string) {
