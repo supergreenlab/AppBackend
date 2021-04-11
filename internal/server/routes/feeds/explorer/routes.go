@@ -33,6 +33,7 @@ func Init(router *httprouter.Router) {
 	router.GET("/public/feedEntries/followed", auth.Wrap(fetchLatestFollowedFeedEntries))
 
 	router.GET("/public/plants", optionalAuth.Wrap(fetchLatestUpdatedPublicPlants))
+	router.GET("/public/plants/search", optionalAuth.Wrap(searchPublicPlants))
 	router.GET("/public/feedEntries", optionalAuth.Wrap(fetchLatestPublicFeedEntries))
 	router.GET("/public/plant/:id", optionalAuth.Wrap(fetchPublicPlant))
 	router.GET("/public/plant/:id/feedEntries", optionalAuth.Wrap(fetchPublicPlantFeedEntries))

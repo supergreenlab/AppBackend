@@ -38,6 +38,11 @@ type SelectPlantsEndpointBuilder struct {
 	Selector middleware.Middleware
 }
 
+func (dbe SelectPlantsEndpointBuilder) SetParam(param middlewares.Factory) SelectPlantsEndpointBuilder {
+	dbe.Params = middlewares.DecodeQuery(param)
+	return dbe
+}
+
 func (dbe SelectPlantsEndpointBuilder) Endpoint() middlewares.Endpoint {
 	dbe.Pre[0] = dbe.Selector
 	e := dbe.DBEndpointBuilder.Endpoint()
@@ -49,9 +54,7 @@ func NewSelectPlantsEndpointBuilder(pre []middleware.Middleware) SelectPlantsEnd
 	defaultSelector := func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
-			params := r.Context().Value(middlewares.QueryObjectContextKey{}).(*SelectPlantsParams)
-			selector := sess.Select("p.id", "p.name", "p.settings").From("plants p").
-				Offset(params.GetOffset()).Limit(params.GetLimit())
+			selector := sess.Select("p.id", "p.name", "p.settings").From("plants p")
 			ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
 			fn(w, r.WithContext(ctx), p)
 		}
