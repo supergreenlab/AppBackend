@@ -65,10 +65,10 @@ func (pfe *publicPlants) AsFeedMediasArray() []tools.S3FileHolder {
 type publicFeedEntry struct {
 	sgldb.FeedEntry
 
-	Liked      *bool `db:"liked,omitempty" json:"liked,omitempty"`
-	Bookmarked *bool `db:"bookmarked,omitempty" json:"bookmarked,omitempty"`
-	NComments  *int  `db:"ncomments,omitempty" json:"nComments,omitempty"`
-	NLikes     *int  `db:"nlikes,omitempty" json:"nLikes,omitempty"`
+	Liked      bool `db:"liked" json:"liked"`
+	Bookmarked bool `db:"bookmarked" json:"bookmarked"`
+	NComments  int  `db:"ncomments" json:"nComments"`
+	NLikes     int  `db:"nlikes" json:"nLikes"`
 
 	// Split model?
 	PlantID            *uuid.NullUUID `db:"plantid,omitempty" json:"plantID,omitempty"`
