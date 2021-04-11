@@ -126,7 +126,6 @@ func cardMetricsProcess() {
 				time.Sleep(1 * time.Second)
 				continue
 			}
-			logrus.Infof("%s", string(j))
 			if err := db.SetFeedEntryMeta(fe.ID.UUID, string(j)); err != nil {
 				logrus.Errorf("db.SetFeedEntryMeta in cardMetricsProcess %q - fe: %+v j: %s", err, fe, string(j))
 			}

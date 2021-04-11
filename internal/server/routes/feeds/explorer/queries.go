@@ -80,11 +80,11 @@ func createJoinLatestPlantFeedMedia(optional, order bool, columns []interface{})
 			} else {
 				selector = selector.Join(db.Raw(fmt.Sprintf("(%s) latestfm", lastFeedMediaSelector.String()))).On("latestfm.feedid = p.feedid")
 			}
-			selector = selector.Join("feedentries latestferow").On("latestferow.cat = latestfe.cat").And("latestferow.feedid = p.feedid")
+			selector = selector.Join("feedentries latestferow").On("latestferow.cat = latestfe.cat and latestferow.feedid = p.feedid")
 			if optional {
-				selector = selector.LeftJoin("feedmedias latestfmrow").On("latestfmrow.cat = latestfm.cat").And("latestfmrow.userid = p.userid")
+				selector = selector.LeftJoin("feedmedias latestfmrow").On("latestfmrow.cat = latestfm.cat and latestfmrow.userid = p.userid")
 			} else {
-				selector = selector.Join("feedmedias latestfmrow").On("latestfmrow.cat = latestfm.cat").And("latestfmrow.userid = p.userid")
+				selector = selector.Join("feedmedias latestfmrow").On("latestfmrow.cat = latestfm.cat and latestfmrow.userid = p.userid")
 			}
 
 			if order {
