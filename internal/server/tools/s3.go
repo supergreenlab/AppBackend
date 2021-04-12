@@ -19,8 +19,10 @@
 package tools
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/SuperGreenLab/AppBackend/internal/data/kv"
 	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
 )
 
@@ -40,7 +42,7 @@ type S3FileHolders interface {
 
 func LoadFeedMediaPublicURLs(fm S3FileHolder) error {
 	paths := fm.GetURLs()
-	expiry := time.Second * 60 * 60
+	expiry := time.Minute * 60
 
 	results := make([]string, len(paths))
 	for i, p := range paths {
@@ -48,11 +50,17 @@ func LoadFeedMediaPublicURLs(fm S3FileHolder) error {
 			results[i] = ""
 			continue
 		}
-		url1, err := storage.Client.PresignedGetObject(p.Bucket, *p.Path, expiry, nil)
-		if err != nil {
-			return err
+		cacheKey := fmt.Sprintf("cache.presigned-%s-%s", p.Bucket, *p.Path)
+		if v, err := kv.GetString(cacheKey); err == nil {
+			results[i] = v
+		} else {
+			url1, err := storage.Client.PresignedGetObject(p.Bucket, *p.Path, expiry, nil)
+			if err != nil {
+				return err
+			}
+			results[i] = url1.RequestURI()
+			kv.SetStringWithExpiration(cacheKey, results[i], time.Minute*45)
 		}
-		results[i] = url1.RequestURI()
 	}
 	fm.SetURLs(results)
 	return nil
