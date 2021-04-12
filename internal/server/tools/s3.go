@@ -24,6 +24,7 @@ import (
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/kv"
 	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
+	"github.com/sirupsen/logrus"
 )
 
 type S3Path struct {
@@ -59,7 +60,9 @@ func LoadFeedMediaPublicURLs(fm S3FileHolder) error {
 				return err
 			}
 			results[i] = url1.RequestURI()
-			kv.SetStringWithExpiration(cacheKey, results[i], time.Minute*45)
+			if err := kv.SetStringWithExpiration(cacheKey, results[i], time.Minute*45); err != nil {
+				logrus.Errorf("kv.SetStringWithExpiration in LoadFeedMediaPublicURLs: %q - cacheKey: %s", err, cacheKey)
+			}
 		}
 	}
 	fm.SetURLs(results)
