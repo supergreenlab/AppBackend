@@ -45,12 +45,14 @@ var searchPublicPlants = NewSelectPlantsEndpointBuilder([]middleware.Middleware{
 			searchTests := []udb.Compound{}
 			qs := strings.Split(params.Q, " ")
 			for _, q := range qs {
-				searchTests = append(searchTests, udb.Raw("p.name ilike '%' || ? || '%'", q))
-				searchTests = append(searchTests, udb.Raw("p.settings::text ilike '%' || ? || '%'", q))
-				searchTests = append(searchTests, udb.Raw("boxes.settings::text ilike '%' || ? || '%'", q))
+				searchTests = append(searchTests,
+					udb.Or(udb.Raw("p.name ilike '%' || ? || '%'", q)).
+						Or(udb.Raw("p.settings::text ilike '%' || ? || '%'", q)).
+						Or(udb.Raw("boxes.settings::text ilike '%' || ? || '%'", q)),
+				)
 			}
 
-			selector = selector.Where(udb.Or(searchTests...))
+			selector = selector.Where(udb.And(searchTests...))
 			ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
 			fn(w, r.WithContext(ctx), p)
 		}
