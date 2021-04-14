@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020  SuperGreenLab <towelie@supergreenlab.com>
+ * Copyright (C) 2021  SuperGreenLab <towelie@supergreenlab.com>
  * Author: Constantin Clauzel <constantin.clauzel@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,27 +16,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package feeds
+package explorer
 
 import (
-	"time"
-
-	"github.com/SuperGreenLab/AppBackend/internal/data/db"
-	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
+	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
+	"github.com/julienschmidt/httprouter"
+	"github.com/rileyr/middleware"
+	"upper.io/db.v3/lib/sqlbuilder"
 )
 
-func loadFeedMediaPublicURLs(fm db.FeedMedia) (db.FeedMedia, error) {
-	expiry := time.Second * 60 * 60
-	url1, err := storage.Client.PresignedGetObject("feedmedias", fm.FilePath, expiry, nil)
-	if err != nil {
-		return fm, err
-	}
-	fm.FilePath = url1.RequestURI()
-
-	url2, err := storage.Client.PresignedGetObject("feedmedias", fm.ThumbnailPath, expiry, nil)
-	if err != nil {
-		return fm, err
-	}
-	fm.ThumbnailPath = url2.RequestURI()
-	return fm, nil
-}
+var fetchPublicPlantFeedEntries = NewSelectFeedEntriesEndpointBuilder([]middleware.Middleware{
+	middlewares.Filter(func(p httprouter.Params, selector sqlbuilder.Selector) sqlbuilder.Selector {
+		return selector.Where("pfeo.id = ?", p.ByName("id"))
+	}),
+}).JoinSocial().Endpoint().Handle()

@@ -58,7 +58,7 @@ func feedMediaUploadURLHandler(w http.ResponseWriter, r *http.Request, p httprou
 	} else if strings.HasSuffix(fmup.FileName, ".jpg") || strings.HasSuffix(fmup.FileName, ".jpeg") {
 		path = fmt.Sprintf("pictures-%s.jpg", uuid.Must(uuid.NewV4()).String())
 	} else {
-		logrus.Errorf("Unknown file type %s - userID: %s", fmup.FileName)
+		logrus.Errorf("Unknown file type %s", fmup.FileName)
 		http.Error(w, "Unknown file type", http.StatusBadRequest)
 		return
 	}

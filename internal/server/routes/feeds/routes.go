@@ -20,6 +20,7 @@ package feeds
 
 import (
 	cmiddlewares "github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
+	"github.com/SuperGreenLab/AppBackend/internal/server/routes/feeds/explorer"
 	fmiddlewares "github.com/SuperGreenLab/AppBackend/internal/server/routes/feeds/middlewares"
 	"github.com/julienschmidt/httprouter"
 )
@@ -92,10 +93,5 @@ func Init(router *httprouter.Router) {
 	router.GET("/bookmarks", auth.Wrap(selectBookmarks))
 	router.GET("/timelapses", auth.Wrap(selectTimelapses))
 
-	router.GET("/public/plants", optionalAuth.Wrap(fetchPublicPlants))
-	router.GET("/public/plant/:id", optionalAuth.Wrap(fetchPublicPlant))
-	router.GET("/public/plant/:id/feedEntries", optionalAuth.Wrap(fetchPublicFeedEntries))
-	router.GET("/public/feedEntry/:id", optionalAuth.Wrap(fetchPublicFeedEntry))
-	router.GET("/public/feedEntry/:id/feedMedias", optionalAuth.Wrap(fetchPublicFeedMedias))
-	router.GET("/public/feedMedia/:id", optionalAuth.Wrap(fetchPublicFeedMedia))
+	explorer.Init(router)
 }

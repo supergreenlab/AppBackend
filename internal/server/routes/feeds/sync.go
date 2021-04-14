@@ -30,6 +30,7 @@ import (
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	cmiddlewares "github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	fmiddlewares "github.com/SuperGreenLab/AppBackend/internal/server/routes/feeds/middlewares"
+	"github.com/SuperGreenLab/AppBackend/internal/server/tools"
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
@@ -103,6 +104,25 @@ type FeedMediaWithArchived struct {
 	BoxArchived   sql.NullBool `json:"-" db:"box_archived"`
 }
 
+// TODO DRY with explorer/models.go:123
+func (r *FeedMediaWithArchived) SetURLs(paths []string) {
+	r.FilePath = paths[0]
+	r.ThumbnailPath = paths[1]
+}
+
+func (r FeedMediaWithArchived) GetURLs() []tools.S3Path {
+	return []tools.S3Path{
+		tools.S3Path{
+			Path:   &r.FilePath,
+			Bucket: "feedmedias",
+		},
+		tools.S3Path{
+			Path:   &r.ThumbnailPath,
+			Bucket: "feedmedias",
+		},
+	}
+}
+
 var syncFeedMediasHandler = syncCollection("feedmedias", "feedmediaid", func() interface{} { return &[]FeedMediaWithArchived{} }, func(selector sqlbuilder.Selector) sqlbuilder.Selector {
 	selector = selector.Join("feedentries fe").On("fe.id = a.feedentryid")
 	selector = selector.Columns(udb.Raw("p.archived as plant_archived")).LeftJoin("plants p").On("p.feedid = fe.feedid")
@@ -115,15 +135,16 @@ var syncFeedMediasHandler = syncCollection("feedmedias", "feedmediaid", func() i
 			feedMedias := r.Context().Value(middlewares.ObjectContextKey{}).(*[]FeedMediaWithArchived)
 			for i, fm := range *feedMedias {
 				if fm.Deleted == false && fm.PlantArchived.Bool == false && fm.BoxArchived.Bool == false {
-					fm.FeedMedia, err = loadFeedMediaPublicURLs(fm.FeedMedia)
+					err = tools.LoadFeedMediaPublicURLs(&fm)
 					if err != nil {
-						logrus.Errorf("loadFeedMediaPublicURLs in syncFeedMediasHandler %q - fm: %+v", err, fm)
+						logrus.Errorf("tools.LoadFeedMediaPublicURLs in syncFeedMediasHandler %q - fm: %+v", err, fm)
 						http.Error(w, err.Error(), http.StatusInternalServerError)
 						return
 					}
 				} else {
 					logrus.Infof("Skipped %+v", fm)
 				}
+				// might not be useful anymore
 				(*feedMedias)[i] = fm
 			}
 			ctx := context.WithValue(r.Context(), middlewares.ObjectContextKey{}, feedMedias)

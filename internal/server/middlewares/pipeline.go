@@ -28,57 +28,108 @@ import (
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
-// InsertEndpoint - insert an object
-func InsertEndpoint(
-	collection string,
-	factory func() interface{},
-	pre []middleware.Middleware,
-	post []middleware.Middleware,
-) httprouter.Handle {
-	s := middleware.NewStack()
-
-	s.Use(DecodeJSON(factory))
-	if pre != nil {
-		for _, m := range pre {
-			s.Use(m)
-		}
-	}
-	s.Use(InsertObject(collection))
-
-	if post != nil {
-		for _, m := range post {
-			s.Use(m)
-		}
-	}
-	s.Use(PublishInsert(collection))
-
-	return s.Wrap(OutputObjectID)
+type Endpoint struct {
+	Middlewares []middleware.Middleware
+	Output      httprouter.Handle
 }
 
-// UpdateEndpoint - updates and object
-func UpdateEndpoint(
-	collection string,
-	factory func() interface{},
-	pre []middleware.Middleware,
-	post []middleware.Middleware,
-) httprouter.Handle {
+func (e Endpoint) Handle() httprouter.Handle {
 	s := middleware.NewStack()
 
-	s.Use(DecodeJSON(factory))
+	for _, m := range e.Middlewares {
+		s.Use(m)
+	}
+	return s.Wrap(e.Output)
+}
+
+func NewEndpoint() Endpoint {
+	return Endpoint{Middlewares: []middleware.Middleware{}}
+}
+
+type Factory func() interface{}
+
+type DBEndpointBuilder struct {
+	Params middleware.Middleware
+	Input  middleware.Middleware
+	Pre    []middleware.Middleware
+	DBFn   middleware.Middleware
+	Post   []middleware.Middleware
+	Output httprouter.Handle
+}
+
+func (dbe DBEndpointBuilder) Endpoint() Endpoint {
+	e := NewEndpoint()
+	if dbe.Params != nil {
+		e.Middlewares = append(e.Middlewares, dbe.Params)
+	}
+	if dbe.Input != nil {
+		e.Middlewares = append(e.Middlewares, dbe.Input)
+	}
+	e.Middlewares = append(e.Middlewares, dbe.Pre...)
+	e.Middlewares = append(e.Middlewares, dbe.DBFn)
+	e.Middlewares = append(e.Middlewares, dbe.Post...)
+	e.Output = dbe.Output
+	return e
+}
+
+func NewDBEndpointBuilder(param Factory, input Factory, pre, post []middleware.Middleware, dbfn middleware.Middleware, output httprouter.Handle) DBEndpointBuilder {
+	e := DBEndpointBuilder{DBFn: dbfn, Output: output}
+	if param != nil {
+		e.Params = DecodeQuery(param)
+	}
+	if input != nil {
+		e.Input = DecodeJSON(input)
+	}
+	e.Pre = []middleware.Middleware{}
 	if pre != nil {
-		for _, m := range pre {
-			s.Use(m)
-		}
+		e.Pre = append(e.Pre, pre...)
 	}
-	s.Use(UpdateObject(collection))
-
+	e.Post = []middleware.Middleware{}
 	if post != nil {
-		for _, m := range post {
-			s.Use(m)
-		}
+		e.Post = append(e.Post, post...)
 	}
+	return e
+}
 
-	return s.Wrap(OutputOK)
+type InsertEndpointBuilder struct {
+	DBEndpointBuilder
+
+	Collection string
+}
+
+func (dbe InsertEndpointBuilder) Endpoint() Endpoint {
+	e := dbe.DBEndpointBuilder.Endpoint()
+	e.Middlewares = append(e.Middlewares, PublishInsert(dbe.Collection))
+	e.Output = dbe.DBEndpointBuilder.Output
+	return e
+}
+
+func NewInsertEndpointBuilder(collection string, input Factory, pre, post []middleware.Middleware) InsertEndpointBuilder {
+	e := InsertEndpointBuilder{
+		DBEndpointBuilder: NewDBEndpointBuilder(nil, input, pre, post, InsertObject(collection), OutputObjectID),
+		Collection:        collection,
+	}
+	return e
+}
+
+type UpdateEndpointBuilder struct {
+	DBEndpointBuilder
+
+	Collection string
+}
+
+func (dbe UpdateEndpointBuilder) Endpoint() Endpoint {
+	e := dbe.DBEndpointBuilder.Endpoint()
+	e.Output = dbe.DBEndpointBuilder.Output
+	return e
+}
+
+func NewUpdateEndpointBuilder(collection string, input Factory, pre, post []middleware.Middleware) UpdateEndpointBuilder {
+	e := UpdateEndpointBuilder{
+		DBEndpointBuilder: NewDBEndpointBuilder(nil, input, pre, post, UpdateObject(collection), OutputOK),
+		Collection:        collection,
+	}
+	return e
 }
 
 type SelectParams interface {
@@ -99,19 +150,23 @@ func (p *SelectParamsOffsetLimit) GetLimit() int {
 	return p.Limit
 }
 
-// SelectEndpoint - select objects
-func SelectEndpoint(
-	collection string,
-	factory func() interface{},
-	paramFactory func() interface{},
-	pre []middleware.Middleware,
-	post []middleware.Middleware,
-) httprouter.Handle {
-	s := middleware.NewStack()
+type SelectEndpointBuilder struct {
+	DBEndpointBuilder
 
-	s.Use(DecodeQuery(paramFactory))
+	Selector middleware.Middleware
 
-	s.Use(func(fn httprouter.Handle) httprouter.Handle {
+	Collection string
+}
+
+func (dbe SelectEndpointBuilder) Endpoint() Endpoint {
+	dbe.Pre[0] = dbe.Selector
+	e := dbe.DBEndpointBuilder.Endpoint()
+	e.Output = dbe.DBEndpointBuilder.Output
+	return e
+}
+
+func NewSelectEndpointBuilder(collection string, param, factory Factory, pre, post []middleware.Middleware) SelectEndpointBuilder {
+	defaultSelector := func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			sess := r.Context().Value(SessContextKey{}).(sqlbuilder.Database)
 			params := r.Context().Value(QueryObjectContextKey{}).(SelectParams)
@@ -120,22 +175,97 @@ func SelectEndpoint(
 			ctx := context.WithValue(r.Context(), SelectorContextKey{}, selector)
 			fn(w, r.WithContext(ctx), p)
 		}
-	})
+	}
+	e := SelectEndpointBuilder{
+		DBEndpointBuilder: NewDBEndpointBuilder(param, nil, append([]middleware.Middleware{defaultSelector}, pre...), post, SelectQuery(factory), OutputSelectResult(collection)),
+		Collection:        collection,
+		Selector:          defaultSelector,
+	}
+	return e
+}
 
-	if pre != nil {
-		for _, m := range pre {
-			s.Use(m)
+type SelectOneEndpointBuilder struct {
+	DBEndpointBuilder
+
+	Collection string
+}
+
+func (dbe SelectOneEndpointBuilder) Endpoint() Endpoint {
+	e := dbe.DBEndpointBuilder.Endpoint()
+	e.Output = dbe.DBEndpointBuilder.Output
+	return e
+}
+
+func NewSelectOneEndpointBuilder(collection string, param, factory Factory, pre, post []middleware.Middleware) SelectOneEndpointBuilder {
+	e := SelectOneEndpointBuilder{
+		DBEndpointBuilder: NewDBEndpointBuilder(param, nil, pre, post, SelectOneQuery(factory), OutputSelectOneResult()),
+		Collection:        collection,
+	}
+	return e
+}
+
+type CountEndpointBuilder struct {
+	DBEndpointBuilder
+
+	Selector middleware.Middleware
+
+	Collection string
+}
+
+func (dbe CountEndpointBuilder) Endpoint() Endpoint {
+	dbe.Pre[0] = dbe.Selector
+	e := dbe.DBEndpointBuilder.Endpoint()
+	e.Output = dbe.DBEndpointBuilder.Output
+	return e
+}
+
+func NewCountEndpointBuilder(collection string, param Factory, pre, post []middleware.Middleware) CountEndpointBuilder {
+	defaultSelector := func(fn httprouter.Handle) httprouter.Handle {
+		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+			sess := r.Context().Value(SessContextKey{}).(sqlbuilder.Database)
+			selector := sess.Select(db.Raw("COUNT(*) AS n")).From(collection + " t")
+			ctx := context.WithValue(r.Context(), SelectorContextKey{}, selector)
+			fn(w, r.WithContext(ctx), p)
 		}
 	}
-	s.Use(SelectQuery(factory))
-
-	if post != nil {
-		for _, m := range post {
-			s.Use(m)
-		}
+	factory := func() interface{} { return &Count{} }
+	e := CountEndpointBuilder{
+		DBEndpointBuilder: NewDBEndpointBuilder(param, nil, append([]middleware.Middleware{defaultSelector}, pre...), post, SelectOneQuery(factory), OutputSelectOneResult()),
+		Collection:        collection,
 	}
+	e.Selector = defaultSelector
+	return e
+}
 
-	return s.Wrap(OutputSelectResult(collection))
+// InsertEndpoint - insert an object
+func InsertEndpoint(
+	collection string,
+	factory Factory,
+	pre []middleware.Middleware,
+	post []middleware.Middleware,
+) httprouter.Handle {
+	return NewInsertEndpointBuilder(collection, factory, pre, post).Endpoint().Handle()
+}
+
+// UpdateEndpoint - updates and object
+func UpdateEndpoint(
+	collection string,
+	factory func() interface{},
+	pre []middleware.Middleware,
+	post []middleware.Middleware,
+) httprouter.Handle {
+	return NewUpdateEndpointBuilder(collection, factory, pre, post).Endpoint().Handle()
+}
+
+// SelectEndpoint - select objects
+func SelectEndpoint(
+	collection string,
+	factory func() interface{},
+	paramFactory func() interface{},
+	pre []middleware.Middleware,
+	post []middleware.Middleware,
+) httprouter.Handle {
+	return NewSelectEndpointBuilder(collection, paramFactory, factory, pre, post).Endpoint().Handle()
 }
 
 // SelectEndpoint - select objects
@@ -146,24 +276,7 @@ func SelectOneEndpoint(
 	pre []middleware.Middleware,
 	post []middleware.Middleware,
 ) httprouter.Handle {
-	s := middleware.NewStack()
-
-	s.Use(DecodeQuery(paramFactory))
-
-	if pre != nil {
-		for _, m := range pre {
-			s.Use(m)
-		}
-	}
-	s.Use(SelectOneQuery(factory))
-
-	if post != nil {
-		for _, m := range post {
-			s.Use(m)
-		}
-	}
-
-	return s.Wrap(OutputSelectOneResult(collection))
+	return NewSelectOneEndpointBuilder(collection, paramFactory, factory, pre, post).Endpoint().Handle()
 }
 
 type Count struct {
@@ -177,31 +290,5 @@ func CountEndpoint(
 	pre []middleware.Middleware,
 	post []middleware.Middleware,
 ) httprouter.Handle {
-	s := middleware.NewStack()
-
-	s.Use(DecodeQuery(paramFactory))
-
-	s.Use(func(fn httprouter.Handle) httprouter.Handle {
-		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-			sess := r.Context().Value(SessContextKey{}).(sqlbuilder.Database)
-			selector := sess.Select(db.Raw("COUNT(*) AS n")).From(collection + " t")
-			ctx := context.WithValue(r.Context(), SelectorContextKey{}, selector)
-			fn(w, r.WithContext(ctx), p)
-		}
-	})
-
-	if pre != nil {
-		for _, m := range pre {
-			s.Use(m)
-		}
-	}
-	s.Use(SelectOneQuery(func() interface{} { return &Count{} }))
-
-	if post != nil {
-		for _, m := range post {
-			s.Use(m)
-		}
-	}
-
-	return s.Wrap(OutputSelectOneResult(collection))
+	return NewCountEndpointBuilder(collection, paramFactory, pre, post).Endpoint().Handle()
 }

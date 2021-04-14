@@ -63,6 +63,7 @@ func archivePlantHandler(w http.ResponseWriter, r *http.Request, p httprouter.Pa
 		return
 	}
 
+	// TODO try something better..
 	if _, err := sess.DeleteFrom("userend_plants").Where("plantid = ?", id).And("userendid = ?", ueid).Exec(); err != nil {
 		logrus.Errorf("sess.DeleteFrom('userend_plants') in archivePlantHandler %q - id: %s uid: %s ueid: %s", err, id, uid, ueid)
 		http.Error(w, err.Error(), http.StatusBadRequest)
