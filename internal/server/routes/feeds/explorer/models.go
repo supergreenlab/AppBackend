@@ -76,6 +76,8 @@ type publicFeedEntry struct {
 	PlantThumbnailPath *string        `db:"plantthumbnailpath,omitempty" json:"plantThumbnailPath,omitempty"`
 	PlantSettings      *string        `db:"plantsettings,omitempty" json:"plantSettings,omitempty"`
 	BoxSettings        *string        `db:"boxsettings,omitempty" json:"boxSettings,omitempty"`
+	Followed           *bool          `db:"followed,omitempty" json:"followed,omitempty"`
+	NFollows           *int           `db:"nfollows,omitempty" json:"nFollows,omitempty"`
 
 	Nickname    *string        `db:"nickname" json:"nickname"`
 	Pic         *string        `db:"pic" json:"pic"`

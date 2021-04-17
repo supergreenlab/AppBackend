@@ -27,6 +27,7 @@ import (
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
+	"github.com/rileyr/middleware"
 	"upper.io/db.v3"
 	udb "upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
@@ -112,22 +113,26 @@ func joinBoxSettings(fn httprouter.Handle) httprouter.Handle {
 	}
 }
 
-func joinFollows(fn httprouter.Handle) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
-		uid, userIDExists := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
-		if !userIDExists {
-			fn(w, r, p)
-			return
+func joinFollowsWithTable(table string) middleware.Middleware {
+	return func(fn httprouter.Handle) httprouter.Handle {
+		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+			selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
+			uid, userIDExists := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
+			if !userIDExists {
+				fn(w, r, p)
+				return
+			}
+
+			selector = selector.Columns(db.Raw("(follows.id is not null) as followed")).
+				LeftJoin("follows").On(fmt.Sprintf("follows.plantid = %s.id and follows.userid = ?", table), uid)
+
+			ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
+			fn(w, r.WithContext(ctx), p)
 		}
-
-		selector = selector.Columns(db.Raw("(follows.id is not null) as followed")).
-			LeftJoin("follows").On("follows.plantid = p.id and follows.userid = ?", uid)
-
-		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
-		fn(w, r.WithContext(ctx), p)
 	}
 }
+
+var joinFollows = joinFollowsWithTable("p")
 
 func joinNFollows(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {

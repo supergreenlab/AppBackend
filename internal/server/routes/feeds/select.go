@@ -336,7 +336,7 @@ func joinFeedEntry(fn httprouter.Handle) httprouter.Handle {
 		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
 		uid, userIDExists := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
 
-		selector = selector.Columns("fe.*").Join("feedentries fe").On("t.feedentryid = fe.id").
+		selector = selector.Columns("fe.*", "p.settings as plantsettings").Join("feedentries fe").On("t.feedentryid = fe.id").
 			Columns("p.id as plantid").Join("plants p").On("p.feedid = fe.feedid").Where("p.deleted = ?", false).And("p.is_public = ?", true)
 
 		if userIDExists {
@@ -360,7 +360,9 @@ type publicFeedEntryBookmark struct {
 	NComments  int  `db:"ncomments" json:"nComments"`
 	NLikes     int  `db:"nlikes" json:"nLikes"`
 
-	PlantID string `db:"plantid" json:"plantID"`
+	// TODO this will be a problem with box entries
+	PlantID       string `db:"plantid" json:"plantID"`
+	PlantSettings string `db:"plantsettings" json:"plantSettings"`
 }
 
 var selectBookmarks = middlewares.SelectEndpoint(

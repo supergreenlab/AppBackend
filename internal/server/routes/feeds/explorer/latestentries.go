@@ -37,4 +37,5 @@ var fetchLatestPublicFeedEntries = NewSelectFeedEntriesEndpointBuilder([]middlew
 	}),
 	joinPlantForFeedEntry,
 	joinBoxSettings,
+	joinFollows,
 }).JoinSocial().Endpoint().Handle()
