@@ -96,7 +96,7 @@ type SelectBoxesParams struct {
 
 var selectBoxes = middlewares.SelectEndpoint(
 	"boxes",
-	func() interface{} { return &[]db.FeedEntry{} },
+	func() interface{} { return &[]db.Box{} },
 	func() interface{} { return &SelectBoxesParams{} },
 	[]middleware.Middleware{
 		filterUserID,
