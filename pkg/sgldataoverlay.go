@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package discord
+package appbackend
 
 import (
 	"bytes"
@@ -188,7 +188,7 @@ func init() {
 	imagick.Initialize()
 }
 
-func addSGLOverlays(box db.Box, plant db.Plant, device *db.Device, img *bytes.Buffer) (*bytes.Buffer, error) {
+func AddSGLOverlays(box db.Box, plant db.Plant, device *db.Device, img *bytes.Buffer) (*bytes.Buffer, error) {
 	mw := imagick.NewMagickWand()
 	defer mw.Destroy()
 

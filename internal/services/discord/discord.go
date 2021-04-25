@@ -32,6 +32,7 @@ import (
 	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/SuperGreenLab/AppBackend/internal/services/pubsub"
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 	"github.com/bwmarrin/discordgo"
 	"github.com/disintegration/imaging"
 	"github.com/gofrs/uuid"
@@ -172,7 +173,7 @@ func listenFeedMediasAdded() {
 			continue
 		}
 
-		buff, err = addSGLOverlays(box, plant, device, buff)
+		buff, err = appbackend.AddSGLOverlays(box, plant, device, buff)
 		if err != nil {
 			logrus.Errorf("addSGLOverlays in listenFeedMediasAdded %q - device: %+v", err, device)
 			continue
