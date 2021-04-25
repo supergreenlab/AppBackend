@@ -48,6 +48,17 @@ func filterUserID(fn httprouter.Handle) httprouter.Handle {
 	}
 }
 
+func filterID(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
+
+		id := p.ByName("id")
+		selector = selector.Where("t.id = ?", id)
+		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
+		fn(w, r.WithContext(ctx), p)
+	}
+}
+
 type SelectPlantsParams struct {
 	middlewares.SelectParamsOffsetLimit
 }
@@ -57,6 +68,17 @@ var selectPlants = middlewares.SelectEndpoint(
 	func() interface{} { return &[]db.Plant{} },
 	func() interface{} { return &SelectPlantsParams{} },
 	[]middleware.Middleware{
+		filterUserID,
+	},
+	[]middleware.Middleware{},
+)
+
+var selectPlant = middlewares.SelectOneEndpoint(
+	"plants",
+	func() interface{} { return &db.Plant{} },
+	nil,
+	[]middleware.Middleware{
+		filterID,
 		filterUserID,
 	},
 	[]middleware.Middleware{},
@@ -76,6 +98,17 @@ var selectFeedEntries = middlewares.SelectEndpoint(
 	[]middleware.Middleware{},
 )
 
+var selectFeedEntry = middlewares.SelectOneEndpoint(
+	"feedentries",
+	func() interface{} { return &db.FeedEntry{} },
+	nil,
+	[]middleware.Middleware{
+		filterID,
+		filterUserID,
+	},
+	[]middleware.Middleware{},
+)
+
 type SelectFeedsParams struct {
 	middlewares.SelectParamsOffsetLimit
 }
@@ -85,6 +118,17 @@ var selectFeeds = middlewares.SelectEndpoint(
 	func() interface{} { return &[]db.FeedEntry{} },
 	func() interface{} { return &SelectFeedsParams{} },
 	[]middleware.Middleware{
+		filterUserID,
+	},
+	[]middleware.Middleware{},
+)
+
+var selectFeed = middlewares.SelectEndpoint(
+	"feeds",
+	func() interface{} { return &db.FeedEntry{} },
+	nil,
+	[]middleware.Middleware{
+		filterID,
 		filterUserID,
 	},
 	[]middleware.Middleware{},
@@ -104,6 +148,17 @@ var selectBoxes = middlewares.SelectEndpoint(
 	[]middleware.Middleware{},
 )
 
+var selectBox = middlewares.SelectOneEndpoint(
+	"boxes",
+	func() interface{} { return &db.Box{} },
+	nil,
+	[]middleware.Middleware{
+		filterID,
+		filterUserID,
+	},
+	[]middleware.Middleware{},
+)
+
 type SelectDevicesParams struct {
 	middlewares.SelectParamsOffsetLimit
 }
@@ -118,6 +173,17 @@ var selectDevices = middlewares.SelectEndpoint(
 	[]middleware.Middleware{},
 )
 
+var selectDevice = middlewares.SelectOneEndpoint(
+	"devices",
+	func() interface{} { return &db.Device{} },
+	nil,
+	[]middleware.Middleware{
+		filterID,
+		filterUserID,
+	},
+	[]middleware.Middleware{},
+)
+
 type SelectFeedMediasParams struct {
 	middlewares.SelectParamsOffsetLimit
 }
@@ -127,6 +193,17 @@ var selectFeedMedias = middlewares.SelectEndpoint(
 	func() interface{} { return &[]db.FeedMedia{} },
 	func() interface{} { return &SelectFeedMediasParams{} },
 	[]middleware.Middleware{
+		filterUserID,
+	},
+	[]middleware.Middleware{},
+)
+
+var selectFeedMedia = middlewares.SelectOneEndpoint(
+	"feedmedias",
+	func() interface{} { return &db.FeedMedia{} },
+	nil,
+	[]middleware.Middleware{
+		filterID,
 		filterUserID,
 	},
 	[]middleware.Middleware{},
@@ -376,6 +453,18 @@ var selectBookmarks = middlewares.SelectEndpoint(
 	[]middleware.Middleware{},
 )
 
+var selectBookmark = middlewares.SelectOneEndpoint(
+	"bookmarks",
+	func() interface{} { return &publicFeedEntryBookmark{} },
+	nil,
+	[]middleware.Middleware{
+		filterID,
+		filterUserID,
+		joinFeedEntry,
+	},
+	[]middleware.Middleware{},
+)
+
 type SelectTimelapsesParams struct {
 	middlewares.SelectParamsOffsetLimit
 }
@@ -385,6 +474,17 @@ var selectTimelapses = middlewares.SelectEndpoint(
 	func() interface{} { return &[]db.Timelapse{} },
 	func() interface{} { return &SelectTimelapsesParams{} },
 	[]middleware.Middleware{
+		filterUserID,
+	},
+	[]middleware.Middleware{},
+)
+
+var selectTimelapse = middlewares.SelectOneEndpoint(
+	"timelapses",
+	func() interface{} { return &db.Timelapse{} },
+	nil,
+	[]middleware.Middleware{
+		filterID,
 		filterUserID,
 	},
 	[]middleware.Middleware{},
