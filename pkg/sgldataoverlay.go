@@ -26,7 +26,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"gopkg.in/gographics/imagick.v2/imagick"
 )
 
@@ -188,7 +187,7 @@ func init() {
 	imagick.Initialize()
 }
 
-func AddSGLOverlays(box db.Box, plant db.Plant, device *db.Device, img *bytes.Buffer) (*bytes.Buffer, error) {
+func AddSGLOverlays(box Box, plant Plant, device *Device, img *bytes.Buffer) (*bytes.Buffer, error) {
 	mw := imagick.NewMagickWand()
 	defer mw.Destroy()
 

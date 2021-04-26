@@ -59,7 +59,7 @@ func init() {
 func listenFeedMediasAdded() {
 	ch := pubsub.SubscribeOject("insert.feedmedias")
 	for c := range ch {
-		fm := c.(middlewares.InsertMessage).Object.(*db.FeedMedia)
+		fm := c.(middlewares.InsertMessage).Object.(*appbackend.FeedMedia)
 		id := c.(middlewares.InsertMessage).ID
 
 		plant, err := db.GetPlantForFeedEntryID(fm.FeedEntryID)
@@ -147,7 +147,7 @@ func listenFeedMediasAdded() {
 			logrus.Errorf("db.GetBox in listenFeedMediasAdded %q - plant: %+v", err, plant)
 			continue
 		}
-		var device *db.Device
+		var device *appbackend.Device
 		if box.DeviceID.Valid {
 			d, err := db.GetDevice(box.DeviceID.UUID)
 			if err != nil {

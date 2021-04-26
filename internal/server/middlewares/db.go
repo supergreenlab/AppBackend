@@ -23,6 +23,7 @@ import (
 	"net/http"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
@@ -79,7 +80,7 @@ type UpdatedIDContextKey struct{}
 func UpdateObject(collection string) func(fn httprouter.Handle) httprouter.Handle {
 	return func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-			o := r.Context().Value(ObjectContextKey{}).(db.Object)
+			o := r.Context().Value(ObjectContextKey{}).(appbackend.Object)
 			sess := r.Context().Value(SessContextKey{}).(sqlbuilder.Database)
 			col := sess.Collection(collection)
 			err := col.Find(o.GetID()).Update(o)

@@ -21,8 +21,8 @@ package middlewares
 import (
 	"net/http"
 
-	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
 	"upper.io/db.v3/lib/sqlbuilder"
@@ -31,8 +31,8 @@ import (
 func CheckPlantArchivedForPlant(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
-		o := r.Context().Value(middlewares.ObjectContextKey{}).(*db.Plant)
-		plant := db.Plant{}
+		o := r.Context().Value(middlewares.ObjectContextKey{}).(*appbackend.Plant)
+		plant := appbackend.Plant{}
 		if err := sess.Select("archived").From("plants").Where("id = ?", o.ID).One(&plant); err != nil {
 			logrus.Errorf("sess.Select in CheckPlantArchivedForPlant %q - %+v", err, o)
 			http.Error(w, "Uknown plant", http.StatusBadRequest)
@@ -47,8 +47,8 @@ func CheckPlantArchivedForPlant(fn httprouter.Handle) httprouter.Handle {
 func CheckPlantArchivedForTimelapse(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
-		o := r.Context().Value(middlewares.ObjectContextKey{}).(*db.Timelapse)
-		plant := db.Plant{}
+		o := r.Context().Value(middlewares.ObjectContextKey{}).(*appbackend.Timelapse)
+		plant := appbackend.Plant{}
 		if err := sess.Select("archived").From("plants").Where("id = ?", o.PlantID).One(&plant); err != nil {
 			logrus.Errorf("sess.Select in CheckPlantArchivedForTimelapse %q - %+v", err, o)
 			http.Error(w, "Uknown plant", http.StatusBadRequest)
@@ -63,8 +63,8 @@ func CheckPlantArchivedForTimelapse(fn httprouter.Handle) httprouter.Handle {
 func CheckPlantArchivedForFeed(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
-		o := r.Context().Value(middlewares.ObjectContextKey{}).(*db.Feed)
-		plant := db.Plant{}
+		o := r.Context().Value(middlewares.ObjectContextKey{}).(*appbackend.Feed)
+		plant := appbackend.Plant{}
 		if err := sess.Select("archived").From("plants").Where("feedid = ?", o.ID).One(&plant); err != nil && err.Error() != "upper: no more rows in this result set" {
 			logrus.Errorf("sess.Select in CheckPlantArchivedForFeed %q - %+v", err, o)
 			http.Error(w, "Uknown plant", http.StatusBadRequest)
@@ -79,8 +79,8 @@ func CheckPlantArchivedForFeed(fn httprouter.Handle) httprouter.Handle {
 func CheckPlantArchivedForFeedEntry(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
-		o := r.Context().Value(middlewares.ObjectContextKey{}).(*db.FeedEntry)
-		plant := db.Plant{}
+		o := r.Context().Value(middlewares.ObjectContextKey{}).(*appbackend.FeedEntry)
+		plant := appbackend.Plant{}
 		if err := sess.Select("archived").From("plants").Join("feedentries").On("plants.feedid = feedentries.feedid").Where("feedentries.id = ?", o.ID).One(&plant); err != nil && err.Error() != "upper: no more rows in this result set" {
 			logrus.Errorf("sess.Select in CheckPlantArchivedForFeedEntry %q - %+v", err, o)
 			http.Error(w, "Uknown plant", http.StatusBadRequest)
@@ -95,8 +95,8 @@ func CheckPlantArchivedForFeedEntry(fn httprouter.Handle) httprouter.Handle {
 func CheckPlantArchivedForFeedMedia(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
-		o := r.Context().Value(middlewares.ObjectContextKey{}).(*db.FeedMedia)
-		plant := db.Plant{}
+		o := r.Context().Value(middlewares.ObjectContextKey{}).(*appbackend.FeedMedia)
+		plant := appbackend.Plant{}
 		if err := sess.Select("archived").From("plants").Join("feedentries").On("plants.feedid = feedentries.feedid").Join("feedmedias").On("feedmedias.feedentryid = feedentries.id").Where("feedmedias.id = ?", o.ID).One(&plant); err != nil && err.Error() != "upper: no more rows in this result set" {
 			logrus.Errorf("sess.Select in CheckPlantArchivedForFeedMedia %q - %+v", err, o)
 			http.Error(w, "Uknown plant", http.StatusBadRequest)

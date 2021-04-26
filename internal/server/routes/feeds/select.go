@@ -24,9 +24,9 @@ import (
 	"time"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
-	sgldb "github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
@@ -65,7 +65,7 @@ type SelectPlantsParams struct {
 
 var selectPlants = middlewares.SelectEndpoint(
 	"plants",
-	func() interface{} { return &[]db.Plant{} },
+	func() interface{} { return &[]appbackend.Plant{} },
 	func() interface{} { return &SelectPlantsParams{} },
 	[]middleware.Middleware{
 		filterUserID,
@@ -75,7 +75,7 @@ var selectPlants = middlewares.SelectEndpoint(
 
 var selectPlant = middlewares.SelectOneEndpoint(
 	"plants",
-	func() interface{} { return &db.Plant{} },
+	func() interface{} { return &appbackend.Plant{} },
 	nil,
 	[]middleware.Middleware{
 		filterID,
@@ -90,7 +90,7 @@ type SelectFeedEntriesParams struct {
 
 var selectFeedEntries = middlewares.SelectEndpoint(
 	"feedentries",
-	func() interface{} { return &[]db.FeedEntry{} },
+	func() interface{} { return &[]appbackend.FeedEntry{} },
 	func() interface{} { return &SelectFeedEntriesParams{} },
 	[]middleware.Middleware{
 		filterUserID,
@@ -100,7 +100,7 @@ var selectFeedEntries = middlewares.SelectEndpoint(
 
 var selectFeedEntry = middlewares.SelectOneEndpoint(
 	"feedentries",
-	func() interface{} { return &db.FeedEntry{} },
+	func() interface{} { return &appbackend.FeedEntry{} },
 	nil,
 	[]middleware.Middleware{
 		filterID,
@@ -115,7 +115,7 @@ type SelectFeedsParams struct {
 
 var selectFeeds = middlewares.SelectEndpoint(
 	"feeds",
-	func() interface{} { return &[]db.FeedEntry{} },
+	func() interface{} { return &[]appbackend.FeedEntry{} },
 	func() interface{} { return &SelectFeedsParams{} },
 	[]middleware.Middleware{
 		filterUserID,
@@ -125,7 +125,7 @@ var selectFeeds = middlewares.SelectEndpoint(
 
 var selectFeed = middlewares.SelectEndpoint(
 	"feeds",
-	func() interface{} { return &db.FeedEntry{} },
+	func() interface{} { return &appbackend.FeedEntry{} },
 	nil,
 	[]middleware.Middleware{
 		filterID,
@@ -140,7 +140,7 @@ type SelectBoxesParams struct {
 
 var selectBoxes = middlewares.SelectEndpoint(
 	"boxes",
-	func() interface{} { return &[]db.Box{} },
+	func() interface{} { return &[]appbackend.Box{} },
 	func() interface{} { return &SelectBoxesParams{} },
 	[]middleware.Middleware{
 		filterUserID,
@@ -150,7 +150,7 @@ var selectBoxes = middlewares.SelectEndpoint(
 
 var selectBox = middlewares.SelectOneEndpoint(
 	"boxes",
-	func() interface{} { return &db.Box{} },
+	func() interface{} { return &appbackend.Box{} },
 	nil,
 	[]middleware.Middleware{
 		filterID,
@@ -165,7 +165,7 @@ type SelectDevicesParams struct {
 
 var selectDevices = middlewares.SelectEndpoint(
 	"devices",
-	func() interface{} { return &[]db.Device{} },
+	func() interface{} { return &[]appbackend.Device{} },
 	func() interface{} { return &SelectDevicesParams{} },
 	[]middleware.Middleware{
 		filterUserID,
@@ -175,7 +175,7 @@ var selectDevices = middlewares.SelectEndpoint(
 
 var selectDevice = middlewares.SelectOneEndpoint(
 	"devices",
-	func() interface{} { return &db.Device{} },
+	func() interface{} { return &appbackend.Device{} },
 	nil,
 	[]middleware.Middleware{
 		filterID,
@@ -190,7 +190,7 @@ type SelectFeedMediasParams struct {
 
 var selectFeedMedias = middlewares.SelectEndpoint(
 	"feedmedias",
-	func() interface{} { return &[]db.FeedMedia{} },
+	func() interface{} { return &[]appbackend.FeedMedia{} },
 	func() interface{} { return &SelectFeedMediasParams{} },
 	[]middleware.Middleware{
 		filterUserID,
@@ -200,7 +200,7 @@ var selectFeedMedias = middlewares.SelectEndpoint(
 
 var selectFeedMedia = middlewares.SelectOneEndpoint(
 	"feedmedias",
-	func() interface{} { return &db.FeedMedia{} },
+	func() interface{} { return &appbackend.FeedMedia{} },
 	nil,
 	[]middleware.Middleware{
 		filterID,
@@ -428,7 +428,7 @@ func joinFeedEntry(fn httprouter.Handle) httprouter.Handle {
 }
 
 type publicFeedEntryBookmark struct {
-	sgldb.FeedEntry
+	appbackend.FeedEntry
 
 	Liked      bool `db:"liked" json:"liked"`
 	Bookmarked bool `db:"bookmarked" json:"bookmarked"`
@@ -469,7 +469,7 @@ type SelectTimelapsesParams struct {
 
 var selectTimelapses = middlewares.SelectEndpoint(
 	"timelapses",
-	func() interface{} { return &[]db.Timelapse{} },
+	func() interface{} { return &[]appbackend.Timelapse{} },
 	func() interface{} { return &SelectTimelapsesParams{} },
 	[]middleware.Middleware{
 		filterUserID,
@@ -479,7 +479,7 @@ var selectTimelapses = middlewares.SelectEndpoint(
 
 var selectTimelapse = middlewares.SelectOneEndpoint(
 	"timelapses",
-	func() interface{} { return &db.Timelapse{} },
+	func() interface{} { return &appbackend.Timelapse{} },
 	nil,
 	[]middleware.Middleware{
 		filterID,

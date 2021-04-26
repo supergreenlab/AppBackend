@@ -28,6 +28,7 @@ import (
 	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/SuperGreenLab/AppBackend/internal/services/pubsub"
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/slack-go/slack"
@@ -42,7 +43,7 @@ var (
 func listenFeedEntriesAdded() {
 	ch := pubsub.SubscribeOject("insert.feedentries")
 	for c := range ch {
-		fe := c.(middlewares.InsertMessage).Object.(*db.FeedEntry)
+		fe := c.(middlewares.InsertMessage).Object.(*appbackend.FeedEntry)
 		id := c.(middlewares.InsertMessage).ID
 
 		plant, err := db.GetPlantForFeedEntryID(id)
@@ -60,7 +61,7 @@ func listenFeedEntriesAdded() {
 func listenFeedMediasAdded() {
 	ch := pubsub.SubscribeOject("insert.feedmedias")
 	for c := range ch {
-		fm := c.(middlewares.InsertMessage).Object.(*db.FeedMedia)
+		fm := c.(middlewares.InsertMessage).Object.(*appbackend.FeedMedia)
 		id := c.(middlewares.InsertMessage).ID
 
 		plant, err := db.GetPlantForFeedEntryID(fm.FeedEntryID)
@@ -109,7 +110,7 @@ func PublicFeedMediaPosted(imageURL string) {
 	}
 }
 
-func PublicDiaryEntryPosted(id uuid.UUID, fe db.FeedEntry, p db.Plant) {
+func PublicDiaryEntryPosted(id uuid.UUID, fe appbackend.FeedEntry, p appbackend.Plant) {
 	params := map[string]interface{}{}
 	if err := json.Unmarshal([]byte(fe.Params), &params); err != nil {
 		logrus.Errorf("json.Unmarshal in PublicDiaryEntryPosted %q - %+v", err, fe)
@@ -136,7 +137,7 @@ func PublicDiaryEntryPosted(id uuid.UUID, fe db.FeedEntry, p db.Plant) {
 	}
 }
 
-func CommentPosted(id uuid.UUID, com db.Comment, p db.Plant, u db.User) {
+func CommentPosted(id uuid.UUID, com db.Comment, p appbackend.Plant, u db.User) {
 	attachment := slack.Attachment{
 		Color:         "good",
 		Fallback:      fmt.Sprintf("Comment posted by %s on the plant %s", u.Nickname, p.Name),
@@ -159,7 +160,7 @@ func CommentPosted(id uuid.UUID, com db.Comment, p db.Plant, u db.User) {
 	}
 }
 
-func CommentLikeAdded(l db.Like, com db.Comment, p db.Plant, u db.User) {
+func CommentLikeAdded(l db.Like, com db.Comment, p appbackend.Plant, u db.User) {
 	attachment := slack.Attachment{
 		Color:         "good",
 		Fallback:      fmt.Sprintf("%s liked a comment on the plant %s", u.Nickname, p.Name),
@@ -182,7 +183,7 @@ func CommentLikeAdded(l db.Like, com db.Comment, p db.Plant, u db.User) {
 	}
 }
 
-func PostLikeAdded(l db.Like, p db.Plant, u db.User) {
+func PostLikeAdded(l db.Like, p appbackend.Plant, u db.User) {
 	attachment := slack.Attachment{
 		Color:         "good",
 		Fallback:      fmt.Sprintf("%s liked a diary entry on the plant %s", u.Nickname, p.Name),

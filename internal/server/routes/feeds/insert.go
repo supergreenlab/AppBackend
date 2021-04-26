@@ -26,6 +26,7 @@ import (
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	fmiddlewares "github.com/SuperGreenLab/AppBackend/internal/server/routes/feeds/middlewares"
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
@@ -36,9 +37,9 @@ import (
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
-func fillUserEnd(sess sqlbuilder.Database, ueid uuid.UUID, collection string, all db.Objects, factory func() db.UserEndObject) {
+func fillUserEnd(sess sqlbuilder.Database, ueid uuid.UUID, collection string, all appbackend.Objects, factory func() db.UserEndObject) {
 	// TODO batch insert, or insert select below
-	all.Each(func(a db.Object) {
+	all.Each(func(a appbackend.Object) {
 		ueo := factory()
 		ueo.SetUserEndID(ueid)
 		ueo.SetObjectID(a.GetID().UUID)
@@ -72,44 +73,44 @@ var createUserEndHandler = middlewares.InsertEndpoint(
 
 				w.Header().Set("x-sgl-token", tokenString)
 
-				boxes := []db.Box{}
+				boxes := []appbackend.Box{}
 				err = sess.Select("*").From("boxes").Where("userid = ?", uid).And("deleted = ?", false).All(&boxes)
 				if err != nil {
 					logrus.Errorf("sess.Select.From('boxes') in createUserEndHandler %q - uid: %s", err, uid)
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
-				fillUserEnd(sess, id, "boxes", db.Boxes(boxes), func() db.UserEndObject { return &db.UserEndBox{} })
+				fillUserEnd(sess, id, "boxes", appbackend.Boxes(boxes), func() db.UserEndObject { return &db.UserEndBox{} })
 
-				plants := []db.Plant{}
+				plants := []appbackend.Plant{}
 				err = sess.Select("*").From("plants").Where("userid = ?", uid).And("deleted = ?", false).And("archived = ?", false).All(&plants)
 				if err != nil {
 					logrus.Errorf("sess.Select.From('plants') in createUserEndHandler %q - uid: %s", err, uid)
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
-				fillUserEnd(sess, id, "plants", db.Plants(plants), func() db.UserEndObject { return &db.UserEndPlant{} })
+				fillUserEnd(sess, id, "plants", appbackend.Plants(plants), func() db.UserEndObject { return &db.UserEndPlant{} })
 
-				timelapses := []db.Timelapse{}
+				timelapses := []appbackend.Timelapse{}
 				err = sess.Select("*").From("timelapses").Where("userid = ?", uid).And("deleted = ?", false).And("(select archived from plants where plants.id = timelapses.plantid) = ?", false).All(&timelapses)
 				if err != nil {
 					logrus.Errorf("sess.Select.From('timelapses') in createUserEndHandler %q - uid: %s", err, uid)
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
-				fillUserEnd(sess, id, "timelapses", db.Timelapses(timelapses), func() db.UserEndObject { return &db.UserEndTimelapse{} })
+				fillUserEnd(sess, id, "timelapses", appbackend.Timelapses(timelapses), func() db.UserEndObject { return &db.UserEndTimelapse{} })
 
-				devices := []db.Device{}
+				devices := []appbackend.Device{}
 				err = sess.Select("*").From("devices").Where("userid = ?", uid).And("deleted = ?", false).All(&devices)
 				if err != nil {
 					logrus.Errorf("sess.Select.From('devices') in createUserEndHandler %q - uid: %s", err, uid)
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
-				fillUserEnd(sess, id, "devices", db.Devices(devices), func() db.UserEndObject { return &db.UserEndDevice{} })
+				fillUserEnd(sess, id, "devices", appbackend.Devices(devices), func() db.UserEndObject { return &db.UserEndDevice{} })
 
 				// TODO replace with joins + add box archived flag management
-				feeds := []db.Feed{}
+				feeds := []appbackend.Feed{}
 				err = sess.Select("*").From("feeds").Where("userid = ?", uid).And("deleted = ?", false).And(
 					udb.Or(
 						udb.Raw("not exists(select id from plants where plants.feedid = feeds.id)"),
@@ -120,9 +121,9 @@ var createUserEndHandler = middlewares.InsertEndpoint(
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
-				fillUserEnd(sess, id, "feeds", db.Feeds(feeds), func() db.UserEndObject { return &db.UserEndFeed{} })
+				fillUserEnd(sess, id, "feeds", appbackend.Feeds(feeds), func() db.UserEndObject { return &db.UserEndFeed{} })
 
-				feedEntries := []db.FeedEntry{}
+				feedEntries := []appbackend.FeedEntry{}
 				err = sess.Select("*").From("feedentries").Where("userid = ?", uid).And("deleted = ?", false).And(
 					udb.Or(
 						udb.Raw("not exists(select id from plants where plants.feedid = feedentries.feedid)"),
@@ -133,9 +134,9 @@ var createUserEndHandler = middlewares.InsertEndpoint(
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
-				fillUserEnd(sess, id, "feedentries", db.FeedEntries(feedEntries), func() db.UserEndObject { return &db.UserEndFeedEntry{} })
+				fillUserEnd(sess, id, "feedentries", appbackend.FeedEntries(feedEntries), func() db.UserEndObject { return &db.UserEndFeedEntry{} })
 
-				feedMedias := []db.FeedMedia{}
+				feedMedias := []appbackend.FeedMedia{}
 				err = sess.Select("*").From("feedmedias").Where("userid = ?", uid).And("deleted = ?", false).And(
 					udb.Or(
 						udb.Raw("not exists(select id from plants where plants.feedid = (select feedid from feedentries where feedmedias.feedentryid = feedentries.id))"),
@@ -146,7 +147,7 @@ var createUserEndHandler = middlewares.InsertEndpoint(
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
-				fillUserEnd(sess, id, "feedmedias", db.FeedMedias(feedMedias), func() db.UserEndObject { return &db.UserEndFeedMedia{} })
+				fillUserEnd(sess, id, "feedmedias", appbackend.FeedMedias(feedMedias), func() db.UserEndObject { return &db.UserEndFeedMedia{} })
 
 				fn(w, r, p)
 			}
@@ -156,10 +157,10 @@ var createUserEndHandler = middlewares.InsertEndpoint(
 
 var createBoxHandler = middlewares.InsertEndpoint(
 	"boxes",
-	func() interface{} { return &db.Box{} },
+	func() interface{} { return &appbackend.Box{} },
 	[]middleware.Middleware{
 		middlewares.SetUserID,
-		middlewares.CheckAccessRight("devices", "DeviceID", true, func() db.UserObject { return &db.Device{} }),
+		middlewares.CheckAccessRight("devices", "DeviceID", true, func() appbackend.UserObject { return &appbackend.Device{} }),
 	},
 	[]middleware.Middleware{
 		fmiddlewares.CreateUserEndObjects("userend_boxes", func() db.UserEndObject { return &db.UserEndBox{} }),
@@ -168,10 +169,10 @@ var createBoxHandler = middlewares.InsertEndpoint(
 
 var createPlantHandler = middlewares.InsertEndpoint(
 	"plants",
-	func() interface{} { return &db.Plant{} },
+	func() interface{} { return &appbackend.Plant{} },
 	[]middleware.Middleware{
 		middlewares.SetUserID,
-		middlewares.CheckAccessRight("boxes", "BoxID", false, func() db.UserObject { return &db.Box{} }),
+		middlewares.CheckAccessRight("boxes", "BoxID", false, func() appbackend.UserObject { return &appbackend.Box{} }),
 	},
 	[]middleware.Middleware{
 		fmiddlewares.CreateUserEndObjects("userend_plants", func() db.UserEndObject { return &db.UserEndPlant{} }),
@@ -180,10 +181,10 @@ var createPlantHandler = middlewares.InsertEndpoint(
 
 var createTimelapseHandler = middlewares.InsertEndpoint(
 	"timelapses",
-	func() interface{} { return &db.Timelapse{} },
+	func() interface{} { return &appbackend.Timelapse{} },
 	[]middleware.Middleware{
 		middlewares.SetUserID,
-		middlewares.CheckAccessRight("plants", "PlantID", false, func() db.UserObject { return &db.Plant{} }),
+		middlewares.CheckAccessRight("plants", "PlantID", false, func() appbackend.UserObject { return &appbackend.Plant{} }),
 	},
 	[]middleware.Middleware{
 		fmiddlewares.CheckPlantArchivedForTimelapse,
@@ -193,7 +194,7 @@ var createTimelapseHandler = middlewares.InsertEndpoint(
 
 var createDeviceHandler = middlewares.InsertEndpoint(
 	"devices",
-	func() interface{} { return &db.Device{} },
+	func() interface{} { return &appbackend.Device{} },
 	[]middleware.Middleware{middlewares.SetUserID},
 	[]middleware.Middleware{
 		fmiddlewares.CreateUserEndObjects("userend_devices", func() db.UserEndObject { return &db.UserEndDevice{} }),
@@ -202,7 +203,7 @@ var createDeviceHandler = middlewares.InsertEndpoint(
 
 var createFeedHandler = middlewares.InsertEndpoint(
 	"feeds",
-	func() interface{} { return &db.Feed{} },
+	func() interface{} { return &appbackend.Feed{} },
 	[]middleware.Middleware{middlewares.SetUserID},
 	[]middleware.Middleware{
 		fmiddlewares.CheckPlantArchivedForFeed,
@@ -212,10 +213,10 @@ var createFeedHandler = middlewares.InsertEndpoint(
 
 var createFeedEntryHandler = middlewares.InsertEndpoint(
 	"feedentries",
-	func() interface{} { return &db.FeedEntry{} },
+	func() interface{} { return &appbackend.FeedEntry{} },
 	[]middleware.Middleware{
 		middlewares.SetUserID,
-		middlewares.CheckAccessRight("feeds", "FeedID", false, func() db.UserObject { return &db.Feed{} }),
+		middlewares.CheckAccessRight("feeds", "FeedID", false, func() appbackend.UserObject { return &appbackend.Feed{} }),
 	},
 	[]middleware.Middleware{
 		fmiddlewares.CheckPlantArchivedForFeedEntry,
@@ -225,10 +226,10 @@ var createFeedEntryHandler = middlewares.InsertEndpoint(
 
 var createFeedMediaHandler = middlewares.InsertEndpoint(
 	"feedmedias",
-	func() interface{} { return &db.FeedMedia{} },
+	func() interface{} { return &appbackend.FeedMedia{} },
 	[]middleware.Middleware{
 		middlewares.SetUserID,
-		middlewares.CheckAccessRight("feedentries", "FeedEntryID", false, func() db.UserObject { return &db.FeedEntry{} }),
+		middlewares.CheckAccessRight("feedentries", "FeedEntryID", false, func() appbackend.UserObject { return &appbackend.FeedEntry{} }),
 	},
 	[]middleware.Middleware{
 		fmiddlewares.CheckPlantArchivedForFeedMedia,
@@ -241,7 +242,7 @@ var createPlantSharingHandler = middlewares.InsertEndpoint(
 	func() interface{} { return &db.PlantSharing{} },
 	[]middleware.Middleware{
 		middlewares.SetUserID,
-		middlewares.CheckAccessRight("feedentries", "FeedEntryID", false, func() db.UserObject { return &db.FeedEntry{} }),
+		middlewares.CheckAccessRight("feedentries", "FeedEntryID", false, func() appbackend.UserObject { return &appbackend.FeedEntry{} }),
 	},
 	nil,
 )

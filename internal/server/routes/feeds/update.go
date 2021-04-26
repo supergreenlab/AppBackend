@@ -25,6 +25,7 @@ import (
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	fmiddlewares "github.com/SuperGreenLab/AppBackend/internal/server/routes/feeds/middlewares"
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
@@ -32,12 +33,12 @@ import (
 
 var updateBoxHandler = middlewares.UpdateEndpoint(
 	"boxes",
-	func() interface{} { return &db.Box{} },
+	func() interface{} { return &appbackend.Box{} },
 	[]middleware.Middleware{
 		middlewares.ObjectIDRequired,
 		middlewares.SetUserID,
-		middlewares.CheckAccessRight("boxes", "ID", false, func() db.UserObject { return &db.Box{} }),
-		middlewares.CheckAccessRight("devices", "DeviceID", true, func() db.UserObject { return &db.Device{} }),
+		middlewares.CheckAccessRight("boxes", "ID", false, func() appbackend.UserObject { return &appbackend.Box{} }),
+		middlewares.CheckAccessRight("devices", "DeviceID", true, func() appbackend.UserObject { return &appbackend.Device{} }),
 	},
 	[]middleware.Middleware{
 		fmiddlewares.UpdateUserEndObjects("userend_devices", "deviceid"),
@@ -46,12 +47,12 @@ var updateBoxHandler = middlewares.UpdateEndpoint(
 
 var updatePlantHandler = middlewares.UpdateEndpoint(
 	"plants",
-	func() interface{} { return &db.Plant{} },
+	func() interface{} { return &appbackend.Plant{} },
 	[]middleware.Middleware{
 		middlewares.ObjectIDRequired,
 		middlewares.SetUserID,
-		middlewares.CheckAccessRight("plants", "ID", false, func() db.UserObject { return &db.Plant{} }),
-		middlewares.CheckAccessRight("boxes", "BoxID", false, func() db.UserObject { return &db.Box{} }),
+		middlewares.CheckAccessRight("plants", "ID", false, func() appbackend.UserObject { return &appbackend.Plant{} }),
+		middlewares.CheckAccessRight("boxes", "BoxID", false, func() appbackend.UserObject { return &appbackend.Box{} }),
 	},
 	[]middleware.Middleware{
 		fmiddlewares.CheckPlantArchivedForPlant,
@@ -61,12 +62,12 @@ var updatePlantHandler = middlewares.UpdateEndpoint(
 
 var updateTimelapseHandler = middlewares.UpdateEndpoint(
 	"timelapses",
-	func() interface{} { return &db.Timelapse{} },
+	func() interface{} { return &appbackend.Timelapse{} },
 	[]middleware.Middleware{
 		middlewares.ObjectIDRequired,
 		middlewares.SetUserID,
-		middlewares.CheckAccessRight("timelapses", "ID", false, func() db.UserObject { return &db.Timelapse{} }),
-		middlewares.CheckAccessRight("plants", "PlantID", false, func() db.UserObject { return &db.Plant{} }),
+		middlewares.CheckAccessRight("timelapses", "ID", false, func() appbackend.UserObject { return &appbackend.Timelapse{} }),
+		middlewares.CheckAccessRight("plants", "PlantID", false, func() appbackend.UserObject { return &appbackend.Plant{} }),
 	},
 	[]middleware.Middleware{
 		fmiddlewares.CheckPlantArchivedForTimelapse,
@@ -76,11 +77,11 @@ var updateTimelapseHandler = middlewares.UpdateEndpoint(
 
 var updateDeviceHandler = middlewares.UpdateEndpoint(
 	"devices",
-	func() interface{} { return &db.Device{} },
+	func() interface{} { return &appbackend.Device{} },
 	[]middleware.Middleware{
 		middlewares.ObjectIDRequired,
 		middlewares.SetUserID,
-		middlewares.CheckAccessRight("devices", "ID", false, func() db.UserObject { return &db.Device{} }),
+		middlewares.CheckAccessRight("devices", "ID", false, func() appbackend.UserObject { return &appbackend.Device{} }),
 	},
 	[]middleware.Middleware{
 		fmiddlewares.UpdateUserEndObjects("userend_devices", "deviceid"),
@@ -89,11 +90,11 @@ var updateDeviceHandler = middlewares.UpdateEndpoint(
 
 var updateFeedHandler = middlewares.UpdateEndpoint(
 	"feeds",
-	func() interface{} { return &db.Feed{} },
+	func() interface{} { return &appbackend.Feed{} },
 	[]middleware.Middleware{
 		middlewares.ObjectIDRequired,
 		middlewares.SetUserID,
-		middlewares.CheckAccessRight("feeds", "ID", false, func() db.UserObject { return &db.Feed{} }),
+		middlewares.CheckAccessRight("feeds", "ID", false, func() appbackend.UserObject { return &appbackend.Feed{} }),
 	},
 	[]middleware.Middleware{
 		fmiddlewares.CheckPlantArchivedForFeed,
@@ -103,12 +104,12 @@ var updateFeedHandler = middlewares.UpdateEndpoint(
 
 var updateFeedEntryHandler = middlewares.UpdateEndpoint(
 	"feedentries",
-	func() interface{} { return &db.FeedEntry{} },
+	func() interface{} { return &appbackend.FeedEntry{} },
 	[]middleware.Middleware{
 		middlewares.ObjectIDRequired,
 		middlewares.SetUserID,
-		middlewares.CheckAccessRight("feedentries", "ID", false, func() db.UserObject { return &db.FeedEntry{} }),
-		middlewares.CheckAccessRight("feeds", "FeedID", false, func() db.UserObject { return &db.Feed{} }),
+		middlewares.CheckAccessRight("feedentries", "ID", false, func() appbackend.UserObject { return &appbackend.FeedEntry{} }),
+		middlewares.CheckAccessRight("feeds", "FeedID", false, func() appbackend.UserObject { return &appbackend.Feed{} }),
 	},
 	[]middleware.Middleware{
 		fmiddlewares.CheckPlantArchivedForFeedEntry,
@@ -118,12 +119,12 @@ var updateFeedEntryHandler = middlewares.UpdateEndpoint(
 
 var updateFeedMediaHandler = middlewares.UpdateEndpoint(
 	"feedmedias",
-	func() interface{} { return &db.FeedMedia{} },
+	func() interface{} { return &appbackend.FeedMedia{} },
 	[]middleware.Middleware{
 		middlewares.ObjectIDRequired,
 		middlewares.SetUserID,
-		middlewares.CheckAccessRight("feedmedias", "ID", false, func() db.UserObject { return &db.FeedMedia{} }),
-		middlewares.CheckAccessRight("feedentries", "FeedEntryID", false, func() db.UserObject { return &db.FeedEntry{} }),
+		middlewares.CheckAccessRight("feedmedias", "ID", false, func() appbackend.UserObject { return &appbackend.FeedMedia{} }),
+		middlewares.CheckAccessRight("feedentries", "FeedEntryID", false, func() appbackend.UserObject { return &appbackend.FeedEntry{} }),
 	},
 	[]middleware.Middleware{
 		fmiddlewares.CheckPlantArchivedForFeedMedia,
@@ -149,7 +150,7 @@ var updateUserEndHandler = middlewares.UpdateEndpoint(
 	[]middleware.Middleware{
 		middlewares.SetUserID,
 		setUserEndID,
-		middlewares.CheckAccessRight("userends", "ID", false, func() db.UserObject { return &db.UserEnd{} }),
+		middlewares.CheckAccessRight("userends", "ID", false, func() appbackend.UserObject { return &db.UserEnd{} }),
 	},
 	[]middleware.Middleware{},
 )

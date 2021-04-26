@@ -22,14 +22,13 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/SuperGreenLab/AppBackend/internal/data/db"
-
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 	"github.com/gofrs/uuid"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
 // CheckUserID - checks a given field value against a userID
-func CheckUserID(sess sqlbuilder.Database, uid uuid.UUID, o db.UserObject, collection, field string, optional bool, factory func() db.UserObject) error {
+func CheckUserID(sess sqlbuilder.Database, uid uuid.UUID, o appbackend.UserObject, collection, field string, optional bool, factory func() appbackend.UserObject) error {
 	var id uuid.UUID
 	idFieldValue := reflect.ValueOf(o).Elem().FieldByName(field).Interface()
 	if v, ok := idFieldValue.(uuid.UUID); ok == true {

@@ -28,8 +28,8 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/tools"
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
@@ -85,7 +85,7 @@ func OptionalAuthStack() middleware.Stack {
 // SetUserID - sets the userID field for the object payload
 func SetUserID(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		o := r.Context().Value(ObjectContextKey{}).(db.UserObject)
+		o := r.Context().Value(ObjectContextKey{}).(appbackend.UserObject)
 		uid := r.Context().Value(UserIDContextKey{}).(uuid.UUID)
 
 		o.SetUserID(uid)
@@ -96,10 +96,10 @@ func SetUserID(fn httprouter.Handle) httprouter.Handle {
 }
 
 // CheckAccessRight - checks if the user has access to the given object
-func CheckAccessRight(collection, field string, optional bool, factory func() db.UserObject) middleware.Middleware {
+func CheckAccessRight(collection, field string, optional bool, factory func() appbackend.UserObject) middleware.Middleware {
 	return func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-			o := r.Context().Value(ObjectContextKey{}).(db.UserObject)
+			o := r.Context().Value(ObjectContextKey{}).(appbackend.UserObject)
 			uid := r.Context().Value(UserIDContextKey{}).(uuid.UUID)
 			sess := r.Context().Value(SessContextKey{}).(sqlbuilder.Database)
 

@@ -28,11 +28,12 @@ import (
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/data/kv"
 	"github.com/SuperGreenLab/AppBackend/internal/data/prometheus"
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 )
 
-func loadTimeSeries(device db.Device, from, to int64, module, metric string, i int) (prometheus.TimeSeries, error) {
+func loadTimeSeries(device appbackend.Device, from, to int64, module, metric string, i int) (prometheus.TimeSeries, error) {
 	rr, err := prometheus.QueryProm(fmt.Sprintf("g_%s{id=\"%s\"}", fmt.Sprintf("%s_%d_%s", module, i, metric), device.Identifier), from, to, 50)
 
 	if err != nil {
@@ -85,7 +86,7 @@ func cardMetricsProcess() {
 				continue
 			}
 
-			meta := db.FeedEntryMeta{}
+			meta := appbackend.FeedEntryMeta{}
 			from := t.Add(-36 * time.Hour).Unix()
 			to := t.Add(36 * time.Hour).Unix()
 			if temp, err := loadTimeSeries(device, from, to, "BOX", "TEMP", int(*box.DeviceBox)); err == nil {

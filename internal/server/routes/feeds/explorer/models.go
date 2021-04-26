@@ -21,8 +21,8 @@ package explorer
 import (
 	"time"
 
-	sgldb "github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/tools"
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 	"github.com/gofrs/uuid"
 )
 
@@ -63,7 +63,7 @@ func (pfe *publicPlants) AsFeedMediasArray() []tools.S3FileHolder {
 }
 
 type publicFeedEntry struct {
-	sgldb.FeedEntry
+	appbackend.FeedEntry
 
 	Liked      bool `db:"liked" json:"liked"`
 	Bookmarked bool `db:"bookmarked" json:"bookmarked"`
@@ -131,7 +131,7 @@ func (pfe *publicFeedEntries) AsFeedMediasArray() []tools.S3FileHolder {
 }
 
 type publicFeedMedia struct {
-	sgldb.FeedMedia
+	appbackend.FeedMedia
 }
 
 func (r *publicFeedMedia) SetURLs(paths []string) {

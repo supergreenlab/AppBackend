@@ -21,10 +21,10 @@ package alerts
 import (
 	"fmt"
 
-	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/data/kv"
 	"github.com/SuperGreenLab/AppBackend/internal/services/prometheus"
 	"github.com/SuperGreenLab/AppBackend/internal/services/pubsub"
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 )
 
 const (
@@ -55,7 +55,7 @@ func getHumidityMinMax(controllerID string, boxID int, timerPower float64) (floa
 	return minNight + (minDay-minNight)*timerPower/100, maxNight + (maxDay-maxNight)*timerPower/100, nil
 }
 
-func getHumidityAlertContent(plant db.Plant, alertType string, timerPower, value, minValue, maxValue float64) (string, string) {
+func getHumidityAlertContent(plant appbackend.Plant, alertType string, timerPower, value, minValue, maxValue float64) (string, string) {
 	alertTypesToText := map[string]string{
 		alertTypeTooHigh: "too humid",
 		alertTypeTooLow:  "too dry",

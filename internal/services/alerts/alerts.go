@@ -28,6 +28,7 @@ import (
 	"github.com/SuperGreenLab/AppBackend/internal/services/notifications"
 	"github.com/SuperGreenLab/AppBackend/internal/services/prometheus"
 	"github.com/SuperGreenLab/AppBackend/internal/services/pubsub"
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 )
@@ -44,7 +45,7 @@ var (
 
 type getMinMaxFunc func(controllerID string, boxID int, timerPower float64) (float64, float64, error)
 
-type getAlertContentFunc func(plant db.Plant, alertType string, timerPower, value, minValue, maxValue float64) (string, string)
+type getAlertContentFunc func(plant appbackend.Plant, alertType string, timerPower, value, minValue, maxValue float64) (string, string)
 
 func checkMetric(metricName string, getAlertContent getAlertContentFunc, metric pubsub.ControllerIntMetric, getMinMax getMinMaxFunc, getSensorPresentForBox kv.GetSensorPresentForBoxFunc, getAlertStatus kv.GetAlertStatusFunc, setAlertStatus kv.SetAlertStatusFunc, getAlertType kv.GetAlertTypeFunc, setAlertType kv.SetAlertTypeFunc) {
 	boxID, err := boxIDNumFromMetric(metric.Key)

@@ -21,9 +21,9 @@ package feeds
 import (
 	"net/http"
 
-	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	fmiddlewares "github.com/SuperGreenLab/AppBackend/internal/server/routes/feeds/middlewares"
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
@@ -37,7 +37,7 @@ func archivePlantHandler(w http.ResponseWriter, r *http.Request, p httprouter.Pa
 
 	id := p.ByName("id")
 
-	o := &db.Plant{}
+	o := &appbackend.Plant{}
 	err := sess.Collection("plants").Find("id", id).One(o)
 	if err != nil {
 		logrus.Errorf("sess.Collection('plants') in archivePlantHandler %q - id: %s uid: %s ueid: %s", err, id, uid, ueid)

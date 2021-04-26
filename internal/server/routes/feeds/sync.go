@@ -26,11 +26,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	cmiddlewares "github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	fmiddlewares "github.com/SuperGreenLab/AppBackend/internal/server/routes/feeds/middlewares"
 	"github.com/SuperGreenLab/AppBackend/internal/server/tools"
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
@@ -81,25 +81,25 @@ func syncCollection(collection, id string, factory func() interface{}, customSel
 	})
 }
 
-var syncBoxesHandler = syncCollection("boxes", "boxid", func() interface{} { return &[]db.Box{} }, nil, nil)
+var syncBoxesHandler = syncCollection("boxes", "boxid", func() interface{} { return &[]appbackend.Box{} }, nil, nil)
 
-var syncPlantsHandler = syncCollection("plants", "plantid", func() interface{} { return &[]db.Plant{} }, nil, nil)
+var syncPlantsHandler = syncCollection("plants", "plantid", func() interface{} { return &[]appbackend.Plant{} }, nil, nil)
 
-var syncTimelapsesHandler = syncCollection("timelapses", "timelapseid", func() interface{} { return &[]db.Timelapse{} }, nil, nil)
+var syncTimelapsesHandler = syncCollection("timelapses", "timelapseid", func() interface{} { return &[]appbackend.Timelapse{} }, nil, nil)
 
-var syncDevicesHandler = syncCollection("devices", "deviceid", func() interface{} { return &[]db.Device{} }, nil, nil)
+var syncDevicesHandler = syncCollection("devices", "deviceid", func() interface{} { return &[]appbackend.Device{} }, nil, nil)
 
-var syncFeedsHandler = syncCollection("feeds", "feedid", func() interface{} { return &[]db.Feed{} }, func(selector sqlbuilder.Selector) sqlbuilder.Selector {
+var syncFeedsHandler = syncCollection("feeds", "feedid", func() interface{} { return &[]appbackend.Feed{} }, func(selector sqlbuilder.Selector) sqlbuilder.Selector {
 	// TODO this should be filtered on userend creation
 	return selector.And("isnewsfeed", false)
 }, nil)
 
-var syncFeedEntriesHandler = syncCollection("feedentries", "feedentryid", func() interface{} { return &[]db.FeedEntry{} }, func(selector sqlbuilder.Selector) sqlbuilder.Selector {
+var syncFeedEntriesHandler = syncCollection("feedentries", "feedentryid", func() interface{} { return &[]appbackend.FeedEntry{} }, func(selector sqlbuilder.Selector) sqlbuilder.Selector {
 	return selector.Join("feeds f").On("f.id = a.feedid").Where("f.isnewsfeed", false)
 }, nil)
 
 type FeedMediaWithArchived struct {
-	db.FeedMedia
+	appbackend.FeedMedia
 	PlantArchived sql.NullBool `json:"-" db:"plant_archived"`
 	BoxArchived   sql.NullBool `json:"-" db:"box_archived"`
 }

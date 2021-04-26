@@ -21,7 +21,7 @@ package middlewares
 import (
 	"net/http"
 
-	"github.com/SuperGreenLab/AppBackend/internal/data/db"
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
 )
@@ -29,7 +29,7 @@ import (
 // ObjectIDRequired - Checks if the object's id is set in the payload
 func ObjectIDRequired(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		o := r.Context().Value(ObjectContextKey{}).(db.Object)
+		o := r.Context().Value(ObjectContextKey{}).(appbackend.Object)
 		if o.GetID().Valid == false {
 			logrus.Errorf("Missing object's ID - %+v", o)
 			http.Error(w, "Missing object's ID", http.StatusBadRequest)

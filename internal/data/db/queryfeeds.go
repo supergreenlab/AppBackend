@@ -21,17 +21,18 @@ package db
 import (
 	"time"
 
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 	"github.com/gofrs/uuid"
 )
 
-func GetFeedEntry(feedEntryID uuid.UUID) (FeedEntry, error) {
-	feedEntry := FeedEntry{}
+func GetFeedEntry(feedEntryID uuid.UUID) (appbackend.FeedEntry, error) {
+	feedEntry := appbackend.FeedEntry{}
 	err := GetObjectWithID(feedEntryID, "feedentries", &feedEntry)
 	return feedEntry, err
 }
 
-func GetFeedEntriesBetweenDates(from, to time.Time) ([]FeedEntry, error) {
-	feedEntries := []FeedEntry{}
+func GetFeedEntriesBetweenDates(from, to time.Time) ([]appbackend.FeedEntry, error) {
+	feedEntries := []appbackend.FeedEntry{}
 	selector := Sess.Select("*").From("feedentries").Where("cat >= ?", from).And("cat <= ?", to)
 	if err := selector.All(&feedEntries); err != nil {
 		return feedEntries, err
@@ -52,14 +53,14 @@ func GetComment(commentID uuid.UUID) (Comment, error) {
 	return comment, err
 }
 
-func GetBox(boxID uuid.UUID) (Box, error) {
-	box := Box{}
+func GetBox(boxID uuid.UUID) (appbackend.Box, error) {
+	box := appbackend.Box{}
 	err := GetObjectWithID(boxID, "boxes", &box)
 	return box, err
 }
 
-func GetBoxFromPlantFeed(feedID uuid.UUID) (Box, error) {
-	box := Box{}
+func GetBoxFromPlantFeed(feedID uuid.UUID) (appbackend.Box, error) {
+	box := appbackend.Box{}
 	selector := Sess.Select("boxes.*").From("boxes").Join("plants").On("plants.boxid = boxes.id").Where("plants.feedid = ?", feedID)
 	if err := selector.One(&box); err != nil {
 		return box, err
@@ -67,14 +68,14 @@ func GetBoxFromPlantFeed(feedID uuid.UUID) (Box, error) {
 	return box, nil
 }
 
-func GetDevice(deviceID uuid.UUID) (Device, error) {
-	device := Device{}
+func GetDevice(deviceID uuid.UUID) (appbackend.Device, error) {
+	device := appbackend.Device{}
 	err := GetObjectWithID(deviceID, "devices", &device)
 	return device, err
 }
 
-func GetDeviceFromPlantFeed(feedID uuid.UUID) (Device, error) {
-	device := Device{}
+func GetDeviceFromPlantFeed(feedID uuid.UUID) (appbackend.Device, error) {
+	device := appbackend.Device{}
 	selector := Sess.Select("devices.*").From("devices").Join("boxes").On("boxes.deviceid = devices.id").Join("plants").On("plants.boxid = boxes.id").Where("plants.feedid = ?", feedID)
 	if err := selector.One(&device); err != nil {
 		return device, err
@@ -89,14 +90,14 @@ func GetUserEndsForUserID(userID uuid.UUID) ([]UserEnd, error) {
 	return userends, err
 }
 
-func GetPlantForFeedID(feedID uuid.UUID) (Plant, error) {
-	plant := Plant{}
+func GetPlantForFeedID(feedID uuid.UUID) (appbackend.Plant, error) {
+	plant := appbackend.Plant{}
 	err := GetObjectWithField("feedid", feedID, "plants", &plant)
 	return plant, err
 }
 
-func GetPlantForFeedEntryID(feedEntryID uuid.UUID) (Plant, error) {
-	plant := Plant{}
+func GetPlantForFeedEntryID(feedEntryID uuid.UUID) (appbackend.Plant, error) {
+	plant := appbackend.Plant{}
 	selector := Sess.Select("plants.*").From("plants").Join("feedentries").On("plants.feedid = feedentries.feedid").Where("feedentries.id = ?", feedEntryID)
 	if err := selector.One(&plant); err != nil {
 		return plant, err
@@ -105,8 +106,8 @@ func GetPlantForFeedEntryID(feedEntryID uuid.UUID) (Plant, error) {
 	return plant, nil
 }
 
-func GetActivePlantsForControllerIdentifier(controllerID string, boxSlotID int) ([]Plant, error) {
-	plants := []Plant{}
+func GetActivePlantsForControllerIdentifier(controllerID string, boxSlotID int) ([]appbackend.Plant, error) {
+	plants := []appbackend.Plant{}
 	selector := Sess.Select("plants.*").From("plants").Join("boxes").On("boxes.id = plants.boxid").Join("devices").On("devices.id = boxes.deviceid").Where("devices.identifier = ?", controllerID).And("boxes.devicebox = ?", boxSlotID).And("plants.deleted = false").And("plants.archived = false").And("devices.deleted = false")
 	if err := selector.All(&plants); err != nil {
 		return plants, err

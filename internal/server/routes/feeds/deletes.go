@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	fmiddlewares "github.com/SuperGreenLab/AppBackend/internal/server/routes/feeds/middlewares"
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
@@ -40,14 +40,14 @@ type deletesRequest struct {
 	} `json:"deletes"`
 }
 
-var factories map[string]func() db.UserObject = map[string]func() db.UserObject{
-	"boxes":       func() db.UserObject { return &db.Box{} },
-	"plants":      func() db.UserObject { return &db.Plant{} },
-	"timelapses":  func() db.UserObject { return &db.Timelapse{} },
-	"devices":     func() db.UserObject { return &db.Device{} },
-	"feeds":       func() db.UserObject { return &db.Feed{} },
-	"feedentries": func() db.UserObject { return &db.FeedEntry{} },
-	"feedmedias":  func() db.UserObject { return &db.FeedMedia{} },
+var factories map[string]func() appbackend.UserObject = map[string]func() appbackend.UserObject{
+	"boxes":       func() appbackend.UserObject { return &appbackend.Box{} },
+	"plants":      func() appbackend.UserObject { return &appbackend.Plant{} },
+	"timelapses":  func() appbackend.UserObject { return &appbackend.Timelapse{} },
+	"devices":     func() appbackend.UserObject { return &appbackend.Device{} },
+	"feeds":       func() appbackend.UserObject { return &appbackend.Feed{} },
+	"feedentries": func() appbackend.UserObject { return &appbackend.FeedEntry{} },
+	"feedmedias":  func() appbackend.UserObject { return &appbackend.FeedMedia{} },
 }
 
 var idFields map[string]string = map[string]string{
