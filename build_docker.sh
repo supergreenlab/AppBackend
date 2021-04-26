@@ -16,5 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-CGO_ENABLED=0 GOOS=linux go build -v -a -installsuffix cgo -o bin/appbackend cmd/appbackend/main.go
+docker build -t appbackend-dev . -f Dockerfile.dev
+docker run --rm -it -v $(pwd):/app --workdir /app --entrypoint=/usr/local/go/bin/go appbackend-dev build -v -o bin/appbackend cmd/appbackend/main.go
+docker rmi appbackend-dev
 docker build -t supergreenlab/appbackend .

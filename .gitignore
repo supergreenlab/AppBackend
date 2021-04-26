@@ -3,3 +3,4 @@ bin/appbackend
 air_errors.log
 /config/
 tests/node_modules
+/assets/plume.otf
