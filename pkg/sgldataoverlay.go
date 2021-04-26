@@ -220,6 +220,8 @@ func AddSGLOverlays(box Box, plant Plant, device *Device, img *bytes.Buffer) (*b
 	t := time.Now()
 	d := t.Format("2006/01/02")
 	addText(mw, d, "#3BB30B", 25, 1, float64(mw.GetImageWidth()-170), float64(mw.GetImageHeight()-15))
+	d = t.Format("15:04")
+	addText(mw, d, "#3BB30B", 35, 1, float64(mw.GetImageWidth()-170), float64(mw.GetImageHeight()-40))
 
 	addPic(mw, "/usr/local/share/appbackend/watermark-logo.png", float64(mw.GetImageWidth()-100), 10, 0.3)
 
