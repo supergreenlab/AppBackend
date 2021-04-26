@@ -165,6 +165,11 @@ func (dbe SelectEndpointBuilder) Endpoint() Endpoint {
 	return e
 }
 
+func (dbe SelectEndpointBuilder) SetSelector(selector middleware.Middleware) SelectEndpointBuilder {
+	dbe.Selector = selector
+	return dbe
+}
+
 func NewSelectEndpointBuilder(collection string, param, factory Factory, pre, post []middleware.Middleware) SelectEndpointBuilder {
 	defaultSelector := func(fn httprouter.Handle) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -184,22 +189,20 @@ func NewSelectEndpointBuilder(collection string, param, factory Factory, pre, po
 	return e
 }
 
-type SelectOneEndpointBuilder struct {
-	DBEndpointBuilder
+func NewSelectOneEndpointBuilder(collection string, param, factory Factory, pre, post []middleware.Middleware) SelectEndpointBuilder {
+	defaultSelector := func(fn httprouter.Handle) httprouter.Handle {
+		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+			sess := r.Context().Value(SessContextKey{}).(sqlbuilder.Database)
 
-	Collection string
-}
-
-func (dbe SelectOneEndpointBuilder) Endpoint() Endpoint {
-	e := dbe.DBEndpointBuilder.Endpoint()
-	e.Output = dbe.DBEndpointBuilder.Output
-	return e
-}
-
-func NewSelectOneEndpointBuilder(collection string, param, factory Factory, pre, post []middleware.Middleware) SelectOneEndpointBuilder {
-	e := SelectOneEndpointBuilder{
-		DBEndpointBuilder: NewDBEndpointBuilder(param, nil, pre, post, SelectOneQuery(factory), OutputSelectOneResult()),
+			selector := sess.Select("*").From(collection + " t")
+			ctx := context.WithValue(r.Context(), SelectorContextKey{}, selector)
+			fn(w, r.WithContext(ctx), p)
+		}
+	}
+	e := SelectEndpointBuilder{
+		DBEndpointBuilder: NewDBEndpointBuilder(param, nil, append([]middleware.Middleware{defaultSelector}, pre...), post, SelectOneQuery(factory), OutputSelectOneResult()),
 		Collection:        collection,
+		Selector:          defaultSelector,
 	}
 	return e
 }
@@ -268,7 +271,7 @@ func SelectEndpoint(
 	return NewSelectEndpointBuilder(collection, paramFactory, factory, pre, post).Endpoint().Handle()
 }
 
-// SelectEndpoint - select objects
+// SelectOneEndpoint - select object
 func SelectOneEndpoint(
 	collection string,
 	factory func() interface{},

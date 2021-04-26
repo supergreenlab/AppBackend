@@ -394,15 +394,13 @@ func feedEntrySocialSelect(fn httprouter.Handle) httprouter.Handle {
 	}
 }
 
-var selectFeedEntrySocial = middlewares.SelectOneEndpoint(
+var selectFeedEntrySocial = middlewares.NewSelectOneEndpointBuilder(
 	"comments",
-	func() interface{} { return &FeedEntrySocial{} },
 	func() interface{} { return &SelectFeedEntrySocialParams{} },
-	[]middleware.Middleware{
-		feedEntrySocialSelect,
-	},
+	func() interface{} { return &FeedEntrySocial{} },
 	[]middleware.Middleware{},
-)
+	[]middleware.Middleware{},
+).SetSelector(feedEntrySocialSelect).Endpoint().Handle()
 
 type SelectBookmarksParams struct {
 	middlewares.SelectParamsOffsetLimit
