@@ -192,6 +192,16 @@ var createTimelapseHandler = middlewares.InsertEndpoint(
 	},
 )
 
+var createTimelapseFrameHandler = middlewares.InsertEndpoint(
+	"timelapseframes",
+	func() interface{} { return &appbackend.TimelapseFrame{} },
+	[]middleware.Middleware{
+		middlewares.SetUserID,
+		middlewares.CheckAccessRight("timelapseframes", "TimelapseID", false, func() appbackend.UserObject { return &appbackend.Timelapse{} }),
+	},
+	[]middleware.Middleware{},
+)
+
 var createDeviceHandler = middlewares.InsertEndpoint(
 	"devices",
 	func() interface{} { return &appbackend.Device{} },

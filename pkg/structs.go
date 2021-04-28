@@ -115,17 +115,15 @@ func (os Plants) Each(fn func(Object)) {
 
 // Timelapse -
 type Timelapse struct {
-	ID           uuid.NullUUID `db:"id,omitempty" json:"id"`
-	UserID       uuid.UUID     `db:"userid" json:"userID"`
-	PlantID      uuid.UUID     `db:"plantid" json:"plantID"`
-	ControllerID string        `db:"controllerid" json:"controllerID,omitempty"`
-	Rotate       string        `db:"rotate" json:"rotate,omitempty"`
-	Name         string        `db:"name" json:"name,omitempty"`
-	Strain       string        `db:"strain" json:"strain,omitempty"`
-	DropboxToken string        `db:"dropboxtoken" json:"dropboxToken"`
-	UploadName   string        `db:"uploadname" json:"uploadName"`
+	ID      uuid.NullUUID `db:"id,omitempty" json:"id"`
+	UserID  uuid.UUID     `db:"userid" json:"userID"`
+	PlantID uuid.UUID     `db:"plantid" json:"plantID"`
 
-	Deleted bool `db:"deleted" json:"deleted"`
+	Type     string `db:"type" json:"type"`
+	Settings string `db:"settings" json:"settings"`
+
+	Deleted  bool `db:"deleted" json:"deleted"`
+	Archived bool `db:"archived" json:"archived"`
 
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
@@ -151,6 +149,44 @@ type Timelapses []Timelapse
 
 // Each -
 func (os Timelapses) Each(fn func(Object)) {
+	for _, o := range os {
+		fn(o)
+	}
+}
+
+// TimelapseFrame -
+type TimelapseFrame struct {
+	ID          uuid.NullUUID `db:"id,omitempty" json:"id"`
+	UserID      uuid.UUID     `db:"userid" json:"userID"`
+	TimelapseID uuid.UUID     `db:"timelapseid" json:"timelapseID"`
+
+	FilePath string `db:"filepath" json:"filePath"`
+	Meta     string `db:"meta" json:"meta"`
+
+	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
+	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
+}
+
+// GetID -
+func (o TimelapseFrame) GetID() uuid.NullUUID {
+	return o.ID
+}
+
+// SetUserID -
+func (o *TimelapseFrame) SetUserID(userID uuid.UUID) {
+	o.UserID = userID
+}
+
+// GetUserID -
+func (o TimelapseFrame) GetUserID() uuid.UUID {
+	return o.UserID
+}
+
+// TimelapseFrames -
+type TimelapseFrames []TimelapseFrame
+
+// Each -
+func (os TimelapseFrames) Each(fn func(Object)) {
 	for _, o := range os {
 		fn(o)
 	}

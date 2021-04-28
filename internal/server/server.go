@@ -37,6 +37,7 @@ import (
 func Start() {
 	storage.SetupBucket("feedmedias")
 	storage.SetupBucket("users")
+	storage.SetupBucket("timelapses")
 
 	router := httprouter.New()
 

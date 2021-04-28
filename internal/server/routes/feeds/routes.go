@@ -38,6 +38,7 @@ func Init(router *httprouter.Router) {
 	router.POST("/box", authWithUserEndID.Wrap(createBoxHandler))
 	router.POST("/plant", authWithUserEndID.Wrap(createPlantHandler))
 	router.POST("/timelapse", authWithUserEndID.Wrap(createTimelapseHandler))
+	router.POST("/timelapseframes", auth.Wrap(createTimelapseFrameHandler))
 	router.POST("/device", authWithUserEndID.Wrap(createDeviceHandler))
 	router.POST("/feed", authWithUserEndID.Wrap(createFeedHandler))
 	router.POST("/feedEntry", authWithUserEndID.Wrap(createFeedEntryHandler))
@@ -61,6 +62,7 @@ func Init(router *httprouter.Router) {
 	router.POST("/deletes", authWithUserEndID.Wrap(deletesHandler))
 
 	router.POST("/feedMediaUploadURL", authWithUserEndID.Wrap(feedMediaUploadURLHandler))
+	router.POST("/timelapseUploadURL", authWithUserEndID.Wrap(timelapseUploadURLHandler))
 
 	router.GET("/syncBoxes", authWithUserEndID.Wrap(syncBoxesHandler))
 	router.GET("/syncPlants", authWithUserEndID.Wrap(syncPlantsHandler))
