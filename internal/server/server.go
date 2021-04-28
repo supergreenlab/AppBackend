@@ -23,6 +23,7 @@ import (
 
 	"github.com/SuperGreenLab/AppBackend/internal/server/routes/products"
 	"github.com/SuperGreenLab/AppBackend/internal/services/prometheus"
+	"github.com/rs/cors"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
 
@@ -47,6 +48,21 @@ func Start() {
 	products.Init(router)
 
 	go func() {
-		log.Fatal(http.ListenAndServe(":8080", prometheus.NewHTTPTiming(router)))
+		corsOpts := cors.Options{
+			AllowedOrigins: []string{"*"},
+			AllowedMethods: []string{
+				http.MethodHead,
+				http.MethodGet,
+				http.MethodPost,
+				http.MethodPut,
+				http.MethodPatch,
+				http.MethodDelete,
+			},
+			AllowedHeaders:   []string{"*"},
+			AllowCredentials: false,
+			ExposedHeaders:   []string{"x-sgl-token"},
+		}
+
+		log.Fatal(http.ListenAndServe(":8080", cors.New(corsOpts).Handler(prometheus.NewHTTPTiming(router))))
 	}()
 }

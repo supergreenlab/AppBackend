@@ -34,8 +34,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-type timelapseUploadURLParams struct {
-	FileName string `json:"fileName"`
+type timelapseUploadRequest struct {
 }
 
 type timelapseUploadURLResult struct {
@@ -43,7 +42,7 @@ type timelapseUploadURLResult struct {
 }
 
 func timelapseUploadURLHandler(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	fmup := timelapseUploadURLParams{}
+	fmup := timelapseUploadRequest{}
 	if err := tools.DecodeJSONBody(w, r, &fmup); err != nil {
 		logrus.Errorf("tools.DecodeJSONBody in timelapseUploadURLHandler %q", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

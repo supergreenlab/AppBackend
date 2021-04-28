@@ -119,7 +119,7 @@ type Timelapse struct {
 	UserID  uuid.UUID     `db:"userid" json:"userID"`
 	PlantID uuid.UUID     `db:"plantid" json:"plantID"`
 
-	Type     string `db:"type" json:"type"`
+	Type     string `db:"ttype" json:"type"`
 	Settings string `db:"settings" json:"settings"`
 
 	Deleted  bool `db:"deleted" json:"deleted"`

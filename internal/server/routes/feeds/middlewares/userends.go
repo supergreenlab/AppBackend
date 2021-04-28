@@ -36,7 +36,7 @@ func CreateUserEndObjects(collection string, factory func() db.UserEndObject) mi
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			sess := r.Context().Value(cmiddlewares.SessContextKey{}).(sqlbuilder.Database)
 			uid := r.Context().Value(cmiddlewares.UserIDContextKey{}).(uuid.UUID)
-			ueid := r.Context().Value(UserEndIDContextKey{}).(uuid.UUID)
+			ueid, ueidOK := r.Context().Value(UserEndIDContextKey{}).(uuid.UUID)
 
 			id := r.Context().Value(cmiddlewares.InsertedIDContextKey{}).(uuid.UUID)
 
@@ -52,7 +52,7 @@ func CreateUserEndObjects(collection string, factory func() db.UserEndObject) mi
 				ueo := factory()
 				ueo.SetObjectID(id)
 				ueo.SetUserEndID(uend.ID.UUID)
-				if uend.ID.UUID == ueid {
+				if ueidOK && uend.ID.UUID == ueid {
 					ueo.SetSent(true)
 				} else {
 					ueo.SetDirty(true)
@@ -71,11 +71,15 @@ func UpdateUserEndObjects(collection, field string) middleware.Middleware {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			sess := r.Context().Value(cmiddlewares.SessContextKey{}).(sqlbuilder.Database)
 			uid := r.Context().Value(cmiddlewares.UserIDContextKey{}).(uuid.UUID)
-			ueid := r.Context().Value(UserEndIDContextKey{}).(uuid.UUID)
+			ueid, ueidOK := r.Context().Value(UserEndIDContextKey{}).(uuid.UUID)
 
 			id := r.Context().Value(cmiddlewares.UpdatedIDContextKey{}).(uuid.UUID)
 
-			_, err := sess.Update(collection).Set("dirty", true).Where(field, id).And("userendid != ?", ueid).And("userendid in (select id from userends where userid = ?)", uid).Exec()
+			selector := sess.Update(collection).Set("dirty", true).Where(field, id)
+			if ueidOK {
+				selector = selector.And("userendid != ?", ueid)
+			}
+			_, err := selector.And("userendid in (select id from userends where userid = ?)", uid).Exec()
 			if err != nil {
 				logrus.Errorln(err.Error())
 				http.Error(w, err.Error(), http.StatusInternalServerError)
