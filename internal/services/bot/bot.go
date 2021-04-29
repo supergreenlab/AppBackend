@@ -19,5 +19,6 @@
 package bot
 
 func Init() {
+	initTimelapse()
 	initCardMetrics()
 }

@@ -21,7 +21,6 @@ package explorer
 import (
 	"time"
 
-	"github.com/SuperGreenLab/AppBackend/internal/server/tools"
 	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 	"github.com/gofrs/uuid"
 )
@@ -43,9 +42,9 @@ func (r *publicPlant) SetURLs(paths []string) {
 	r.ThumbnailPath = paths[0]
 }
 
-func (r publicPlant) GetURLs() []tools.S3Path {
-	return []tools.S3Path{
-		tools.S3Path{
+func (r publicPlant) GetURLs() []appbackend.S3Path {
+	return []appbackend.S3Path{
+		appbackend.S3Path{
 			Path:   &r.ThumbnailPath,
 			Bucket: "feedmedias",
 		},
@@ -54,8 +53,8 @@ func (r publicPlant) GetURLs() []tools.S3Path {
 
 type publicPlants []*publicPlant
 
-func (pfe *publicPlants) AsFeedMediasArray() []tools.S3FileHolder {
-	res := make([]tools.S3FileHolder, len(*pfe))
+func (pfe *publicPlants) AsFeedMediasArray() []appbackend.S3FileHolder {
+	res := make([]appbackend.S3FileHolder, len(*pfe))
 	for i, fe := range *pfe {
 		res[i] = fe
 	}
@@ -103,17 +102,17 @@ func (r *publicFeedEntry) SetURLs(paths []string) {
 	}
 }
 
-func (r publicFeedEntry) GetURLs() (paths []tools.S3Path) {
-	return []tools.S3Path{
-		tools.S3Path{
+func (r publicFeedEntry) GetURLs() (paths []appbackend.S3Path) {
+	return []appbackend.S3Path{
+		appbackend.S3Path{
 			Path:   r.ThumbnailPath,
 			Bucket: "feedmedias",
 		},
-		tools.S3Path{
+		appbackend.S3Path{
 			Path:   r.Pic,
 			Bucket: "users",
 		},
-		tools.S3Path{
+		appbackend.S3Path{
 			Path:   r.PlantThumbnailPath,
 			Bucket: "feedmedias",
 		},
@@ -122,8 +121,8 @@ func (r publicFeedEntry) GetURLs() (paths []tools.S3Path) {
 
 type publicFeedEntries []*publicFeedEntry
 
-func (pfe *publicFeedEntries) AsFeedMediasArray() []tools.S3FileHolder {
-	res := make([]tools.S3FileHolder, len(*pfe))
+func (pfe *publicFeedEntries) AsFeedMediasArray() []appbackend.S3FileHolder {
+	res := make([]appbackend.S3FileHolder, len(*pfe))
 	for i, fe := range *pfe {
 		res[i] = fe
 	}
@@ -139,13 +138,13 @@ func (r *publicFeedMedia) SetURLs(paths []string) {
 	r.ThumbnailPath = paths[1]
 }
 
-func (r publicFeedMedia) GetURLs() []tools.S3Path {
-	return []tools.S3Path{
-		tools.S3Path{
+func (r publicFeedMedia) GetURLs() []appbackend.S3Path {
+	return []appbackend.S3Path{
+		appbackend.S3Path{
 			Path:   &r.FilePath,
 			Bucket: "feedmedias",
 		},
-		tools.S3Path{
+		appbackend.S3Path{
 			Path:   &r.ThumbnailPath,
 			Bucket: "feedmedias",
 		},
@@ -154,8 +153,8 @@ func (r publicFeedMedia) GetURLs() []tools.S3Path {
 
 type publicFeedMedias []*publicFeedMedia
 
-func (pfe *publicFeedMedias) AsFeedMediasArray() []tools.S3FileHolder {
-	res := make([]tools.S3FileHolder, len(*pfe))
+func (pfe *publicFeedMedias) AsFeedMediasArray() []appbackend.S3FileHolder {
+	res := make([]appbackend.S3FileHolder, len(*pfe))
 	for i, fe := range *pfe {
 		res[i] = fe
 	}

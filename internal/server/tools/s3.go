@@ -24,24 +24,11 @@ import (
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/kv"
 	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 	"github.com/sirupsen/logrus"
 )
 
-type S3Path struct {
-	Path   *string
-	Bucket string
-}
-
-type S3FileHolder interface {
-	SetURLs(paths []string)
-	GetURLs() (paths []S3Path)
-}
-
-type S3FileHolders interface {
-	AsFeedMediasArray() []S3FileHolder
-}
-
-func LoadFeedMediaPublicURLs(fm S3FileHolder) error {
+func LoadFeedMediaPublicURLs(fm appbackend.S3FileHolder) error {
 	paths := fm.GetURLs()
 	expiry := time.Minute * 60
 

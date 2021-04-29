@@ -122,8 +122,7 @@ type Timelapse struct {
 	Type     string `db:"ttype" json:"type"`
 	Settings string `db:"settings" json:"settings"`
 
-	Deleted  bool `db:"deleted" json:"deleted"`
-	Archived bool `db:"archived" json:"archived"`
+	Deleted bool `db:"deleted" json:"deleted"`
 
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
@@ -165,6 +164,28 @@ type TimelapseFrame struct {
 
 	CreatedAt time.Time `db:"cat,omitempty" json:"cat"`
 	UpdatedAt time.Time `db:"uat,omitempty" json:"uat"`
+}
+
+type TimelapseFrameMeta struct {
+	Temperature prometheus.TimeSeries   `json:"temperature,omitempty"`
+	Humidity    prometheus.TimeSeries   `json:"humidity,omitempty"`
+	VPD         prometheus.TimeSeries   `json:"vpd,omitempty"`
+	Timer       prometheus.TimeSeries   `json:"timer,omitempty"`
+	Dimming     []prometheus.TimeSeries `json:"dimming,omitempty"`
+	Ventilation prometheus.TimeSeries   `json:"ventilation,omitempty"`
+}
+
+func (r *TimelapseFrame) SetURLs(paths []string) {
+	r.FilePath = paths[0]
+}
+
+func (r TimelapseFrame) GetURLs() []S3Path {
+	return []S3Path{
+		S3Path{
+			Path:   &r.FilePath,
+			Bucket: "timelapses",
+		},
+	}
 }
 
 // GetID -

@@ -21,6 +21,7 @@ package services
 import (
 	"github.com/SuperGreenLab/AppBackend/internal/services/alerts"
 	"github.com/SuperGreenLab/AppBackend/internal/services/bot"
+	"github.com/SuperGreenLab/AppBackend/internal/services/cron"
 	"github.com/SuperGreenLab/AppBackend/internal/services/discord"
 	"github.com/SuperGreenLab/AppBackend/internal/services/notifications"
 	"github.com/SuperGreenLab/AppBackend/internal/services/prometheus"
@@ -32,6 +33,7 @@ import (
 func Init() {
 	prometheus.Init()
 	pubsub.Init()
+	cron.Init()
 	notifications.Init()
 	social.Init()
 	alerts.Init()

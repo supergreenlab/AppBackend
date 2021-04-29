@@ -1,0 +1,12 @@
+FROM debian
+
+RUN apt-get update && \
+    apt-get install -y libmagickwand-dev
+
+COPY ca-certificates.crt /etc/ssl/certs/
+COPY bin/timelapse /
+COPY db /db
+
+EXPOSE 8083
+
+ENTRYPOINT ["/timelapse"]

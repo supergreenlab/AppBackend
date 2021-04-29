@@ -1,6 +1,5 @@
 alter table timelapses add column ttype varchar not null default 'dropbox';
 alter table timelapses add column settings jsonb not null default '{}'::jsonb;
-alter table timelapses add column archived boolean default false;
 
 update timelapses set settings=jsonb_build_object('controllerid', t.controllerid, 'rotate', t.rotate, 'name', t.name, 'strain', t.strain, 'dropboxtoken', t.dropboxtoken, 'uploadname', t.uploadname) from (select * from timelapses) as t;
 

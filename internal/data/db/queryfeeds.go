@@ -114,5 +114,28 @@ func GetActivePlantsForControllerIdentifier(controllerID string, boxSlotID int) 
 	}
 
 	return plants, nil
+}
 
+func GetTimelapses() ([]appbackend.Timelapse, error) {
+	timelapses := []appbackend.Timelapse{}
+
+	selector := Sess.Select("timelapses.*").From("timelapses").Join("plants").On("plants.id = timelapses.plantid").Where("plants.deleted = false").And("timelapses.deleted = false")
+
+	if err := selector.All(&timelapses); err != nil {
+		return timelapses, err
+	}
+
+	return timelapses, nil
+}
+
+func GetTimelapseFrames(timelapseID uuid.UUID, from, to time.Time) ([]appbackend.TimelapseFrame, error) {
+	timelapseFrames := []appbackend.TimelapseFrame{}
+
+	selector := Sess.Select("timelapseframes.*").From("timelapseframes").Where("timelapseframes.timelapseid = ?", timelapseID).And("cat >= ?", from).And("cat <= ?", to)
+
+	if err := selector.All(&timelapseFrames); err != nil {
+		return timelapseFrames, err
+	}
+
+	return timelapseFrames, nil
 }

@@ -110,13 +110,13 @@ func (r *FeedMediaWithArchived) SetURLs(paths []string) {
 	r.ThumbnailPath = paths[1]
 }
 
-func (r FeedMediaWithArchived) GetURLs() []tools.S3Path {
-	return []tools.S3Path{
-		tools.S3Path{
+func (r FeedMediaWithArchived) GetURLs() []appbackend.S3Path {
+	return []appbackend.S3Path{
+		appbackend.S3Path{
 			Path:   &r.FilePath,
 			Bucket: "feedmedias",
 		},
-		tools.S3Path{
+		appbackend.S3Path{
 			Path:   &r.ThumbnailPath,
 			Bucket: "feedmedias",
 		},

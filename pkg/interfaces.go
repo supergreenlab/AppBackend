@@ -36,3 +36,17 @@ type UserObject interface {
 	SetUserID(uuid.UUID)
 	GetUserID() uuid.UUID
 }
+
+type S3Path struct {
+	Path   *string
+	Bucket string
+}
+
+type S3FileHolder interface {
+	SetURLs(paths []string)
+	GetURLs() (paths []S3Path)
+}
+
+type S3FileHolders interface {
+	AsFeedMediasArray() []S3FileHolder
+}

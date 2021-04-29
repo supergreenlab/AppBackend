@@ -1,0 +1,13 @@
+FROM golang:1.13.3
+
+RUN apt-get update && \
+    apt-get install -y libmagickwand-dev
+
+RUN go get -u github.com/cosmtrek/air
+
+RUN mkdir /app
+WORKDIR /app
+
+EXPOSE 8083
+
+ENTRYPOINT ["/go/bin/air", "-c", ".air.timelapse.toml"]

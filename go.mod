@@ -39,6 +39,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.2.1
 	github.com/rileyr/middleware v0.0.0-20171218202914-adaf4755ca16
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/cors v1.7.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/shopspring/decimal v0.0.0-20200227202807-02e2044944cc // indirect
@@ -46,6 +47,7 @@ require (
 	github.com/slack-go/slack v0.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.5.0
+	github.com/syndtr/goleveldb v1.0.0
 	github.com/xanzy/go-gitlab v0.29.0 // indirect
 	go.mongodb.org/mongo-driver v1.3.1 // indirect
 	golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59
