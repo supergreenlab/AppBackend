@@ -82,7 +82,7 @@ func timelapseJob() {
 			frames[i] = frame
 		}
 
-		expiry := time.Second * 60
+		expiry := time.Hour * 3
 		requestID := uuid.Must(uuid.NewV4())
 		path := fmt.Sprintf("render-%s.mp4", requestID.String())
 		url2, err := storage.Client.PresignedPutObject("timelapses", path, expiry)
@@ -135,5 +135,5 @@ func sendTimelapseRequests(req TimelapseRequest) error {
 }
 
 func initTimelapse() {
-	cron.SetJob("timelapse", "@every 10s", timelapseJob)
+	cron.SetJob("timelapse", "@every 60m", timelapseJob)
 }
