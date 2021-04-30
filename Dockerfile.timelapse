@@ -1,7 +1,8 @@
 FROM debian
 
 RUN apt-get update && \
-    apt-get install -y libmagickwand-dev
+    apt-get install -y libmagickwand-dev && \
+    apt-get install -y ffmpeg
 
 COPY ca-certificates.crt /etc/ssl/certs/
 COPY bin/timelapse /

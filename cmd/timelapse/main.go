@@ -25,15 +25,20 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"time"
 
 	"github.com/SuperGreenLab/AppBackend/internal/services/bot"
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"github.com/syndtr/goleveldb/leveldb/util"
 )
+
+const STORAGE_DIR = "/var/timelapse"
 
 var (
 	_            = pflag.String("accesskey", "", "Access key")
@@ -81,26 +86,49 @@ func downloadFrame(url, dst string) error {
 
 func downloadTimelapses() {
 	for tr := range downloadChan {
-		dir := fmt.Sprintf("/var/timelapse/render-%s", tr.ID.String())
-		if err := os.Mkdir(dir, 0700); err != nil {
-			logrus.Errorf("os.Mkdir in downloadTimelapses %q", err)
-			continue
-		}
-		var i = 0
+		dir := fmt.Sprintf("%s/render-%s", STORAGE_DIR, tr.ID.String())
+		downloadedFrames := make([]appbackend.TimelapseFrame, 0, len(tr.Frames))
+		i := 0
 		for _, frame := range tr.Frames {
-			dst := fmt.Sprintf("%s/%010d.jpg", dir, i)
-			if err := downloadFrame(frame.FilePath, dst); err != nil {
+			dst := fmt.Sprintf("%s/frame-%d.jpg", dir, i)
+			if _, err := os.Stat(dst); os.IsNotExist(err) {
+				if err := downloadFrame(frame.FilePath, dst); err != nil {
+					logrus.Errorf("downloadFrame in downloadTimelapses %q", err)
+					continue
+				}
+			} else if err != nil {
+				logrus.Errorf("os.Stat in downloadTimelapses %q", err)
 				continue
 			}
+			frame.FilePath = dst
+			downloadedFrames = append(downloadedFrames, frame)
 			i += 1
 		}
-		doneDownloadTimelapses(tr)
+		tr.Frames = downloadedFrames
+		if err := doneDownloadTimelapses(tr); err != nil {
+			logrus.Errorf("doneDownloadTimelapses in downloadTimelapses %q", err)
+			continue
+		}
 	}
 }
 
 func generateTimelapses() {
 	for tr := range generateChan {
-		doneGenerateTimelapses(tr)
+		dir := fmt.Sprintf("%s/render-%s", STORAGE_DIR, tr.ID.String())
+		dst := fmt.Sprintf("%s/render-%s.mp4", dir, tr.ID.String())
+
+		cmd := exec.Command("/usr/bin/ffmpeg", "-r", "40", "-i", fmt.Sprintf("%s/frame-%%d.jpg", dir), "-vf", "scale=1440:-2", dst)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Start(); err != nil {
+			logrus.Errorf("cmd.Start in generateTimelapses %q", err)
+		}
+		cmd.Wait()
+
+		if err := doneGenerateTimelapses(tr); err != nil {
+			logrus.Errorf("doneGenerateTimelapses in generateTimelapses %q", err)
+			continue
+		}
 	}
 }
 
@@ -127,6 +155,7 @@ func handleTimelapse(w http.ResponseWriter, r *http.Request, p httprouter.Params
 }
 
 func startDownloadTimelapses(tr bot.TimelapseRequest) error {
+	logrus.Infof("Starting download render %s", tr.ID.String())
 	jsonStr, err := json.Marshal(tr)
 	if err != nil {
 		return err
@@ -135,6 +164,13 @@ func startDownloadTimelapses(tr bot.TimelapseRequest) error {
 	if err != nil {
 		return err
 	}
+
+	dir := fmt.Sprintf("%s/render-%s", STORAGE_DIR, tr.ID.String())
+	if err := os.Mkdir(dir, 0700); err != nil {
+		logrus.Errorf("os.Mkdir in downloadTimelapses %q", err)
+		return err
+	}
+
 	downloadChan <- tr
 	return nil
 }
@@ -147,6 +183,7 @@ func doneDownloadTimelapses(tr bot.TimelapseRequest) error {
 }
 
 func startGenerateTimelapses(tr bot.TimelapseRequest) error {
+	logrus.Infof("Starting generate render %s", tr.ID.String())
 	jsonStr, err := json.Marshal(tr)
 	if err != nil {
 		return err
@@ -164,13 +201,54 @@ func doneGenerateTimelapses(tr bot.TimelapseRequest) error {
 	if err := UnsetString(fmt.Sprintf("generate-%s", tr.ID)); err != nil {
 		return err
 	}
+
+	/*dir := fmt.Sprintf("%s/render-%s", STORAGE_DIR, tr.ID.String())
+	if err := os.RemoveAll(dir); err != nil {
+		return err
+	}*/
 	return nil
 }
 
+func loadInitialDownloads() {
+	iter := db.NewIterator(util.BytesPrefix([]byte("download-")), nil)
+	for iter.Next() {
+		tr := bot.TimelapseRequest{}
+		if err := json.Unmarshal(iter.Value(), &tr); err != nil {
+			logrus.Errorf("json.Unmarshal in loadInitialDownloads %q - iter.Value: %s", err, iter.Value)
+			continue
+		}
+		logrus.Infof("Starting download render %s", tr.ID.String())
+		downloadChan <- tr
+	}
+	iter.Release()
+	err := iter.Error()
+	if err != nil {
+		logrus.Errorf("iter.Error in loadInitialDownloads %q", err)
+		return
+	}
+}
+
+func loadInitialGenerate() {
+	iter := db.NewIterator(util.BytesPrefix([]byte("generate-")), nil)
+	for iter.Next() {
+		tr := bot.TimelapseRequest{}
+		if err := json.Unmarshal(iter.Value(), &tr); err != nil {
+			logrus.Errorf("json.Unmarshal in loadInitialGenerate %q - iter.Value: %s", err, iter.Value)
+			continue
+		}
+		generateChan <- tr
+	}
+	iter.Release()
+	err := iter.Error()
+	if err != nil {
+		logrus.Errorf("iter.Error in loadInitialGenerate %q", err)
+		return
+	}
+}
+
 func main() {
-	dir := "/var/timelapse"
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err := os.Mkdir(dir, 0700); err != nil {
+	if _, err := os.Stat(STORAGE_DIR); os.IsNotExist(err) {
+		if err := os.Mkdir(STORAGE_DIR, 0700); err != nil {
 			logrus.Fatalf("os.Mkdir in main %q", err)
 		}
 	}
@@ -201,6 +279,9 @@ func main() {
 
 	go downloadTimelapses()
 	go generateTimelapses()
+
+	loadInitialDownloads()
+	loadInitialGenerate()
 
 	logrus.Info("Timelapse worker started")
 	select {}

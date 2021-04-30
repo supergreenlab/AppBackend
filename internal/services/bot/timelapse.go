@@ -67,6 +67,11 @@ func timelapseJob() {
 			time.Sleep(1 * time.Second)
 			continue
 		}
+
+		if len(frames) == 0 {
+			continue
+		}
+
 		for i, frame := range frames {
 			err = tools.LoadFeedMediaPublicURLs(&frame)
 			if err != nil {
