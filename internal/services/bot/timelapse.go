@@ -49,56 +49,54 @@ type TimelapseRequest struct {
 	Frames     []appbackend.TimelapseFrame `json:"timelapseFrames"`
 }
 
-func timelapseJob() {
-	timelapses, err := db.GetTimelapses()
-	if err != nil {
-		logrus.Errorf("db.GetTimelapses in timelapseJob %q", err)
-		return
-	}
-
-	t := time.Now()
-	from := time.Date(t.Year(), t.Month(), t.Day()-7, 0, 0, 0, 0, time.UTC)
-	to := time.Date(t.Year(), t.Month(), t.Day(), 23, 59, 59, 0, time.UTC)
-
-	for _, timelapse := range timelapses {
-		frames, err := db.GetTimelapseFrames(timelapse.ID.UUID, from, to)
+func timelapseJob(from, to time.Time) func() {
+	return func() {
+		timelapses, err := db.GetTimelapses()
 		if err != nil {
 			logrus.Errorf("db.GetTimelapses in timelapseJob %q", err)
-			time.Sleep(1 * time.Second)
-			continue
+			return
 		}
 
-		if len(frames) == 0 {
-			continue
-		}
-
-		for i, frame := range frames {
-			err = tools.LoadFeedMediaPublicURLs(&frame)
+		for _, timelapse := range timelapses {
+			frames, err := db.GetTimelapseFrames(timelapse.ID.UUID, from, to)
 			if err != nil {
-				logrus.Errorf("tools.LoadFeedMediaPublicURLs in timelapseJob %q - frame: %+v", err, frame)
+				logrus.Errorf("db.GetTimelapses in timelapseJob %q", err)
+				time.Sleep(1 * time.Second)
 				continue
 			}
 
-			frames[i] = frame
-		}
+			if len(frames) == 0 {
+				continue
+			}
 
-		expiry := time.Hour * 3
-		requestID := uuid.Must(uuid.NewV4())
-		path := fmt.Sprintf("render-%s.mp4", requestID.String())
-		url2, err := storage.Client.PresignedPutObject("timelapses", path, expiry)
-		if err != nil {
-			logrus.Errorf("minioClient.PresignedPutObject in timelapseUploadURLHandler %q - %s", err, path)
-			continue
-		}
+			for i, frame := range frames {
+				err = tools.LoadFeedMediaPublicURLs(&frame)
+				if err != nil {
+					logrus.Errorf("tools.LoadFeedMediaPublicURLs in timelapseJob %q - frame: %+v", err, frame)
+					continue
+				}
 
-		req := TimelapseRequest{
-			ID:         requestID,
-			UploadPath: url2.RequestURI(),
-			Frames:     frames,
-		}
-		if err := sendTimelapseRequests(req); err != nil {
-			logrus.Errorf("sendTimelapseRequests in timelapseUploadURLHandler %q - %s", err, path)
-			continue
+				frames[i] = frame
+			}
+
+			expiry := time.Hour * 3
+			requestID := uuid.Must(uuid.NewV4())
+			path := fmt.Sprintf("render-%s.mp4", requestID.String())
+			url2, err := storage.Client.PresignedPutObject("timelapses", path, expiry)
+			if err != nil {
+				logrus.Errorf("minioClient.PresignedPutObject in timelapseUploadURLHandler %q - %s", err, path)
+				continue
+			}
+
+			req := TimelapseRequest{
+				ID:         requestID,
+				UploadPath: url2.RequestURI(),
+				Frames:     frames,
+			}
+			if err := sendTimelapseRequests(req); err != nil {
+				logrus.Errorf("sendTimelapseRequests in timelapseUploadURLHandler %q - %s", err, path)
+				continue
+			}
 		}
 	}
 }
@@ -134,6 +132,23 @@ func sendTimelapseRequests(req TimelapseRequest) error {
 	return nil
 }
 
+func scheduleDailyTimelapse() {
+	t := time.Now()
+	from := t.Add(-24 * time.Hour)
+	to := t
+
+	cron.SetJob("timelapse", "0 0 * * *", timelapseJob(from, to))
+}
+
+func scheduleWeeklyTimelapse() {
+	t := time.Now()
+	from := t.Add(-7 * 24 * time.Hour)
+	to := t
+
+	cron.SetJob("timelapse", "0 0 * * sun", timelapseJob(from, to))
+}
+
 func initTimelapse() {
-	cron.SetJob("timelapse", "45 * * * *", timelapseJob)
+	scheduleDailyTimelapse()
+	scheduleWeeklyTimelapse()
 }

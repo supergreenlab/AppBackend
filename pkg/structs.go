@@ -21,7 +21,6 @@ package appbackend
 import (
 	"time"
 
-	"github.com/SuperGreenLab/AppBackend/internal/data/prometheus"
 	"github.com/gofrs/uuid"
 	"gopkg.in/guregu/null.v3"
 )
@@ -167,12 +166,7 @@ type TimelapseFrame struct {
 }
 
 type TimelapseFrameMeta struct {
-	Temperature prometheus.TimeSeries   `json:"temperature,omitempty"`
-	Humidity    prometheus.TimeSeries   `json:"humidity,omitempty"`
-	VPD         prometheus.TimeSeries   `json:"vpd,omitempty"`
-	Timer       prometheus.TimeSeries   `json:"timer,omitempty"`
-	Dimming     []prometheus.TimeSeries `json:"dimming,omitempty"`
-	Ventilation prometheus.TimeSeries   `json:"ventilation,omitempty"`
+	MetricsMeta
 }
 
 func (r *TimelapseFrame) SetURLs(paths []string) {
@@ -309,12 +303,7 @@ type FeedEntry struct {
 }
 
 type FeedEntryMeta struct {
-	Temperature prometheus.TimeSeries   `json:"temperature,omitempty"`
-	Humidity    prometheus.TimeSeries   `json:"humidity,omitempty"`
-	VPD         prometheus.TimeSeries   `json:"vpd,omitempty"`
-	Timer       prometheus.TimeSeries   `json:"timer,omitempty"`
-	Dimming     []prometheus.TimeSeries `json:"dimming,omitempty"`
-	Ventilation prometheus.TimeSeries   `json:"ventilation,omitempty"`
+	MetricsMeta
 }
 
 // GetID -

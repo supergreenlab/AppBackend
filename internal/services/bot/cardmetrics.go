@@ -20,34 +20,14 @@ package bot
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
-	"math"
 	"time"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/data/kv"
 	"github.com/SuperGreenLab/AppBackend/internal/data/prometheus"
 	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
-	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 )
-
-func loadTimeSeries(device appbackend.Device, from, to int64, module, metric string, i int) (prometheus.TimeSeries, error) {
-	rr, err := prometheus.QueryProm(fmt.Sprintf("g_%s{id=\"%s\"}", fmt.Sprintf("%s_%d_%s", module, i, metric), device.Identifier), from, to, 50)
-
-	if err != nil {
-		logrus.Errorf("prometheus.QueryProm in loadTimeSeries %q - device: %+v from: %d to: %d module: %s metric: %s i: %d", err, device, from, to, module, metric, i)
-		return prometheus.TimeSeries{}, err
-	}
-
-	if rr.Status != "success" {
-		err := errors.New(fmt.Sprintf("cid parameter error: %s", rr.Status))
-		logrus.Errorf("prometheus.QueryProm in loadTimeSeries %q - device: %+v from: %d to: %d module: %s metric: %s i: %d", err, device, from, to, module, metric, i)
-		return prometheus.TimeSeries{}, err
-	}
-	return rr.ToFloat64(float64(math.MinInt32), float64(math.MaxInt32)), nil
-}
 
 func cardMetricsProcess() {
 	for {
@@ -86,39 +66,10 @@ func cardMetricsProcess() {
 				continue
 			}
 
-			meta := appbackend.FeedEntryMeta{}
-			from := t.Add(-36 * time.Hour).Unix()
-			to := t.Add(36 * time.Hour).Unix()
-			if temp, err := loadTimeSeries(device, from, to, "BOX", "TEMP", int(*box.DeviceBox)); err == nil {
-				meta.Temperature = temp
-			}
-			if humi, err := loadTimeSeries(device, from, to, "BOX", "HUMI", int(*box.DeviceBox)); err == nil {
-				meta.Humidity = humi
-			}
-			if vpd, err := loadTimeSeries(device, from, to, "BOX", "VPD", int(*box.DeviceBox)); err == nil {
-				meta.VPD = vpd
-			}
-			if timer, err := loadTimeSeries(device, from, to, "BOX", "TIMER_OUTPUT", int(*box.DeviceBox)); err == nil {
-				meta.Timer = timer
-			}
-			dimmings := []prometheus.TimeSeries{}
-			for i := 0; ; i += 1 {
-				if ledBox, err := kv.GetLedBox(device.Identifier, i); err != nil || ledBox != int(*box.DeviceBox) {
-					if err != nil {
-						if !errors.Is(err, redis.Nil) {
-							logrus.Errorf("kv.GetLedBox in cardMetricsProcess %q - box: %+v device: %+v i: %d", err, box, device, i)
-						}
-						break
-					}
-					continue
-				}
-				if dimming, err := loadTimeSeries(device, from, to, "LED", "DIM", i); err == nil {
-					dimmings = append(dimmings, dimming)
-				}
-			}
-			meta.Dimming = dimmings
-			if ventilation, err := loadTimeSeries(device, from, to, "BOX", "BLOWER_DUTY", int(*box.DeviceBox)); err == nil {
-				meta.Ventilation = ventilation
+			from := t.Add(-36 * time.Hour)
+			to := t.Add(36 * time.Hour)
+			meta := appbackend.FeedEntryMeta{
+				MetricsMeta: appbackend.LoadMetricsMeta(device, box, from, to, prometheus.LoadTimeSeries),
 			}
 
 			j, err := json.Marshal(meta)

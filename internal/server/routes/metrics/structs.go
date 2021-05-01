@@ -18,10 +18,13 @@
 
 package metrics
 
-import "github.com/SuperGreenLab/AppBackend/internal/data/prometheus"
+import (
+	"github.com/SuperGreenLab/AppBackend/internal/data/prometheus"
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
+)
 
 type servedResult struct {
-	Metrics prometheus.TimeSeries `json:"metrics"`
+	Metrics appbackend.TimeSeries `json:"metrics"`
 }
 
 func newServedResult(rr prometheus.RangeResult, min, max float64) servedResult {

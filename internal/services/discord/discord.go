@@ -29,6 +29,7 @@ import (
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/data/kv"
+	"github.com/SuperGreenLab/AppBackend/internal/data/prometheus"
 	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/SuperGreenLab/AppBackend/internal/services/pubsub"
@@ -173,7 +174,15 @@ func listenFeedMediasAdded() {
 			continue
 		}
 
-		buff, err = appbackend.AddSGLOverlays(box, plant, device, buff)
+		var meta *appbackend.MetricsMeta
+		t := time.Now()
+		from := t.Add(-24 * time.Hour)
+		to := t
+		if device != nil {
+			m := appbackend.LoadMetricsMeta(*device, box, from, to, prometheus.LoadTimeSeries)
+			meta = &m
+		}
+		buff, err = appbackend.AddSGLOverlays(box, plant, meta, buff)
 		if err != nil {
 			logrus.Errorf("addSGLOverlays in listenFeedMediasAdded %q - device: %+v", err, device)
 			continue

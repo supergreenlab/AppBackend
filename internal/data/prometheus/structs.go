@@ -1,6 +1,28 @@
+/*
+ * Copyright (C) 2021  SuperGreenLab <towelie@supergreenlab.com>
+ * Author: Constantin Clauzel <constantin.clauzel@gmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package prometheus
 
-import "strconv"
+import (
+	"strconv"
+
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
+)
 
 // RangeResult query result from prometheus
 type RangeResult struct {
@@ -20,10 +42,8 @@ type RangeResult struct {
 	} `json:"data"`
 }
 
-type TimeSeries [][]float64
-
 // ToFloat64 returns the RangeResult as an array of [timestamp, value]
-func (r RangeResult) ToFloat64(min, max float64) TimeSeries {
+func (r RangeResult) ToFloat64(min, max float64) appbackend.TimeSeries {
 	res := [][]float64{}
 	if len(r.Data.Result) < 1 {
 		return res

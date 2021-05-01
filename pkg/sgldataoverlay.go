@@ -20,10 +20,7 @@ package appbackend
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
-	"math"
-	"net/http"
 	"time"
 
 	"gopkg.in/gographics/imagick.v2/imagick"
@@ -59,45 +56,6 @@ func addPic(mw *imagick.MagickWand, file string, x, y, scale float64) {
 	dw.Composite(imagick.COMPOSITE_OP_ATOP, x, y, float64(pic.GetImageWidth())*scale, float64(pic.GetImageHeight())*scale, pic)
 
 	mw.DrawImage(dw)
-}
-
-type MetricValue [][]float64
-
-type Metrics struct {
-	Metrics MetricValue
-}
-
-func (mv MetricValue) minMax() (float64, float64) {
-	min := math.MaxFloat64
-	max := math.SmallestNonzeroFloat32
-
-	for _, v := range mv {
-		min = math.Min(min, v[1])
-		max = math.Max(max, v[1])
-	}
-
-	return min, max
-}
-
-func (mv MetricValue) current() float64 {
-	if len(mv) < 1 {
-		return 0
-	}
-	return mv[len(mv)-1][1]
-}
-
-func loadGraphValue(controller, metric string) (Metrics, error) {
-	m := Metrics{}
-
-	url := fmt.Sprintf("https://api2.supergreenlab.com/metrics?cid=%s&q=%s&t=24&n=50", controller, metric)
-	r, err := http.Get(url)
-	if err != nil {
-		return m, err
-	}
-	defer r.Body.Close()
-
-	json.NewDecoder(r.Body).Decode(&m)
-	return m, nil
 }
 
 func drawGraphLine(mw *imagick.MagickWand, pts []imagick.PointInfo, color string) {
@@ -145,7 +103,7 @@ func drawGraphBackground(mw *imagick.MagickWand, pts []imagick.PointInfo, color 
 	mw.DrawImage(dw)
 }
 
-func addGraph(mw *imagick.MagickWand, x, y, width, height, min, max float64, mv MetricValue, color string) {
+func addGraph(mw *imagick.MagickWand, x, y, width, height, min, max float64, mv TimeSeries, color string) {
 	var (
 		spanX = width / float64(len(mv)-1)
 	)
@@ -187,7 +145,7 @@ func init() {
 	imagick.Initialize()
 }
 
-func AddSGLOverlays(box Box, plant Plant, device *Device, img *bytes.Buffer) (*bytes.Buffer, error) {
+func AddSGLOverlays(box Box, plant Plant, meta *MetricsMeta, img *bytes.Buffer) (*bytes.Buffer, error) {
 	mw := imagick.NewMagickWand()
 	defer mw.Destroy()
 
@@ -196,25 +154,17 @@ func AddSGLOverlays(box Box, plant Plant, device *Device, img *bytes.Buffer) (*b
 	addText(mw, box.Name, "#3BB30B", 55, 2, 10, 50)
 	addText(mw, plant.Name, "#FF4B4B", 45, 2, 10, 100)
 
-	if device != nil {
-		t, err := loadGraphValue(device.Identifier, fmt.Sprintf("BOX_%d_TEMP", *box.DeviceBox))
-		if err != nil {
-			return nil, err
-		}
-		h, err := loadGraphValue(device.Identifier, fmt.Sprintf("BOX_%d_HUMI", *box.DeviceBox))
-		if err != nil {
-			return nil, err
-		}
+	if meta != nil {
 		var (
 			x = float64(5)
 			y = float64(mw.GetImageHeight() - 5)
 		)
-		addGraph(mw, x, y, 210, 140, 10, 40, t.Metrics, "#3BB30B")
-		addText(mw, fmt.Sprintf("%d°C", int(t.Metrics.current())), "#3BB30B", 60, 2, x+20, y-120)
-		addText(mw, fmt.Sprintf("(%d°F)", int(t.Metrics.current()*9/5+32)), "#3BB30B", 40, 2, x+20, y-80)
+		addGraph(mw, x, y, 210, 140, 10, 40, *meta.Temperature, "#3BB30B")
+		addText(mw, fmt.Sprintf("%d°C", int(meta.Temperature.current())), "#3BB30B", 60, 2, x+20, y-120)
+		addText(mw, fmt.Sprintf("(%d°F)", int(meta.Temperature.current()*9/5+32)), "#3BB30B", 40, 2, x+20, y-80)
 
-		addGraph(mw, x+225, y, 210, 140, 10, 90, h.Metrics, "#0B81B3")
-		addText(mw, fmt.Sprintf("%d%%", int(h.Metrics.current())), "#0B81B3", 60, 2, x+245, y-120)
+		addGraph(mw, x+225, y, 210, 140, 10, 90, *meta.Humidity, "#0B81B3")
+		addText(mw, fmt.Sprintf("%d%%", int(meta.Humidity.current())), "#0B81B3", 60, 2, x+245, y-120)
 	}
 
 	t := time.Now()
