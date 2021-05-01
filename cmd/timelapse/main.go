@@ -87,7 +87,7 @@ func downloadFrame(url, dst string) error {
 func downloadTimelapses() {
 	for tr := range downloadChan {
 		dir := fmt.Sprintf("%s/render-%s", STORAGE_DIR, tr.ID.String())
-		downloadedFrames := make([]appbackend.TimelapseFrame, 0, len(tr.Frames))
+		downloadedFrames := make([]appbackend.TimelapseFrame, len(tr.Frames)*2)
 		i := 0
 		for _, frame := range tr.Frames {
 			dst := fmt.Sprintf("%s/frame-%d.jpg", dir, i)
@@ -101,8 +101,26 @@ func downloadTimelapses() {
 				continue
 			}
 			frame.FilePath = dst
-			downloadedFrames = append(downloadedFrames, frame)
-			i += 1
+			downloadedFrames[i] = frame
+
+			if i != 0 && i%2 == 0 {
+				image1 := fmt.Sprintf("%s/frame-%d.jpg", dir, i-2)
+				image2 := fmt.Sprintf("%s/frame-%d.jpg", dir, i)
+				dstBlur := fmt.Sprintf("%s/frame-%d.jpg", dir, i-1)
+				if _, err := os.Stat(dstBlur); os.IsNotExist(err) {
+					cmd := exec.Command("composite", "-blend", "50", image1, image2, "-matte", dstBlur)
+					cmd.Stdout = os.Stdout
+					cmd.Stderr = os.Stderr
+					if err := cmd.Start(); err != nil {
+						logrus.Errorf("cmd.Start in generateTimelapses %q", err)
+					}
+					cmd.Wait()
+				}
+				blurFrame := frame
+				blurFrame.FilePath = dstBlur
+				downloadedFrames[i-1] = blurFrame
+			}
+			i += 2
 		}
 		tr.Frames = downloadedFrames
 		if err := doneDownloadTimelapses(tr); err != nil {

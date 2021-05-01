@@ -1,6 +1,7 @@
 FROM golang:1.13.3
 
 RUN apt-get update && \
+    apt-get install -y imagemagick && \
     apt-get install -y libmagickwand-dev && \
     apt-get install -y ffmpeg
 
@@ -11,4 +12,4 @@ WORKDIR /app
 
 EXPOSE 8083
 
-ENTRYPOINT ["/go/bin/air", "-c", ".air.timelapse.toml"]
+ENTRYPOINT ["/go/bin/air", "-c", ".air.timelapse.conf"]

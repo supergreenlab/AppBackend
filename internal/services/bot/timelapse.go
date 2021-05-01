@@ -135,5 +135,5 @@ func sendTimelapseRequests(req TimelapseRequest) error {
 }
 
 func initTimelapse() {
-	cron.SetJob("timelapse", "@every 60m", timelapseJob)
+	cron.SetJob("timelapse", "45 * * * *", timelapseJob)
 }
