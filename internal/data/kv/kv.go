@@ -20,6 +20,7 @@ package kv
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -81,6 +82,34 @@ func SetString(key, value string) error {
 
 func SetStringWithExpiration(key, value string, expiration time.Duration) error {
 	return r.Set(key, value, expiration).Err()
+}
+
+func GetKeys(patterns []string) ([]string, error) {
+	keys := []string{}
+	for _, p := range patterns {
+		if strings.ContainsRune(p, '*') {
+			if ks, err := r.Keys(p).Result(); err != nil {
+				return nil, err
+			} else {
+				keys = append(keys, ks...)
+			}
+		} else {
+			keys = append(keys, p)
+		}
+	}
+	return keys, nil
+}
+
+func GetValues(keys []string) (map[string]interface{}, error) {
+	values, err := r.MGet(keys...).Result()
+	if err != nil {
+		return nil, err
+	}
+	results := map[string]interface{}{}
+	for i, v := range values {
+		results[keys[i]] = v
+	}
+	return results, nil
 }
 
 func Init() {

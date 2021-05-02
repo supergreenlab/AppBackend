@@ -69,7 +69,9 @@ func cardMetricsProcess() {
 			from := t.Add(-36 * time.Hour)
 			to := t.Add(36 * time.Hour)
 			meta := appbackend.FeedEntryMeta{
-				MetricsMeta: appbackend.LoadMetricsMeta(device, box, from, to, prometheus.LoadTimeSeries),
+				MetricsMeta: appbackend.LoadMetricsMeta(device, box, from, to, prometheus.LoadTimeSeries, func(i int) (int, error) {
+					return kv.GetLedBox(device.Identifier, i)
+				}),
 			}
 
 			j, err := json.Marshal(meta)

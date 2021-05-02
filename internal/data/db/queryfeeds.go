@@ -90,6 +90,12 @@ func GetUserEndsForUserID(userID uuid.UUID) ([]UserEnd, error) {
 	return userends, err
 }
 
+func GetPlant(id uuid.UUID) (appbackend.Plant, error) {
+	plant := appbackend.Plant{}
+	err := GetObjectWithField("id", id, "plants", &plant)
+	return plant, err
+}
+
 func GetPlantForFeedID(feedID uuid.UUID) (appbackend.Plant, error) {
 	plant := appbackend.Plant{}
 	err := GetObjectWithField("feedid", feedID, "plants", &plant)

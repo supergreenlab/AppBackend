@@ -22,7 +22,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/SuperGreenLab/AppBackend/internal/data/kv"
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 )
@@ -37,8 +36,9 @@ type MetricsMeta struct {
 }
 
 type MetricsLoader func(device Device, from, to time.Time, module, metric string, i int) (TimeSeries, error)
+type GetLedBox func(i int) (int, error)
 
-func LoadMetricsMeta(device Device, box Box, from, to time.Time, loader MetricsLoader) MetricsMeta {
+func LoadMetricsMeta(device Device, box Box, from, to time.Time, loader MetricsLoader, getLedBox GetLedBox) MetricsMeta {
 	meta := MetricsMeta{}
 	if temp, err := loader(device, from, to, "BOX", "TEMP", int(*box.DeviceBox)); err == nil {
 		meta.Temperature = &temp
@@ -54,7 +54,7 @@ func LoadMetricsMeta(device Device, box Box, from, to time.Time, loader MetricsL
 	}
 	dimmings := []TimeSeries{}
 	for i := 0; ; i += 1 {
-		if ledBox, err := kv.GetLedBox(device.Identifier, i); err != nil || ledBox != int(*box.DeviceBox) {
+		if ledBox, err := getLedBox(i); err != nil || ledBox != int(*box.DeviceBox) {
 			if err != nil {
 				if !errors.Is(err, redis.Nil) {
 					logrus.Errorf("kv.GetLedBox in cardMetricsProcess %q - box: %+v device: %+v i: %d", err, box, device, i)

@@ -47,6 +47,9 @@ type TimelapseRequest struct {
 	ID         uuid.UUID                   `json:"id"`
 	UploadPath string                      `json:"uploadPath`
 	Frames     []appbackend.TimelapseFrame `json:"timelapseFrames"`
+
+	Plant appbackend.Plant `json:"plant"`
+	Box   appbackend.Box   `json:"box"`
 }
 
 func timelapseJob(from, to time.Time) func() {
@@ -58,6 +61,20 @@ func timelapseJob(from, to time.Time) func() {
 		}
 
 		for _, timelapse := range timelapses {
+			plant, err := db.GetPlant(timelapse.PlantID)
+			if err != nil {
+				logrus.Errorf("db.GetPlant in timelapseJob %q", err)
+				time.Sleep(1 * time.Second)
+				continue
+			}
+
+			box, err := db.GetBox(plant.BoxID)
+			if err != nil {
+				logrus.Errorf("db.GetBox in timelapseJob %q", err)
+				time.Sleep(1 * time.Second)
+				continue
+			}
+
 			frames, err := db.GetTimelapseFrames(timelapse.ID.UUID, from, to)
 			if err != nil {
 				logrus.Errorf("db.GetTimelapses in timelapseJob %q", err)
@@ -92,6 +109,8 @@ func timelapseJob(from, to time.Time) func() {
 				ID:         requestID,
 				UploadPath: url2.RequestURI(),
 				Frames:     frames,
+				Box:        box,
+				Plant:      plant,
 			}
 			if err := sendTimelapseRequests(req); err != nil {
 				logrus.Errorf("sendTimelapseRequests in timelapseUploadURLHandler %q - %s", err, path)

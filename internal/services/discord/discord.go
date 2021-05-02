@@ -179,7 +179,9 @@ func listenFeedMediasAdded() {
 		from := t.Add(-24 * time.Hour)
 		to := t
 		if device != nil {
-			m := appbackend.LoadMetricsMeta(*device, box, from, to, prometheus.LoadTimeSeries)
+			m := appbackend.LoadMetricsMeta(*device, box, from, to, prometheus.LoadTimeSeries, func(i int) (int, error) {
+				return kv.GetLedBox(device.Identifier, i)
+			})
 			meta = &m
 		}
 		buff, err = appbackend.AddSGLOverlays(box, plant, meta, buff)
