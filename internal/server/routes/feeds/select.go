@@ -191,21 +191,21 @@ type SelectDevicesParamsParams struct {
 }
 
 type SelectDevicesParamsResponse struct {
-	Params map[string]string
+	Params map[string]interface{} `json:"params"`
 }
 
 func loadParams(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		params := r.Context().Value(middlewares.QueryObjectContextKey{}).(*SelectDevicesParamsParams)
 		device := r.Context().Value(middlewares.SelectResultContextKey{}).(*appbackend.Device)
+		for i, k := range params.Params {
+			params.Params[i] = fmt.Sprintf("%s.KV.%s", device.Identifier, k)
+		}
 		keys, err := kv.GetKeys(params.Params) // TODO Is this dangerous?
 		if err != nil {
 			logrus.Errorf("kv.GetKeys in loadParams %q - %+v", err, params)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
-		}
-		for i, k := range keys {
-			keys[i] = fmt.Sprintf("%s.KV.%s", device.Identifier, k)
 		}
 		m, err := kv.GetValues(keys)
 		if err != nil {
@@ -214,7 +214,7 @@ func loadParams(fn httprouter.Handle) httprouter.Handle {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), middlewares.SelectResultContextKey{}, m)
+		ctx := context.WithValue(r.Context(), middlewares.SelectResultContextKey{}, SelectDevicesParamsResponse{Params: m})
 		fn(w, r.WithContext(ctx), p)
 	}
 }
