@@ -57,7 +57,7 @@ func LoadMetricsMeta(device Device, box Box, from, to time.Time, loader MetricsL
 		if ledBox, err := getLedBox(i); err != nil || ledBox != int(*box.DeviceBox) {
 			if err != nil {
 				if !errors.Is(err, redis.Nil) {
-					logrus.Errorf("kv.GetLedBox in cardMetricsProcess %q - box: %+v device: %+v i: %d", err, box, device, i)
+					logrus.Errorf("kv.GetLedBox in LoadMetricsMeta %q - box: %+v device: %+v i: %d", err, box, device, i)
 				}
 				break
 			}
