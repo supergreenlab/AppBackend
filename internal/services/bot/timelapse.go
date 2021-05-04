@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
-	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
 	"github.com/SuperGreenLab/AppBackend/internal/server/tools"
 	"github.com/SuperGreenLab/AppBackend/internal/services/cron"
 	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
@@ -45,10 +44,9 @@ var (
 )
 
 type TimelapseRequest struct {
-	ID         uuid.UUID                   `json:"id"`
-	Token      string                      `json:"token"`
-	UploadPath string                      `json:"uploadPath`
-	Frames     []appbackend.TimelapseFrame `json:"timelapseFrames"`
+	ID     uuid.UUID                   `json:"id"`
+	Token  string                      `json:"token"`
+	Frames []appbackend.TimelapseFrame `json:"timelapseFrames"`
 
 	Plant  appbackend.Plant   `json:"plant"`
 	Box    appbackend.Box     `json:"box"`
@@ -110,14 +108,7 @@ func timelapseJob(from, to time.Time) func() {
 				frames[i] = frame
 			}
 
-			expiry := time.Hour * 3
 			requestID := uuid.Must(uuid.NewV4())
-			path := fmt.Sprintf("render-%s.mp4", requestID.String())
-			url2, err := storage.Client.PresignedPutObject("timelapses", path, expiry)
-			if err != nil {
-				logrus.Errorf("minioClient.PresignedPutObject in timelapseUploadURLHandler %q - %s", err, path)
-				continue
-			}
 
 			// TODO DRY with internal/server/routes/users/login.go
 			hmacSampleSecret := []byte(viper.GetString("JWTSecret"))
@@ -132,16 +123,15 @@ func timelapseJob(from, to time.Time) func() {
 			}
 
 			req := TimelapseRequest{
-				ID:         requestID,
-				Token:      tokenString,
-				UploadPath: url2.RequestURI(),
-				Frames:     frames,
-				Box:        box,
-				Plant:      plant,
-				Device:     device,
+				ID:     requestID,
+				Token:  tokenString,
+				Frames: frames,
+				Box:    box,
+				Plant:  plant,
+				Device: device,
 			}
 			if err := sendTimelapseRequests(req); err != nil {
-				logrus.Errorf("sendTimelapseRequests in timelapseUploadURLHandler %q - %s", err, path)
+				logrus.Errorf("sendTimelapseRequests in timelapseUploadURLHandler %q - %+v", err, req)
 				continue
 			}
 		}
