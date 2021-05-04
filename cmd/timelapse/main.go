@@ -21,68 +21,44 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/SuperGreenLab/AppBackend/internal/services/bot"
 	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
+	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
+// TODO remove dependencies on external commands
+
+type feedMediaUploadURLParams struct {
+	FileName string `json:"fileName"`
+}
+
+type feedMediaUploadURLResult struct {
+	FilePath      string `json:"filePath"`
+	ThumbnailPath string `json:"thumbnailPath"`
+}
+
+type insertResponse struct {
+	ID uuid.UUID `json:"id"`
+}
+
 const STORAGE_DIR = "/var/timelapse"
 
 var (
-	_            = pflag.String("accesskey", "", "Access key")
-	_            = pflag.String("storageurl", "http://192.168.1.87:9000", "SGL Backend storage url")
-	_            = pflag.String("storagehost", "minio:9000", "SGL Backend storage host name")
 	downloadChan = make(chan bot.TimelapseRequest)
 	generateChan = make(chan bot.TimelapseRequest)
 )
-
-func init() {
-	viper.SetDefault("StorageUrl", "http://192.168.1.87:9000")
-	viper.SetDefault("StorageHost", "minio:9000")
-}
-
-func downloadFrame(url, dst string) error {
-	url = fmt.Sprintf("%s%s", viper.GetString("StorageUrl"), url)
-	logrus.Infof("Downloading %s to %s", url, dst)
-
-	timeout := time.Duration(5 * time.Second)
-	client := http.Client{
-		Timeout: timeout,
-	}
-
-	request, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return err
-	}
-	request.Host = viper.GetString("StorageHost")
-
-	resp, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	dstFile, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer dstFile.Close()
-
-	io.Copy(dstFile, resp.Body)
-	return nil
-}
 
 func downloadTimelapses() {
 	for tr := range downloadChan {
@@ -92,8 +68,8 @@ func downloadTimelapses() {
 		for _, frame := range tr.Frames {
 			dst := fmt.Sprintf("%s/frame-%d.jpg", dir, i)
 			if _, err := os.Stat(dst); os.IsNotExist(err) {
-				if err := downloadFrame(frame.FilePath, dst); err != nil {
-					logrus.Errorf("downloadFrame in downloadTimelapses %q", err)
+				if err := appbackend.DownloadFile(frame.FilePath, dst); err != nil {
+					logrus.Errorf("appbackend.DownloadFile in downloadTimelapses %q", err)
 					continue
 				}
 			} else if err != nil {
@@ -136,6 +112,15 @@ func generateTimelapses() {
 		dst := fmt.Sprintf("%s/render-%s.mp4", dir, tr.ID.String())
 
 		cmd := exec.Command("/usr/bin/ffmpeg", "-r", "40", "-i", fmt.Sprintf("%s/frame-%%d.jpg", dir), "-vf", "scale=1440:-2", dst)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Start(); err != nil {
+			logrus.Errorf("cmd.Start in generateTimelapses %q", err)
+		}
+		cmd.Wait()
+
+		dstThumbnail := fmt.Sprintf("%s/render-%s.jpg", dir, tr.ID.String())
+		cmd = exec.Command("/usr/bin/ffmpeg", "-i", dst, "-vf", "fps=1", dstThumbnail)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		if err := cmd.Start(); err != nil {
@@ -216,14 +201,62 @@ func startGenerateTimelapses(tr bot.TimelapseRequest) error {
 }
 
 func doneGenerateTimelapses(tr bot.TimelapseRequest) error {
+	dir := fmt.Sprintf("%s/render-%s", STORAGE_DIR, tr.ID.String())
+	fileName := fmt.Sprintf("render-%s.mp4", tr.ID.String())
+
+	fmup := feedMediaUploadURLParams{
+		FileName: fileName,
+	}
+	fmur := feedMediaUploadURLResult{}
+	if err := appbackend.POSTSGLObject(tr.Token, "/feedMediaUploadURL", fmup, &fmur); err != nil {
+		return err
+	}
+
+	filePath := fmt.Sprintf("%s/%s", dir, fileName)
+	if err := appbackend.UploadSGLObjectFile(fmur.FilePath, filePath); err != nil {
+		return err
+	}
+	thumbnailPath := fmt.Sprintf("%s/render-%s.jpg", dir, tr.ID.String())
+	if err := appbackend.UploadSGLObjectFile(fmur.ThumbnailPath, thumbnailPath); err != nil {
+		return err
+	}
+
+	fe := appbackend.FeedEntry{
+		FeedID: tr.Plant.FeedID,
+		Date:   time.Now(),
+		Type:   "FE_TIMELAPSE",
+
+		Params: "{}",
+	}
+
+	ir := insertResponse{}
+	if err := appbackend.POSTSGLObject(tr.Token, "/feedEntry", fe, &ir); err != nil {
+		return err
+	}
+
+	filePathS := strings.Split(fmur.FilePath, "/")
+	filePathS = strings.Split(filePathS[2], "?")
+
+	thumbnailPathS := strings.Split(fmur.ThumbnailPath, "/")
+	thumbnailPathS = strings.Split(thumbnailPathS[2], "?")
+	fm := appbackend.FeedMedia{
+		FeedEntryID:   ir.ID,
+		FilePath:      filePathS[0],
+		ThumbnailPath: thumbnailPathS[0],
+
+		Params: "{}",
+	}
+	if err := appbackend.POSTSGLObject(tr.Token, "/feedMedia", fm, nil); err != nil {
+		return err
+	}
+
 	if err := UnsetString(fmt.Sprintf("generate-%s", tr.ID)); err != nil {
 		return err
 	}
 
-	/*dir := fmt.Sprintf("%s/render-%s", STORAGE_DIR, tr.ID.String())
 	if err := os.RemoveAll(dir); err != nil {
 		return err
-	}*/
+	}
 	return nil
 }
 

@@ -173,3 +173,21 @@ func UploadSGLObject(url string, obj io.Reader, length int64) error {
 
 	return nil
 }
+
+func UploadSGLObjectFile(url, file string) error {
+	f, err := os.Open(file)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	fi, err := f.Stat()
+	if err != nil {
+		return err
+	}
+	if err := UploadSGLObject(url, f, fi.Size()); err != nil {
+		return err
+	}
+
+	return nil
+}

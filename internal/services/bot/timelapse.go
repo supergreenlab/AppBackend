@@ -28,10 +28,10 @@ import (
 	"time"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
-	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
 	"github.com/SuperGreenLab/AppBackend/internal/server/tools"
 	"github.com/SuperGreenLab/AppBackend/internal/services/cron"
 	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -44,9 +44,9 @@ var (
 )
 
 type TimelapseRequest struct {
-	ID         uuid.UUID                   `json:"id"`
-	UploadPath string                      `json:"uploadPath`
-	Frames     []appbackend.TimelapseFrame `json:"timelapseFrames"`
+	ID     uuid.UUID                   `json:"id"`
+	Token  string                      `json:"token"`
+	Frames []appbackend.TimelapseFrame `json:"timelapseFrames"`
 
 	Plant appbackend.Plant `json:"plant"`
 	Box   appbackend.Box   `json:"box"`
@@ -96,24 +96,28 @@ func timelapseJob(from, to time.Time) func() {
 				frames[i] = frame
 			}
 
-			expiry := time.Hour * 3
 			requestID := uuid.Must(uuid.NewV4())
-			path := fmt.Sprintf("render-%s.mp4", requestID.String())
-			url2, err := storage.Client.PresignedPutObject("timelapses", path, expiry)
+			// TODO DRY with internal/server/routes/users/login.go
+			hmacSampleSecret := []byte(viper.GetString("JWTSecret"))
+			token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+				"type":   "timelapse_worker",
+				"userID": timelapse.UserID.String(),
+			})
+			tokenString, err := token.SignedString(hmacSampleSecret)
 			if err != nil {
-				logrus.Errorf("minioClient.PresignedPutObject in timelapseUploadURLHandler %q - %s", err, path)
+				logrus.Errorf("token.SignedString in loginHandler %q", err)
 				continue
 			}
 
 			req := TimelapseRequest{
-				ID:         requestID,
-				UploadPath: url2.RequestURI(),
-				Frames:     frames,
-				Box:        box,
-				Plant:      plant,
+				ID:     requestID,
+				Token:  tokenString,
+				Frames: frames,
+				Box:    box,
+				Plant:  plant,
 			}
 			if err := sendTimelapseRequests(req); err != nil {
-				logrus.Errorf("sendTimelapseRequests in timelapseUploadURLHandler %q - %s", err, path)
+				logrus.Errorf("sendTimelapseRequests in timelapseUploadURLHandler %q - %+v", err, req)
 				continue
 			}
 		}
