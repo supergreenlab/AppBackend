@@ -77,7 +77,7 @@ func timelapseJob(from, to time.Time) func() {
 			}
 
 			var device *appbackend.Device
-			if box.DeviceID.Valid != true {
+			if box.DeviceID.Valid {
 				d, err := db.GetDevice(plant.BoxID)
 				if err != nil {
 					logrus.Errorf("db.GetDevice in timelapseJob %q", err)
@@ -186,12 +186,6 @@ func scheduleWeeklyTimelapse() {
 }
 
 func initTimelapse() {
-	t := time.Now()
-	from := t.Add(-7 * 24 * time.Hour)
-	to := t
-
-	cron.SetJob("timelapse", "0 * * * *", timelapseJob(from, to))
-
 	scheduleDailyTimelapse()
 	scheduleWeeklyTimelapse()
 }
