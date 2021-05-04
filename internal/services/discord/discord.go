@@ -175,10 +175,10 @@ func listenFeedMediasAdded() {
 		}
 
 		var meta *appbackend.MetricsMeta
-		t := time.Now()
-		from := t.Add(-24 * time.Hour)
-		to := t
 		if device != nil {
+			t := time.Now()
+			from := t.Add(-24 * time.Hour)
+			to := t
 			m := appbackend.LoadMetricsMeta(*device, box, from, to, prometheus.LoadTimeSeries, func(i int) (int, error) {
 				return kv.GetLedBox(device.Identifier, i)
 			})

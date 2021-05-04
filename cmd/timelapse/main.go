@@ -28,6 +28,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SuperGreenLab/AppBackend/internal/data/kv"
+	"github.com/SuperGreenLab/AppBackend/internal/data/prometheus"
 	"github.com/SuperGreenLab/AppBackend/internal/services/bot"
 	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 	"github.com/gofrs/uuid"
@@ -79,6 +81,22 @@ func downloadTimelapses() {
 			frame.FilePath = dst
 			downloadedFrames[i] = frame
 
+			var meta *appbackend.MetricsMeta
+			if tr.Device != nil {
+				t := time.Now()
+				from := t.Add(-24 * time.Hour)
+				to := t
+				m := appbackend.LoadMetricsMeta(*tr.Device, tr.Box, from, to, prometheus.LoadTimeSeries, func(i int) (int, error) {
+					return kv.GetLedBox(tr.Device.Identifier, i)
+				})
+				meta = &m
+			}
+
+			if err := appbackend.AddSGLOverlaysForFile(tr.Box, tr.Plant, meta, dst); err != nil {
+				logrus.Errorf("appbackend.AddSGLOverlaysForFile in generateTimelapses %q", err)
+				continue
+			}
+
 			if i != 0 && i%2 == 0 {
 				image1 := fmt.Sprintf("%s/frame-%d.jpg", dir, i-2)
 				image2 := fmt.Sprintf("%s/frame-%d.jpg", dir, i)
@@ -120,7 +138,7 @@ func generateTimelapses() {
 		cmd.Wait()
 
 		dstThumbnail := fmt.Sprintf("%s/render-%s.jpg", dir, tr.ID.String())
-		cmd = exec.Command("/usr/bin/ffmpeg", "-i", dst, "-vf", "fps=1", dstThumbnail)
+		cmd = exec.Command("/usr/bin/ffmpeg", "-i", dst, "-ss", "00:00:00.000", "-frames:v", "1", dstThumbnail)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		if err := cmd.Start(); err != nil {

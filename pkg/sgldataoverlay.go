@@ -21,6 +21,7 @@ package appbackend
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"time"
 
 	"gopkg.in/gographics/imagick.v2/imagick"
@@ -176,4 +177,23 @@ func AddSGLOverlays(box Box, plant Plant, meta *MetricsMeta, img *bytes.Buffer) 
 	addPic(mw, "/usr/local/share/appbackend/watermark-logo.png", float64(mw.GetImageWidth()-100), 10, 0.3)
 
 	return bytes.NewBuffer(mw.GetImageBlob()), nil
+}
+
+func AddSGLOverlaysForFile(box Box, plant Plant, meta *MetricsMeta, file string) error {
+	f, err := ioutil.ReadFile(file)
+	if err != nil {
+		return err
+	}
+
+	buff := bytes.NewBuffer(f)
+
+	buff, err = AddSGLOverlays(box, plant, meta, buff)
+	if err != nil {
+		return err
+	}
+
+	if ioutil.WriteFile(file, buff.Bytes(), 0644); err != nil {
+		return err
+	}
+	return nil
 }
