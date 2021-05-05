@@ -35,15 +35,15 @@ import (
 )
 
 var (
-	_ = pflag.String("apiurl", "http://192.168.1.87:8080", "SGL Backend api url")
-	_ = pflag.String("storageurl", "http://192.168.1.87:9000", "SGL Backend storage url")
-	_ = pflag.String("storagehost", "minio:9000", "SGL Backend storage host name")
+	_ = pflag.String("apiurl", "https://api2.supergreenlab.com", "SGL Backend api url")
+	_ = pflag.String("storageurl", "https://storage.supergreenlab.com", "SGL Backend storage url")
+	_ = pflag.String("storagehost", "storage.supergreenlab.com", "SGL Backend storage host name")
 )
 
 func init() {
-	viper.SetDefault("ApiUrl", "http://192.168.1.87:8080")
-	viper.SetDefault("StorageUrl", "http://192.168.1.87:9000")
-	viper.SetDefault("StorageHost", "minio:9000")
+	viper.SetDefault("ApiUrl", "https://api2.supergreenlab.com")
+	viper.SetDefault("StorageUrl", "https://storage.supergreenlab.com")
+	viper.SetDefault("StorageHost", "storage.supergreenlab.com")
 }
 
 func DownloadFile(url, dst string) error {

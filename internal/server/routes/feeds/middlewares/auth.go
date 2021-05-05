@@ -38,6 +38,13 @@ func AuthStackWithUserEnd() middleware.Stack {
 	return auth
 }
 
+// AuthStackWithOptUserEnd - Adds userEndID from JWT claim, sets it as required
+func AuthStackWithOptUserEnd() middleware.Stack {
+	auth := cmiddlewares.AuthStack()
+	auth.Use(JwtTokenUserEndID)
+	return auth
+}
+
 // UserEndIDContextKey - context key which stores the request's userEndID
 type UserEndIDContextKey struct{}
 
