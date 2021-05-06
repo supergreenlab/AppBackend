@@ -16,6 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-docker build -t liveserver-dev . -f Dockerfile.timelapse.dev
-docker run --rm -it -v $(pwd):/app --workdir /app --entrypoint=/usr/local/go/bin/go liveserver-dev build -v -o bin/liveserver cmd/liveserver/main.go
-docker build -t supergreenlab/liveserver -f Dockerfile.timelapse .
+docker build -t timelapse-dev . -f Dockerfile.timelapse.dev
+docker run --rm -it -v $(pwd):/app --workdir /app --entrypoint=/usr/local/go/bin/go timelapse-dev build -v -o bin/timelapse cmd/timelapse/main.go
+docker build -t supergreenlab/timelapse -f Dockerfile.timelapse .
