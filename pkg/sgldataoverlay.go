@@ -145,7 +145,7 @@ func init() {
 	imagick.Initialize()
 }
 
-func AddSGLOverlays(box Box, plant Plant, meta *MetricsMeta, img *bytes.Buffer) (*bytes.Buffer, error) {
+func AddSGLOverlays(box Box, plant Plant, meta MetricsMeta, img *bytes.Buffer) (*bytes.Buffer, error) {
 	mw := imagick.NewMagickWand()
 	defer mw.Destroy()
 
@@ -154,17 +154,21 @@ func AddSGLOverlays(box Box, plant Plant, meta *MetricsMeta, img *bytes.Buffer) 
 	addText(mw, box.Name, "#3BB30B", 55, 2, 10, 50)
 	addText(mw, plant.Name, "#FF4B4B", 45, 2, 10, 100)
 
-	if meta != nil {
+	if meta.Temperature != nil || meta.Humidity != nil {
 		var (
 			x = float64(5)
 			y = float64(mw.GetImageHeight() - 5)
 		)
-		addGraph(mw, x, y, 210, 140, 10, 40, *meta.Temperature, "#3BB30B")
-		addText(mw, fmt.Sprintf("%d°C", int(meta.Temperature.current())), "#3BB30B", 60, 2, x+20, y-120)
-		addText(mw, fmt.Sprintf("(%d°F)", int(meta.Temperature.current()*9/5+32)), "#3BB30B", 40, 2, x+20, y-80)
+		if meta.Temperature != nil {
+			addGraph(mw, x, y, 210, 140, 10, 40, *meta.Temperature, "#3BB30B")
+			addText(mw, fmt.Sprintf("%d°C", int(meta.Temperature.current())), "#3BB30B", 60, 2, x+20, y-120)
+			addText(mw, fmt.Sprintf("(%d°F)", int(meta.Temperature.current()*9/5+32)), "#3BB30B", 40, 2, x+20, y-80)
+		}
 
-		addGraph(mw, x+225, y, 210, 140, 10, 90, *meta.Humidity, "#0B81B3")
-		addText(mw, fmt.Sprintf("%d%%", int(meta.Humidity.current())), "#0B81B3", 60, 2, x+245, y-120)
+		if meta.Humidity != nil {
+			addGraph(mw, x+225, y, 210, 140, 10, 90, *meta.Humidity, "#0B81B3")
+			addText(mw, fmt.Sprintf("%d%%", int(meta.Humidity.current())), "#0B81B3", 60, 2, x+245, y-120)
+		}
 	}
 
 	t := meta.Date
@@ -178,7 +182,7 @@ func AddSGLOverlays(box Box, plant Plant, meta *MetricsMeta, img *bytes.Buffer) 
 	return bytes.NewBuffer(mw.GetImageBlob()), nil
 }
 
-func AddSGLOverlaysForFile(box Box, plant Plant, meta *MetricsMeta, file string) error {
+func AddSGLOverlaysForFile(box Box, plant Plant, meta MetricsMeta, file string) error {
 	f, err := ioutil.ReadFile(file)
 	if err != nil {
 		return err

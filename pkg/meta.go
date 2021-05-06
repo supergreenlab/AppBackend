@@ -27,7 +27,7 @@ import (
 )
 
 type MetricsMeta struct {
-	Date        time.Time     `json:"time"`
+	Date        time.Time     `json:"date"`
 	Temperature *TimeSeries   `json:"temperature,omitempty"`
 	Humidity    *TimeSeries   `json:"humidity,omitempty"`
 	VPD         *TimeSeries   `json:"vpd,omitempty"`

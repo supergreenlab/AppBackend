@@ -28,8 +28,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SuperGreenLab/AppBackend/internal/data/kv"
-	"github.com/SuperGreenLab/AppBackend/internal/data/prometheus"
 	"github.com/SuperGreenLab/AppBackend/internal/services/bot"
 	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 	"github.com/gofrs/uuid"
@@ -81,15 +79,10 @@ func downloadTimelapses() {
 			frame.FilePath = dst
 			downloadedFrames[i] = frame
 
-			var meta *appbackend.MetricsMeta
-			if tr.Device != nil {
-				t := time.Now()
-				from := t.Add(-24 * time.Hour)
-				to := t
-				m := appbackend.LoadMetricsMeta(*tr.Device, tr.Box, from, to, prometheus.LoadTimeSeries, func(i int) (int, error) {
-					return kv.GetLedBox(tr.Device.Identifier, i)
-				})
-				meta = &m
+			var meta appbackend.MetricsMeta
+			if err := json.Unmarshal([]byte(frame.Meta), &meta); err != nil {
+				logrus.Errorf("json.Unmarshal in downloadTimelapses %q", err)
+				continue
 			}
 
 			if err := appbackend.AddSGLOverlaysForFile(tr.Box, tr.Plant, meta, dst); err != nil {
