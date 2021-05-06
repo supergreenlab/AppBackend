@@ -18,5 +18,4 @@
 
 docker build -t appbackend-dev . -f Dockerfile.dev
 docker run --rm -it -v $(pwd):/app --workdir /app --entrypoint=/usr/local/go/bin/go appbackend-dev build -v -o bin/appbackend cmd/appbackend/main.go
-docker rmi appbackend-dev
 docker build -t supergreenlab/appbackend .

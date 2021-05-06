@@ -53,6 +53,82 @@ type TimelapseRequest struct {
 	Device *appbackend.Device `json:"device,omitempty"`
 }
 
+func SendTimelapseRequest(from, to time.Time, timelapse appbackend.Timelapse) error {
+	plant, err := db.GetPlant(timelapse.PlantID)
+	if err != nil {
+		logrus.Errorf("db.GetPlant in timelapseJob %q", err)
+		time.Sleep(1 * time.Second)
+		return err
+	}
+
+	box, err := db.GetBox(plant.BoxID)
+	if err != nil {
+		logrus.Errorf("db.GetBox in timelapseJob %q", err)
+		time.Sleep(1 * time.Second)
+		return err
+	}
+
+	var device *appbackend.Device
+	if box.DeviceID.Valid {
+		d, err := db.GetDevice(plant.BoxID)
+		if err != nil {
+			logrus.Errorf("db.GetDevice in timelapseJob %q", err)
+			time.Sleep(1 * time.Second)
+			return err
+		}
+		device = &d
+	}
+
+	frames, err := db.GetTimelapseFrames(timelapse.ID.UUID, from, to)
+	if err != nil {
+		logrus.Errorf("db.GetTimelapses in timelapseJob %q", err)
+		time.Sleep(1 * time.Second)
+		return err
+	}
+
+	if len(frames) == 0 {
+		return err
+	}
+
+	for i, frame := range frames {
+		err = tools.LoadFeedMediaPublicURLs(&frame)
+		if err != nil {
+			logrus.Errorf("tools.LoadFeedMediaPublicURLs in timelapseJob %q - frame: %+v", err, frame)
+			return err
+		}
+
+		frames[i] = frame
+	}
+
+	requestID := uuid.Must(uuid.NewV4())
+
+	// TODO DRY with internal/server/routes/users/login.go
+	hmacSampleSecret := []byte(viper.GetString("JWTSecret"))
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"type":   "timelapse_worker",
+		"userID": timelapse.UserID.String(),
+	})
+	tokenString, err := token.SignedString(hmacSampleSecret)
+	if err != nil {
+		logrus.Errorf("token.SignedString in loginHandler %q", err)
+		return err
+	}
+
+	req := TimelapseRequest{
+		ID:     requestID,
+		Token:  tokenString,
+		Frames: frames,
+		Box:    box,
+		Plant:  plant,
+		Device: device,
+	}
+	if err := sendTimelapseRequests(req); err != nil {
+		logrus.Errorf("sendTimelapseRequests in timelapseUploadURLHandler %q - %+v", err, req)
+		return err
+	}
+	return nil
+}
+
 func timelapseJob(from, to time.Time) func() {
 	return func() {
 		timelapses, err := db.GetTimelapses()
@@ -62,77 +138,8 @@ func timelapseJob(from, to time.Time) func() {
 		}
 
 		for _, timelapse := range timelapses {
-			plant, err := db.GetPlant(timelapse.PlantID)
-			if err != nil {
-				logrus.Errorf("db.GetPlant in timelapseJob %q", err)
-				time.Sleep(1 * time.Second)
-				continue
-			}
-
-			box, err := db.GetBox(plant.BoxID)
-			if err != nil {
-				logrus.Errorf("db.GetBox in timelapseJob %q", err)
-				time.Sleep(1 * time.Second)
-				continue
-			}
-
-			var device *appbackend.Device
-			if box.DeviceID.Valid {
-				d, err := db.GetDevice(plant.BoxID)
-				if err != nil {
-					logrus.Errorf("db.GetDevice in timelapseJob %q", err)
-					time.Sleep(1 * time.Second)
-					continue
-				}
-				device = &d
-			}
-
-			frames, err := db.GetTimelapseFrames(timelapse.ID.UUID, from, to)
-			if err != nil {
-				logrus.Errorf("db.GetTimelapses in timelapseJob %q", err)
-				time.Sleep(1 * time.Second)
-				continue
-			}
-
-			if len(frames) == 0 {
-				continue
-			}
-
-			for i, frame := range frames {
-				err = tools.LoadFeedMediaPublicURLs(&frame)
-				if err != nil {
-					logrus.Errorf("tools.LoadFeedMediaPublicURLs in timelapseJob %q - frame: %+v", err, frame)
-					continue
-				}
-
-				frames[i] = frame
-			}
-
-			requestID := uuid.Must(uuid.NewV4())
-
-			// TODO DRY with internal/server/routes/users/login.go
-			hmacSampleSecret := []byte(viper.GetString("JWTSecret"))
-			token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-				"type":   "timelapse_worker",
-				"userID": timelapse.UserID.String(),
-			})
-			tokenString, err := token.SignedString(hmacSampleSecret)
-			if err != nil {
-				logrus.Errorf("token.SignedString in loginHandler %q", err)
-				continue
-			}
-
-			req := TimelapseRequest{
-				ID:     requestID,
-				Token:  tokenString,
-				Frames: frames,
-				Box:    box,
-				Plant:  plant,
-				Device: device,
-			}
-			if err := sendTimelapseRequests(req); err != nil {
-				logrus.Errorf("sendTimelapseRequests in timelapseUploadURLHandler %q - %+v", err, req)
-				continue
+			if err := SendTimelapseRequest(from, to, timelapse); err != nil {
+				logrus.Errorf("SendTimelapseRequest in timelapseJob %q - %+v", err, timelapse)
 			}
 		}
 	}

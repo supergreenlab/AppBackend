@@ -1,0 +1,9 @@
+FROM debian
+
+RUN apt-get update
+
+COPY ca-certificates.crt /etc/ssl/certs/
+COPY bin/dbcleaner /
+COPY db /db
+
+ENTRYPOINT ["/dbcleaner"]

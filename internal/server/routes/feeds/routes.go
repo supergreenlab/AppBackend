@@ -60,7 +60,7 @@ func Init(router *httprouter.Router) {
 	router.PUT("/feedMedia", authWithOptUserEndID.Wrap(updateFeedMediaHandler))
 	router.PUT("/userend", authWithUserEndID.Wrap(updateUserEndHandler))
 
-	router.POST("/deletes", auth.Wrap(deletesHandler))
+	router.POST("/deletes", authWithOptUserEndID.Wrap(deletesHandler))
 
 	router.POST("/feedMediaUploadURL", auth.Wrap(feedMediaUploadURLHandler))
 	router.POST("/timelapseUploadURL", auth.Wrap(timelapseUploadURLHandler))

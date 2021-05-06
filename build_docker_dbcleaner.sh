@@ -16,5 +16,5 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-CGO_ENABLED=0 GOOS=linux go build -v -a -installsuffix cgo -o bin/appbackend cmd/dbcleaner/main.go
-docker build -t supergreenlab/dbcleaner .
+CGO_ENABLED=0 GOOS=linux go build -v -a -installsuffix cgo -o bin/dbcleaner cmd/dbcleaner/main.go
+docker build -t supergreenlab/dbcleaner -f Dockerfile.dbcleaner .

@@ -27,6 +27,7 @@ import (
 )
 
 type MetricsMeta struct {
+	Date        time.Time     `json:"time"`
 	Temperature *TimeSeries   `json:"temperature,omitempty"`
 	Humidity    *TimeSeries   `json:"humidity,omitempty"`
 	VPD         *TimeSeries   `json:"vpd,omitempty"`
@@ -39,7 +40,7 @@ type MetricsLoader func(device Device, from, to time.Time, module, metric string
 type GetLedBox func(i int) (int, error)
 
 func LoadMetricsMeta(device Device, box Box, from, to time.Time, loader MetricsLoader, getLedBox GetLedBox) MetricsMeta {
-	meta := MetricsMeta{}
+	meta := MetricsMeta{Date: time.Now()}
 	if temp, err := loader(device, from, to, "BOX", "TEMP", int(*box.DeviceBox)); err == nil {
 		meta.Temperature = &temp
 	}

@@ -22,7 +22,6 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"time"
 
 	"gopkg.in/gographics/imagick.v2/imagick"
 )
@@ -168,7 +167,7 @@ func AddSGLOverlays(box Box, plant Plant, meta *MetricsMeta, img *bytes.Buffer) 
 		addText(mw, fmt.Sprintf("%d%%", int(meta.Humidity.current())), "#0B81B3", 60, 2, x+245, y-120)
 	}
 
-	t := time.Now()
+	t := meta.Date
 	d := t.Format("2006/01/02")
 	addText(mw, d, "#3BB30B", 25, 1, float64(mw.GetImageWidth()-170), float64(mw.GetImageHeight()-15))
 	d = t.Format("15:04")

@@ -71,7 +71,7 @@ func createDeleteHandler() httprouter.Handle {
 		uid := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
 		sess := r.Context().Value(middlewares.SessContextKey{}).(sqlbuilder.Database)
 		deletes := r.Context().Value(middlewares.ObjectContextKey{}).(*deletesRequest)
-		ueid := r.Context().Value(fmiddlewares.UserEndIDContextKey{}).(uuid.UUID)
+		ueid, ueidOK := r.Context().Value(fmiddlewares.UserEndIDContextKey{}).(uuid.UUID)
 
 		for _, del := range deletes.Deletes {
 			factory, ok := factories[del.Type]
@@ -99,15 +99,22 @@ func createDeleteHandler() httprouter.Handle {
 
 			collection := fmt.Sprintf("userend_%s", del.Type)
 			field := idFields[del.Type]
-			if _, err := sess.Update(collection).Set("dirty", true).Where(field, del.ID).And("userendid != ?", ueid).And("userendid in (select id from userends where userid = ?)", uid).Exec(); err != nil {
+			ueUpdate := sess.Update(collection).Set("dirty", true).Where(field, del.ID)
+			if ueidOK {
+				ueUpdate = ueUpdate.And("userendid != ?", ueid)
+			}
+			ueUpdate = ueUpdate.And("userendid in (select id from userends where userid = ?)", uid)
+			if _, err := ueUpdate.Exec(); err != nil {
 				logrus.Warningf("sess.Update(collection) in createDeleteHandler %q - %+v by %s", err, del, uid)
 				continue
 			}
 
-			if _, err := sess.DeleteFrom(collection).Where(fmt.Sprintf("%s = ?", field), del.ID).And("userendid = ?", ueid).Exec(); err != nil {
-				logrus.Warningf("sess.DeleteFrom(collection) in createDeleteHandler %q - %+v by %s", err, del, uid)
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
+			if ueidOK {
+				if _, err := sess.DeleteFrom(collection).Where(fmt.Sprintf("%s = ?", field), del.ID).And("userendid = ?", ueid).Exec(); err != nil {
+					logrus.Warningf("sess.DeleteFrom(collection) in createDeleteHandler %q - %+v by %s", err, del, uid)
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
 			}
 		}
 	})
