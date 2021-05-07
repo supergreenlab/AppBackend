@@ -31,6 +31,7 @@ import (
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
+	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	"github.com/SuperGreenLab/AppBackend/internal/server/tools"
 	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 
@@ -72,6 +73,7 @@ func timelapseUploadURLHandler(w http.ResponseWriter, r *http.Request, p httprou
 }
 
 func timelapseLatestPic(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	uid := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
 	timelapseIDStr := p.ByName("id")
 	timelapseID, err := uuid.FromString(timelapseIDStr)
 	if err != nil {
@@ -83,6 +85,13 @@ func timelapseLatestPic(w http.ResponseWriter, r *http.Request, p httprouter.Par
 	if err != nil {
 		logrus.Errorf("db.GetTimelapseFrame in timelapseLatestPic %q", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if frame.UserID != uid {
+		errorMsg := "Access denied"
+		logrus.Errorf("frame.UserID.UUID in timelapseLatestPic uid: %s", errorMsg, err, uid)
+		http.Error(w, errorMsg, http.StatusUnauthorized)
 		return
 	}
 
