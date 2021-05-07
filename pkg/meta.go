@@ -43,12 +43,18 @@ func LoadMetricsMeta(device Device, box Box, from, to time.Time, loader MetricsL
 	meta := MetricsMeta{Date: time.Now()}
 	if temp, err := loader(device, from, to, "BOX", "TEMP", int(*box.DeviceBox)); err == nil {
 		meta.Temperature = &temp
+	} else {
+		logrus.Errorf("loader(TEMP) in LoadMetricsMeta %q", err)
 	}
 	if humi, err := loader(device, from, to, "BOX", "HUMI", int(*box.DeviceBox)); err == nil {
 		meta.Humidity = &humi
+	} else {
+		logrus.Errorf("loader(HUMI) in LoadMetricsMeta %q", err)
 	}
 	if vpd, err := loader(device, from, to, "BOX", "VPD", int(*box.DeviceBox)); err == nil {
 		meta.VPD = &vpd
+	} else {
+		logrus.Errorf("loader(VPD) in LoadMetricsMeta %q", err)
 	}
 	if timer, err := loader(device, from, to, "BOX", "TIMER_OUTPUT", int(*box.DeviceBox)); err == nil {
 		meta.Timer = &timer
