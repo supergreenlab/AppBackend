@@ -1,6 +1,7 @@
 tmp
 bin/appbackend
 bin/timelapse
+bin/utils
 air_errors.log
 /config/
 tests/node_modules
