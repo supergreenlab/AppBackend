@@ -65,6 +65,8 @@ func Init(router *httprouter.Router) {
 	router.POST("/feedMediaUploadURL", auth.Wrap(feedMediaUploadURLHandler))
 	router.POST("/timelapseUploadURL", auth.Wrap(timelapseUploadURLHandler))
 
+	router.POST("/sgloverlay", auth.Wrap(sglOverlayHandler))
+
 	router.GET("/syncBoxes", authWithUserEndID.Wrap(syncBoxesHandler))
 	router.GET("/syncPlants", authWithUserEndID.Wrap(syncPlantsHandler))
 	router.GET("/syncTimelapses", authWithUserEndID.Wrap(syncTimelapsesHandler))
@@ -104,6 +106,7 @@ func Init(router *httprouter.Router) {
 	router.GET("/bookmark/:id", auth.Wrap(selectBookmark))
 	router.GET("/timelapses", auth.Wrap(selectTimelapses))
 	router.GET("/timelapse/:id", auth.Wrap(selectTimelapse))
+	router.GET("/timelapse/:id/latest", auth.Wrap(timelapseLatestPic))
 
 	explorer.Init(router)
 }

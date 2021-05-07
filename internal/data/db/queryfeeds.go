@@ -157,3 +157,15 @@ func GetTimelapseFrames(timelapseID uuid.UUID, from, to time.Time) ([]appbackend
 
 	return timelapseFrames, nil
 }
+
+func GetTimelapseFrame(timelapseID uuid.UUID) (appbackend.TimelapseFrame, error) {
+	timelapseFrame := appbackend.TimelapseFrame{}
+
+	selector := Sess.Select("timelapseframes.*").From("timelapseframes").Where("timelapseframes.timelapseid = ?", timelapseID).OrderBy("cat desc").Limit(1)
+
+	if err := selector.One(&timelapseFrame); err != nil {
+		return timelapseFrame, err
+	}
+
+	return timelapseFrame, nil
+}

@@ -19,6 +19,7 @@
 package feeds
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -28,8 +29,10 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/SuperGreenLab/AppBackend/internal/data/db"
 	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
 	"github.com/SuperGreenLab/AppBackend/internal/server/tools"
+	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -66,4 +69,81 @@ func timelapseUploadURLHandler(w http.ResponseWriter, r *http.Request, p httprou
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func timelapseLatestPic(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	timelapseIDStr := p.ByName("id")
+	timelapseID, err := uuid.FromString(timelapseIDStr)
+	if err != nil {
+		logrus.Errorf("uuid.FromString in timelapseLatestPic %q", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	frame, err := db.GetTimelapseFrame(timelapseID)
+	if err != nil {
+		logrus.Errorf("db.GetTimelapseFrame in timelapseLatestPic %q", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = tools.LoadFeedMediaPublicURLs(&frame)
+	if err != nil {
+		logrus.Errorf("tools.LoadFeedMediaPublicURLs in timelapseLatestPic %q", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(frame); err != nil {
+		logrus.Errorf("json.NewEncoder in timelapseLatestPic %q", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+type SGLOverlayParams struct {
+	Box   appbackend.Box         `json:"box"`
+	Plant appbackend.Plant       `json:"plant"`
+	Meta  appbackend.MetricsMeta `json:"meta"`
+	URL   string                 `json:"url"`
+	Host  string                 `json:"host"`
+}
+
+func sglOverlayHandler(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	sop := SGLOverlayParams{}
+	if err := tools.DecodeJSONBody(w, r, &sop); err != nil {
+		logrus.Errorf("tools.DecodeJSONBody in sglOverlayHandler %q", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	timeout := time.Duration(5 * time.Second)
+	client := http.Client{
+		Timeout: timeout,
+	}
+
+	request, err := http.NewRequest("GET", sop.URL, nil)
+	if err != nil {
+		logrus.Errorf("http.NewRequest in sglOverlayHandler %q", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	request.Host = sop.Host
+
+	resp, err := client.Do(request)
+	if err != nil {
+		logrus.Errorf("client.Do in sglOverlayHandler %q", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	picBuffer := &bytes.Buffer{}
+	if _, err := picBuffer.ReadFrom(resp.Body); err != nil {
+		logrus.Errorf("picBuffer.ReadFrom in sglOverlayHandler %q", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	picBuffer, err = appbackend.AddSGLOverlays(sop.Box, sop.Plant, sop.Meta, picBuffer)
+
+	w.Write(picBuffer.Bytes())
 }
