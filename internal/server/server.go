@@ -24,6 +24,8 @@ import (
 	"github.com/SuperGreenLab/AppBackend/internal/server/routes/products"
 	"github.com/SuperGreenLab/AppBackend/internal/services/prometheus"
 	"github.com/rs/cors"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
 
@@ -33,6 +35,14 @@ import (
 	"github.com/julienschmidt/httprouter"
 	log "github.com/sirupsen/logrus"
 )
+
+var (
+	_ = pflag.String("addcors", "false", "Adds cors header, used when not behing cloudflare") // TODO move this somewhere else
+)
+
+func init() {
+	viper.SetDefault("AddCORS", "false")
+}
 
 // Start starts the server
 func Start() {
@@ -48,21 +58,25 @@ func Start() {
 	products.Init(router)
 
 	go func() {
-		corsOpts := cors.Options{
-			AllowedOrigins: []string{"*"},
-			AllowedMethods: []string{
-				http.MethodHead,
-				http.MethodGet,
-				http.MethodPost,
-				http.MethodPut,
-				http.MethodPatch,
-				http.MethodDelete,
-			},
-			AllowedHeaders:   []string{"*"},
-			AllowCredentials: false,
-			ExposedHeaders:   []string{"x-sgl-token"},
-		}
+		if viper.GetString("AddCORS") == "true" {
+			corsOpts := cors.Options{
+				AllowedOrigins: []string{"*"},
+				AllowedMethods: []string{
+					http.MethodHead,
+					http.MethodGet,
+					http.MethodPost,
+					http.MethodPut,
+					http.MethodPatch,
+					http.MethodDelete,
+				},
+				AllowedHeaders:   []string{"*"},
+				AllowCredentials: false,
+				ExposedHeaders:   []string{"x-sgl-token"},
+			}
 
-		log.Fatal(http.ListenAndServe(":8080", cors.New(corsOpts).Handler(prometheus.NewHTTPTiming(router))))
+			log.Fatal(http.ListenAndServe(":8080", cors.New(corsOpts).Handler(prometheus.NewHTTPTiming(router))))
+		} else {
+			log.Fatal(http.ListenAndServe(":8080", prometheus.NewHTTPTiming(router)))
+		}
 	}()
 }
