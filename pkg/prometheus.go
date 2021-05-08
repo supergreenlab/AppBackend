@@ -48,16 +48,17 @@ func (mv TimeSeries) current() float64 {
 }
 
 func LoadGraphValue(device Device, from, to time.Time, module, metric string, i int) (TimeSeries, error) {
-	m := TimeSeries{}
-
+	m := struct {
+		Metrics TimeSeries `json:"metrics"`
+	}{}
 	name := fmt.Sprintf("%s_%d_%s", module, i, metric)
 	url := fmt.Sprintf("https://api2.supergreenlab.com/metrics?cid=%s&q=%s&timeFrom=%d&timeTo=%d&n=50", device.Identifier, name, from.Unix(), to.Unix())
 	r, err := http.Get(url)
 	if err != nil {
-		return m, err
+		return m.Metrics, err
 	}
 	defer r.Body.Close()
 
 	json.NewDecoder(r.Body).Decode(&m)
-	return m, nil
+	return m.Metrics, nil
 }
