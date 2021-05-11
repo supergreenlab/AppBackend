@@ -37,7 +37,7 @@ func main() {
 	kv.Init()
 	storage.Init()
 
-	id, err := uuid.FromString("8333ec06-9e82-4f02-ac21-f7d1e7ad810c")
+	id, err := uuid.FromString("b9be81fe-a56f-4011-b387-97c9cde1671d")
 	if err != nil {
 		logrus.Fatalf("uuid.FromString in main %q", err)
 	}

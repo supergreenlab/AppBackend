@@ -64,14 +64,14 @@ func loginHandler() httprouter.Handle {
 		if err != nil {
 			lp.Password = ""
 			logrus.Errorf("sess.Select in loginHandler %q - %+v", err, lp)
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, "Access denied", http.StatusBadRequest)
 			return
 		}
 		err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(lp.Password))
 		if err != nil {
 			lp.Password = ""
 			logrus.Errorf("bcrypt.CompareHashAndPassword in loginHandler %q - %+v", err, lp)
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, "Access denied", http.StatusBadRequest)
 			return
 		}
 

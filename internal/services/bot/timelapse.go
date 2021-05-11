@@ -70,7 +70,7 @@ func SendTimelapseRequest(from, to time.Time, timelapse appbackend.Timelapse) er
 
 	var device *appbackend.Device
 	if box.DeviceID.Valid {
-		d, err := db.GetDevice(plant.BoxID)
+		d, err := db.GetDevice(box.DeviceID.UUID)
 		if err != nil {
 			logrus.Errorf("db.GetDevice in timelapseJob %q", err)
 			time.Sleep(1 * time.Second)
