@@ -129,13 +129,17 @@ func SendTimelapseRequest(from, to time.Time, timelapse appbackend.Timelapse) er
 	return nil
 }
 
-func timelapseJob(from, to time.Time) func() {
+func timelapseJob(timeFrom time.Duration) func() {
 	return func() {
 		timelapses, err := db.GetTimelapses()
 		if err != nil {
 			logrus.Errorf("db.GetTimelapses in timelapseJob %q", err)
 			return
 		}
+
+		t := time.Now()
+		from := t.Add(timeFrom)
+		to := t
 
 		for _, timelapse := range timelapses {
 			if err := SendTimelapseRequest(from, to, timelapse); err != nil {
@@ -177,19 +181,11 @@ func sendTimelapseRequests(req TimelapseRequest) error {
 }
 
 func scheduleDailyTimelapse() {
-	t := time.Now()
-	from := t.Add(-24 * time.Hour)
-	to := t
-
-	cron.SetJob("timelapse", "0 0 * * *", timelapseJob(from, to))
+	cron.SetJob("timelapse", "0 0 * * *", timelapseJob(-24*time.Hour))
 }
 
 func scheduleWeeklyTimelapse() {
-	t := time.Now()
-	from := t.Add(-7 * 24 * time.Hour)
-	to := t
-
-	cron.SetJob("timelapse", "0 0 * * sun", timelapseJob(from, to))
+	cron.SetJob("timelapse", "0 0 * * sun", timelapseJob(-7*24*time.Hour))
 }
 
 func initTimelapse() {
