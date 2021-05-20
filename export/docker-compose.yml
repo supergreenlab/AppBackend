@@ -1,0 +1,29 @@
+version: '3.1'
+
+volumes:
+    postgres_data: {}
+
+networks:
+  front-tier:
+  back-tier:
+
+services:
+
+  redis:
+    image: redis
+    volumes:
+      - ./redis:/data
+    restart: always
+    networks:
+      - back-tier
+
+  postgres:
+    image: postgres
+    shm_size: 1g
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - back-tier
