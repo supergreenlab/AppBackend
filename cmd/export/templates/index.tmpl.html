@@ -1,0 +1,12 @@
+<html>
+  <head>
+  </head>
+  <body>
+    {{range .Plants}}
+      {{ .Name }}
+      {{ range $key, $value := .SettingsFlat }}
+        {{ $key }}: {{ $value }}
+      {{end}}
+    {{end}}
+  </body>
+</html>

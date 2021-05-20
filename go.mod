@@ -1,6 +1,6 @@
 module github.com/SuperGreenLab/AppBackend
 
-go 1.13
+go 1.16
 
 require (
 	cloud.google.com/go/spanner v1.4.0 // indirect
@@ -27,6 +27,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/schema v1.2.0
 	github.com/jackc/pgconn v1.4.0 // indirect
+	github.com/jeremywohl/flatten v1.0.1 // indirect
 	github.com/jmespath/go-jmespath v0.3.0 // indirect
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/klauspost/compress v1.10.3 // indirect
