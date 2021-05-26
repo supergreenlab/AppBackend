@@ -39,16 +39,23 @@ func SubscribeOject(topic string) chan interface{} {
 	return ps.Sub(topic)
 }
 
+type ControllerStringMetric struct {
+	ControllerID string `json:"controllerID"`
+	Key          string `json:"key"`
+	Value        string `json:"value"`
+}
+
 type ControllerIntMetric struct {
-	ControllerID string
-	Key          string
-	Value        float64
+	ControllerID string  `json:"controllerID"`
+	Key          string  `json:"key"`
+	Value        float64 `json:"value"`
 }
 
 func SubscribeControllerIntMetric(topic string) chan ControllerIntMetric {
 	ch := make(chan ControllerIntMetric, 100)
 	rps := r.PSubscribe(topic)
 	go func() {
+		defer close(ch)
 		for msg := range rps.Channel() {
 			v, err := strconv.ParseFloat(msg.Payload, 64)
 			if err != nil {
@@ -60,7 +67,24 @@ func SubscribeControllerIntMetric(topic string) chan ControllerIntMetric {
 
 			ch <- ControllerIntMetric{ControllerID: keyParts[1], Key: keyParts[3], Value: v}
 		}
-		close(ch)
+	}()
+	return ch
+}
+
+func SubscribeControllerMetric(topic string) chan interface{} {
+	ch := make(chan interface{}, 100)
+	rps := r.PSubscribe(topic)
+	go func() {
+		defer close(ch)
+		for msg := range rps.Channel() {
+			keyParts := strings.Split(msg.Channel, ".")
+			v, err := strconv.ParseFloat(msg.Payload, 64)
+			if err != nil {
+				ch <- ControllerStringMetric{ControllerID: keyParts[1], Key: keyParts[3], Value: msg.Payload}
+			} else {
+				ch <- ControllerIntMetric{ControllerID: keyParts[1], Key: keyParts[3], Value: v}
+			}
+		}
 	}()
 	return ch
 }

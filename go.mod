@@ -26,6 +26,7 @@ require (
 	github.com/golang/gddo v0.0.0-20200324184333-3c2cc9a6329d
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/schema v1.2.0
+	github.com/gorilla/websocket v1.4.2
 	github.com/jackc/pgconn v1.4.0 // indirect
 	github.com/jmespath/go-jmespath v0.3.0 // indirect
 	github.com/julienschmidt/httprouter v1.3.0

@@ -42,6 +42,16 @@ func (e Endpoint) Handle() httprouter.Handle {
 	return s.Wrap(e.Output)
 }
 
+func (e Endpoint) PushMiddleware(m middleware.Middleware) Endpoint {
+	e.Middlewares = append(e.Middlewares, m)
+	return e
+}
+
+func (e Endpoint) SetOutput(o httprouter.Handle) Endpoint {
+	e.Output = o
+	return e
+}
+
 func NewEndpoint() Endpoint {
 	return Endpoint{Middlewares: []middleware.Middleware{}}
 }

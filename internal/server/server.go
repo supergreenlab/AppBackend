@@ -21,6 +21,7 @@ package server
 import (
 	"net/http"
 
+	"github.com/SuperGreenLab/AppBackend/internal/server/routes/devices"
 	"github.com/SuperGreenLab/AppBackend/internal/server/routes/products"
 	"github.com/SuperGreenLab/AppBackend/internal/services/prometheus"
 	"github.com/rs/cors"
@@ -56,6 +57,7 @@ func Start() {
 	metrics.Init(router)
 	feeds.Init(router)
 	products.Init(router)
+	devices.Init(router)
 
 	go func() {
 		if viper.GetString("AddCORS") == "true" {
