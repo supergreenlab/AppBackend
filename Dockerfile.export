@@ -5,6 +5,5 @@ RUN apt-get update && \
 
 COPY ca-certificates.crt /etc/ssl/certs/
 COPY bin/export /
-COPY db /db
 
 ENTRYPOINT ["/export"]

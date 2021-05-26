@@ -1,0 +1,3 @@
+PGPassword="password"
+ExportDir="/sgl_export"
+MinioDir="/minio"

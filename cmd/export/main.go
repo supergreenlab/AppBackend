@@ -19,7 +19,6 @@
 package main
 
 import (
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -42,45 +41,50 @@ func init() {
 	viper.SetDefault("MinioDir", "/minio")
 }
 
-type IndexData struct {
-	Plants []appbackend.Plant
-}
-
 type FeedEntry struct {
 	appbackend.FeedEntry
 	FeedMedias []appbackend.FeedMedia
 }
 
 type PlantData struct {
+	Box         appbackend.Box
 	Plant       appbackend.Plant
 	FeedEntries []FeedEntry
 }
 
 func copyTo(src, dst string) error {
-	s, err := os.Open(src)
-	if err != nil {
+	if _, err := os.Stat(dst); os.IsNotExist(err) {
+		s, err := os.Open(src)
+		if err != nil {
+			return err
+		}
+		defer s.Close()
+		d, err := os.Create(dst)
+		if err != nil {
+			return err
+		}
+		defer d.Close()
+		_, err = io.Copy(d, s)
+		return err
+	} else if err != nil {
 		return err
 	}
-	defer s.Close()
-	d, err := os.Open(dst)
-	if err != nil {
-		return err
-	}
-	defer d.Close()
-	_, err = io.Copy(d, s)
-	return err
+	logrus.Infof("File %s already exists", dst)
+	return nil
 }
 
 func main() {
+	InitConfig()
+	db.Init()
+
 	exportDir := viper.GetString("ExportDir")
 	minioDir := viper.GetString("MinioDir")
 
-	if err := os.Mkdir(exportDir, 0755); err != nil {
-		logrus.Fatalf("os.Mkdir in main %q", err)
+	if _, err := os.Stat(exportDir); os.IsNotExist(err) {
+		if err := os.Mkdir(exportDir, 0700); err != nil {
+			logrus.Fatalf("os.Mkdir in main %q", err)
+		}
 	}
-
-	InitConfig()
-	db.Init()
 
 	plants := make([]appbackend.Plant, 0)
 
@@ -88,20 +92,14 @@ func main() {
 		logrus.Fatalf("%q", err)
 	}
 
-	indexData := IndexData{
-		Plants: plants,
-	}
-
-	if indexFile, err := os.Create(fmt.Sprintf("%s/index.json", exportDir)); err != nil {
-		logrus.Fatalf("os.Open in main %q", err)
-	} else if err := json.NewEncoder(indexFile).Encode(indexData); err != nil {
-		logrus.Fatalf("json.NewEncoder in main %q", err)
-		indexFile.Close()
-	}
-
 	for _, plant := range plants {
+		box := appbackend.Box{}
+		if err := db.Sess.Select("*").From("boxes").Where("id = ?", plant.BoxID).One(&box); err != nil {
+			logrus.Fatalf("%q", err)
+		}
+
 		fes := []appbackend.FeedEntry{}
-		if err := db.Sess.Select("*").From("feedentries").Where("feedid = ?", plant.FeedID).And("deleted=false").OrderBy("cat desc").All(&fes); err != nil {
+		if err := db.Sess.Select("*").From("feedentries").Where("feedid = ?", plant.FeedID).And("deleted=false").OrderBy("cat asc").All(&fes); err != nil {
 			logrus.Fatalf("%q", err)
 		}
 
@@ -113,11 +111,13 @@ func main() {
 			}
 
 			for _, feedMedia := range fms {
-				if err := copyTo(fmt.Sprintf("%s/feedmedias/%s", minioDir, feedMedia.FilePath), fmt.Sprintf("%s/feedmedias/%s", exportDir, feedMedia.FilePath)); err != nil {
-					logrus.Fatalf("copyTo in main %q", err)
+				if err := copyTo(fmt.Sprintf("%s/feedmedias/%s", minioDir, feedMedia.FilePath), fmt.Sprintf("%s/%s", exportDir, feedMedia.FilePath)); err != nil {
+					logrus.Errorf("copyTo in main %q", err)
+					continue
 				}
-				if err := copyTo(fmt.Sprintf("%s/feedmedias/%s", minioDir, feedMedia.ThumbnailPath), fmt.Sprintf("%s/feedmedias/%s", exportDir, feedMedia.ThumbnailPath)); err != nil {
-					logrus.Fatalf("copyTo in main %q", err)
+				if err := copyTo(fmt.Sprintf("%s/feedmedias/%s", minioDir, feedMedia.ThumbnailPath), fmt.Sprintf("%s/%s", exportDir, feedMedia.ThumbnailPath)); err != nil {
+					logrus.Errorf("copyTo in main %q", err)
+					continue
 				}
 			}
 
@@ -126,7 +126,9 @@ func main() {
 				FeedMedias: fms,
 			})
 		}
+
 		plantData := PlantData{
+			Box:         box,
 			Plant:       plant,
 			FeedEntries: feedEntries,
 		}
