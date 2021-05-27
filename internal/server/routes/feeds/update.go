@@ -41,7 +41,7 @@ var updateBoxHandler = middlewares.UpdateEndpoint(
 		middlewares.CheckAccessRight("devices", "DeviceID", true, func() appbackend.UserObject { return &appbackend.Device{} }),
 	},
 	[]middleware.Middleware{
-		fmiddlewares.UpdateUserEndObjects("userend_devices", "deviceid"),
+		fmiddlewares.UpdateUserEndObjects("userend_boxes", "boxid"),
 	},
 )
 
