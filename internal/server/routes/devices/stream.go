@@ -44,13 +44,13 @@ func streamDeviceMetrics(fn httprouter.Handle) httprouter.Handle {
 			return
 		}
 		defer c.Close()
-		identifier := p.ByName("id")
-		q := fmt.Sprintf("pub.%s.*", identifier)
+		device := r.Context().Value(middlewares.SelectResultContextKey{}).(*appbackend.Device)
+		q := fmt.Sprintf("pub.%s.*", device.Identifier)
 		ch := pubsub.SubscribeControllerMetric(q)
 		for e := range ch {
 			err = c.WriteJSON(e)
 			if err != nil {
-				logrus.Errorf("c.WriteJSON in streamDeviceMetrics %q - device: %s", err, identifier)
+				logrus.Errorf("c.WriteJSON in streamDeviceMetrics %q - device: %s", err, device.Identifier)
 				break
 			}
 		}
@@ -64,7 +64,7 @@ var streamDeviceHandler = middlewares.NewEndpoint().
 			uid := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
 			id := p.ByName("id")
 
-			selector := sess.Select("*").From("devices t").Where("t.userid = ?", uid).And("identifier = ?", id).And("deleted = false")
+			selector := sess.Select("*").From("devices t").Where("t.userid = ?", uid).And("id = ?", id).And("deleted = false")
 			ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
 			fn(w, r.WithContext(ctx), p)
 		}
