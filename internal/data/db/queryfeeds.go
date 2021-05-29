@@ -149,7 +149,7 @@ func GetTimelapse(id uuid.UUID) (appbackend.Timelapse, error) {
 func GetTimelapseFrames(timelapseID uuid.UUID, from, to time.Time) ([]appbackend.TimelapseFrame, error) {
 	timelapseFrames := []appbackend.TimelapseFrame{}
 
-	selector := Sess.Select("timelapseframes.*").From("timelapseframes").Where("timelapseframes.timelapseid = ?", timelapseID).And("cat >= ?", from).And("cat <= ?", to)
+	selector := Sess.Select("timelapseframes.*").From("timelapseframes").Where("timelapseframes.timelapseid = ?", timelapseID).And("cat >= ?", from).And("cat <= ?", to).OrderBy("cat asc")
 
 	if err := selector.All(&timelapseFrames); err != nil {
 		return timelapseFrames, err
