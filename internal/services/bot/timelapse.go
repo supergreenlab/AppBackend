@@ -151,7 +151,7 @@ func timelapseJob(timeFrom time.Duration) func() {
 
 func sendTimelapseRequests(req TimelapseRequest) error {
 	servers := strings.Split(viper.GetString("TimelapseWorkers"), ",")
-	s := rand.Int() % len(servers)
+	s := rand.Intn(len(servers))
 	server := servers[s]
 	url := fmt.Sprintf("%s/timelapse", server)
 

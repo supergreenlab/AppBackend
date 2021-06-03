@@ -7,3 +7,4 @@ air_errors.log
 tests/node_modules
 /assets/plume.otf
 /timelapse/
+/export/

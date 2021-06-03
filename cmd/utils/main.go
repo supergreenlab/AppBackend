@@ -19,6 +19,7 @@
 package main
 
 import (
+	"os"
 	"time"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/config"
@@ -31,13 +32,19 @@ import (
 )
 
 func main() {
+	if len(os.Args) == 1 {
+		logrus.Infof("Usage %s uuid", os.Args[0])
+		return
+	}
+	idArg := os.Args[1]
+
 	config.Init()
 
 	db.Init()
 	kv.Init()
 	storage.Init()
 
-	id, err := uuid.FromString("b9be81fe-a56f-4011-b387-97c9cde1671d")
+	id, err := uuid.FromString(idArg)
 	if err != nil {
 		logrus.Fatalf("uuid.FromString in main %q", err)
 	}
@@ -48,8 +55,9 @@ func main() {
 	}
 
 	t := time.Now()
-	from := t.Add(-7 * 24 * time.Hour)
-	to := t
+	from := time.Date(t.Year(), t.Month(), t.Day()-1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
+
 	if err := bot.SendTimelapseRequest(from, to, timelapse); err != nil {
 		logrus.Fatalf("bot.SendTimelapseRequest in main %q", err)
 	}
