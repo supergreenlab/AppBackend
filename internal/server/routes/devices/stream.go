@@ -36,19 +36,32 @@ import (
 
 var upgrader = websocket.Upgrader{}
 
+func listenRemoteCommands(ws *websocket.Conn, device *appbackend.Device) {
+	for {
+		_, message, err := ws.ReadMessage()
+		if err != nil {
+			break
+		}
+		logrus.Infof("%s %s\n", device.ID, message)
+	}
+}
+
 func streamDeviceMetrics(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		c, err := upgrader.Upgrade(w, r, nil)
+		ws, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			log.Println("upgrade:", err)
 			return
 		}
-		defer c.Close()
+		defer ws.Close()
 		device := r.Context().Value(middlewares.SelectResultContextKey{}).(*appbackend.Device)
+
+		go listenRemoteCommands(ws, device)
+
 		q := fmt.Sprintf("pub.%s.*", device.Identifier)
-		ch := pubsub.SubscribeControllerMetric(q)
+		ch := pubsub.SubscribeControllerLogs(q)
 		for e := range ch {
-			err = c.WriteJSON(e)
+			err = ws.WriteJSON(e)
 			if err != nil {
 				logrus.Errorf("c.WriteJSON in streamDeviceMetrics %q - device: %s", err, device.Identifier)
 				break

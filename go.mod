@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/spanner v1.4.0 // indirect
 	firebase.google.com/go/v4 v4.2.0
 	github.com/ClickHouse/clickhouse-go v1.3.14 // indirect
+	github.com/SuperGreenLab/MQTTParser v0.0.0-20191104062431-b1a07e40799f
 	github.com/SuperGreenLab/WebBackend v0.0.0-20191105152239-1a7c2c8088bd // indirect
 	github.com/aws/aws-sdk-go v1.29.31 // indirect
 	github.com/bwmarrin/discordgo v0.20.1
