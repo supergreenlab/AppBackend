@@ -19,6 +19,7 @@
 package pubsub
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -91,18 +92,22 @@ func SubscribeControllerLogs(topic string) chan interface{} {
 				continue
 			}
 			if keyParts[len(keyParts)-1] == "events" {
-				ch <- ControllerLog{ControllerID: keyParts[1], Module: keyParts[2], Msg: msg.Payload}
+				ch <- ControllerLog{Type: "log", ControllerID: keyParts[1], Module: keyParts[2], Msg: msg.Payload}
 				continue
 			}
 			v, err := strconv.ParseFloat(msg.Payload, 64)
 			if err != nil {
-				ch <- ControllerStringMetric{ControllerID: keyParts[1], Key: keyParts[3], Value: msg.Payload}
+				ch <- ControllerStringMetric{Type: "string", ControllerID: keyParts[1], Key: keyParts[3], Value: msg.Payload}
 			} else {
-				ch <- ControllerIntMetric{ControllerID: keyParts[1], Key: keyParts[3], Value: v}
+				ch <- ControllerIntMetric{Type: "int", ControllerID: keyParts[1], Key: keyParts[3], Value: v}
 			}
 		}
 	}()
 	return ch
+}
+
+func PublicRemoteCmd(identifier, cmd string) {
+	r.Publish(fmt.Sprintf("pub.%s.cmd", identifier), cmd)
 }
 
 func Init() {
