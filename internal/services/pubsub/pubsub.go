@@ -88,10 +88,15 @@ func SubscribeControllerLogs(topic string) chan interface{} {
 		defer close(ch)
 		for msg := range rps.Channel() {
 			keyParts := strings.Split(msg.Channel, ".")
-			if len(keyParts) == 0 {
+			if len(keyParts) < 3 {
+				logrus.Errorf("Unknown channel identifier: %q", msg.Channel)
 				continue
 			}
-			if keyParts[len(keyParts)-1] == "events" {
+
+			if keyParts[len(keyParts)-1] == "cmd" {
+				continue
+			}
+			if keyParts[len(keyParts)-1] == "log" {
 				ch <- ControllerLog{Type: "log", ControllerID: keyParts[1], Module: keyParts[2], Msg: msg.Payload}
 				continue
 			}
