@@ -21,6 +21,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -117,27 +118,47 @@ func downloadTimelapses() {
 	}
 }
 
+func copyFile(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	if err != nil {
+		return err
+	}
+	return out.Close()
+}
+
 func generateTimelapses() {
 	for tr := range generateChan {
 		dir := fmt.Sprintf("%s/render-%s", STORAGE_DIR, tr.ID.String())
 		dst := fmt.Sprintf("%s/render-%s.mp4", dir, tr.ID.String())
+		dstThumbnail := fmt.Sprintf("%s/render-%s.jpg", dir, tr.ID.String())
 
 		cmd := exec.Command("/usr/bin/ffmpeg", "-r", "40", "-i", fmt.Sprintf("%s/frame-%%d.jpg", dir), "-vf", "scale=1440:-2", dst)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		if err := cmd.Start(); err != nil {
 			logrus.Errorf("cmd.Start in generateTimelapses %q", err)
+			continue
 		}
 		cmd.Wait()
 
-		dstThumbnail := fmt.Sprintf("%s/render-%s.jpg", dir, tr.ID.String())
-		cmd = exec.Command("/usr/bin/ffmpeg", "-i", dst, "-ss", "00:00:00.000", "-frames:v", "1", dstThumbnail)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Start(); err != nil {
-			logrus.Errorf("cmd.Start in generateTimelapses %q", err)
+		logrus.Infof("Copying %s thumbnail to %s", tr.Frames[len(tr.Frames)/2].FilePath, dstThumbnail)
+
+		if err := copyFile(tr.Frames[len(tr.Frames)/2].FilePath, dstThumbnail); err != nil {
+			logrus.Errorf("copyFile in generateTimelapses %q", err)
+			continue
 		}
-		cmd.Wait()
 
 		if err := doneGenerateTimelapses(tr); err != nil {
 			logrus.Errorf("doneGenerateTimelapses in generateTimelapses %q", err)
