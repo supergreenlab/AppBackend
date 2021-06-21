@@ -62,53 +62,69 @@ type ControllerLog struct {
 }
 
 func SubscribeControllerIntMetric(topic string) chan ControllerIntMetric {
+	stop := make(chan bool, 1)
 	ch := make(chan ControllerIntMetric, 100)
 	rps := r.PSubscribe(topic)
 	go func() {
+		defer close(stop)
 		defer close(ch)
-		for msg := range rps.Channel() {
-			v, err := strconv.ParseFloat(msg.Payload, 64)
-			if err != nil {
-				logrus.Errorf("strconv.ParseFloat in SubscribeControllerIntMetric %q - %+v", err.Error(), msg)
-				continue
+		for {
+			select {
+			case msg := <-rps.Channel():
+				v, err := strconv.ParseFloat(msg.Payload, 64)
+				if err != nil {
+					logrus.Errorf("strconv.ParseFloat in SubscribeControllerIntMetric %q - %+v", err.Error(), msg)
+					continue
+				}
+
+				keyParts := strings.Split(msg.Channel, ".")
+
+				ch <- ControllerIntMetric{ControllerID: keyParts[1], Key: keyParts[3], Value: v}
+			case <-stop:
+				logrus.Infof("Closing channel for %s", topic)
+				return
 			}
-
-			keyParts := strings.Split(msg.Channel, ".")
-
-			ch <- ControllerIntMetric{ControllerID: keyParts[1], Key: keyParts[3], Value: v}
 		}
 	}()
 	return ch
 }
 
-func SubscribeControllerLogs(topic string) chan interface{} {
+func SubscribeControllerLogs(topic string) (chan interface{}, chan bool) {
+	stop := make(chan bool)
 	ch := make(chan interface{}, 100)
 	rps := r.PSubscribe(topic)
 	go func() {
+		defer close(stop)
 		defer close(ch)
-		for msg := range rps.Channel() {
-			keyParts := strings.Split(msg.Channel, ".")
-			if len(keyParts) < 3 {
-				logrus.Errorf("Unknown channel identifier: %q", msg.Channel)
-				continue
-			}
+		for {
+			select {
+			case msg := <-rps.Channel():
+				keyParts := strings.Split(msg.Channel, ".")
+				if len(keyParts) < 3 {
+					logrus.Errorf("Unknown channel identifier: %q", msg.Channel)
+					continue
+				}
 
-			if keyParts[len(keyParts)-1] == "cmd" {
-				continue
-			}
-			if keyParts[len(keyParts)-1] == "log" {
-				ch <- ControllerLog{Type: "log", ControllerID: keyParts[1], Module: keyParts[2], Msg: msg.Payload}
-				continue
-			}
-			v, err := strconv.ParseFloat(msg.Payload, 64)
-			if err != nil {
-				ch <- ControllerStringMetric{Type: "string", ControllerID: keyParts[1], Key: keyParts[3], Value: msg.Payload}
-			} else {
-				ch <- ControllerIntMetric{Type: "int", ControllerID: keyParts[1], Key: keyParts[3], Value: v}
+				if keyParts[len(keyParts)-1] == "cmd" {
+					continue
+				}
+				if keyParts[len(keyParts)-1] == "log" {
+					ch <- ControllerLog{Type: "log", ControllerID: keyParts[1], Module: keyParts[2], Msg: msg.Payload}
+					continue
+				}
+				v, err := strconv.ParseFloat(msg.Payload, 64)
+				if err != nil {
+					ch <- ControllerStringMetric{Type: "string", ControllerID: keyParts[1], Key: keyParts[3], Value: msg.Payload}
+				} else {
+					ch <- ControllerIntMetric{Type: "int", ControllerID: keyParts[1], Key: keyParts[3], Value: v}
+				}
+			case <-stop:
+				logrus.Infof("Closing channel for %s", topic)
+				return
 			}
 		}
 	}()
-	return ch
+	return ch, stop
 }
 
 func PublicRemoteCmd(identifier, cmd string) {
