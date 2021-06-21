@@ -21,7 +21,6 @@ package devices
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
@@ -41,7 +40,7 @@ func listenRemoteCommands(ws *websocket.Conn, device *appbackend.Device) {
 		_, message, err := ws.ReadMessage()
 		if err != nil {
 			logrus.Errorf("ws.ReadMessage in listenRemoteCommands %q - device: %s", err, device.Identifier)
-			continue
+			break
 		}
 		pubsub.PublicRemoteCmd(device.Identifier, string(message))
 	}
@@ -51,7 +50,7 @@ func streamDeviceMetrics(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		ws, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			log.Println("upgrade:", err)
+			logrus.Errorf("upgrader.Upgrade in streamDeviceMetrics %q", err)
 			return
 		}
 		defer ws.Close()
@@ -78,7 +77,7 @@ var streamDeviceHandler = middlewares.NewEndpoint().
 			uid := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
 			id := p.ByName("id")
 
-			selector := sess.Select("*").From("devices t").Where("t.userid = ?", uid).And("id = ?", id).And("deleted = false")
+			selector := sess.Select("*").From("devices t").Where("t.userid = ?", uid).And("t.id = ?", id).And("t.deleted = false")
 			ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
 			fn(w, r.WithContext(ctx), p)
 		}
