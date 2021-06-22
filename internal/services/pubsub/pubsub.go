@@ -93,12 +93,14 @@ func SubscribeControllerLogs(topic string) (chan interface{}, chan bool) {
 	stop := make(chan bool)
 	ch := make(chan interface{}, 100)
 	rps := r.PSubscribe(topic)
+	subCh := rps.Channel()
 	go func() {
 		defer close(stop)
 		defer close(ch)
+		defer rps.Close()
 		for {
 			select {
-			case msg := <-rps.Channel():
+			case msg := <-subCh:
 				keyParts := strings.Split(msg.Channel, ".")
 				if len(keyParts) < 3 {
 					logrus.Errorf("Unknown channel identifier: %q", msg.Channel)
