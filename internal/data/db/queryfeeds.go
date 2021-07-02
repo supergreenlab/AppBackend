@@ -125,7 +125,7 @@ func GetActivePlantsForControllerIdentifier(controllerID string, boxSlotID int) 
 func GetTimelapses() ([]appbackend.Timelapse, error) {
 	timelapses := []appbackend.Timelapse{}
 
-	selector := Sess.Select("timelapses.*").From("timelapses").Join("plants").On("plants.id = timelapses.plantid").Where("plants.deleted = false").And("timelapses.deleted = false")
+	selector := Sess.Select("timelapses.*").From("timelapses").Join("plants").On("plants.id = timelapses.plantid").Where("plants.deleted = false").And("plants.archived = false").And("timelapses.deleted = false")
 
 	if err := selector.All(&timelapses); err != nil {
 		return timelapses, err
