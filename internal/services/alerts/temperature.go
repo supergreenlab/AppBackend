@@ -83,7 +83,7 @@ func getTemperatureAlertContent(plant appbackend.Plant, alertType string, timerP
 func listenTemperatureMetrics() {
 	prometheus.InitAlertTriggered("TEMP", alertTypeTooLow)
 	prometheus.InitAlertTriggered("TEMP", alertTypeTooHigh)
-	ch := pubsub.SubscribeControllerIntMetric("*.BOX_*_TEMP")
+	ch, _ := pubsub.SubscribeControllerIntMetric("*.BOX_*_TEMP.metric")
 	for metric := range ch {
 		checkMetric("TEMP", getTemperatureAlertContent, metric, getTemperatureMinMax, kv.GetSHT21PresentForBox, kv.GetTemperatureAlertStatus, kv.SetTemperatureAlertStatus, kv.GetTemperatureAlertType, kv.SetTemperatureAlertType)
 	}

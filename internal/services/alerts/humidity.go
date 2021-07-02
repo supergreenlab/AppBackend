@@ -79,7 +79,7 @@ func getHumidityAlertContent(plant appbackend.Plant, alertType string, timerPowe
 func listenHumidityMetrics() {
 	prometheus.InitAlertTriggered("HUMI", alertTypeTooLow)
 	prometheus.InitAlertTriggered("HUMI", alertTypeTooHigh)
-	ch := pubsub.SubscribeControllerIntMetric("*.BOX_*_HUMI")
+	ch, _ := pubsub.SubscribeControllerIntMetric("*.BOX_*_HUMI.metric")
 	for metric := range ch {
 		checkMetric("HUMI", getHumidityAlertContent, metric, getHumidityMinMax, kv.GetSHT21PresentForBox, kv.GetHumidityAlertStatus, kv.SetHumidityAlertStatus, kv.GetHumidityAlertType, kv.SetHumidityAlertType)
 	}

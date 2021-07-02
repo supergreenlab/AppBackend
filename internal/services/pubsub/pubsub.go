@@ -61,16 +61,18 @@ type ControllerLog struct {
 	Msg          string `json:"msg"`
 }
 
-func SubscribeControllerIntMetric(topic string) chan ControllerIntMetric {
-	stop := make(chan bool, 1)
+func SubscribeControllerIntMetric(topic string) (chan ControllerIntMetric, chan bool) {
+	stop := make(chan bool)
 	ch := make(chan ControllerIntMetric, 100)
 	rps := r.PSubscribe(topic)
+	subCh := rps.Channel()
 	go func() {
 		defer close(stop)
 		defer close(ch)
+		defer rps.Close()
 		for {
 			select {
-			case msg := <-rps.Channel():
+			case msg := <-subCh:
 				v, err := strconv.ParseFloat(msg.Payload, 64)
 				if err != nil {
 					logrus.Errorf("strconv.ParseFloat in SubscribeControllerIntMetric %q - %+v", err.Error(), msg)
@@ -86,7 +88,7 @@ func SubscribeControllerIntMetric(topic string) chan ControllerIntMetric {
 			}
 		}
 	}()
-	return ch
+	return ch, stop
 }
 
 func SubscribeControllerLogs(topic string) (chan interface{}, chan bool) {
