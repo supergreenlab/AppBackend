@@ -42,7 +42,6 @@ func listenRemoteCommands(ws *websocket.Conn, device *appbackend.Device) {
 			logrus.Errorf("ws.ReadMessage in listenRemoteCommands %q - device: %s", err, device.Identifier)
 			break
 		}
-		logrus.Infof("Sending command: %s", message)
 		pubsub.PublicRemoteCmd(device.Identifier, string(message))
 	}
 }
@@ -63,7 +62,6 @@ func streamDeviceMetrics(fn httprouter.Handle) httprouter.Handle {
 		ch, stop := pubsub.SubscribeControllerLogs(q)
 		defer func() { stop <- true }()
 		for e := range ch {
-			//logrus.Infof("Received log: %s", e)
 			err = ws.WriteJSON(e)
 			if err != nil {
 				logrus.Errorf("c.WriteJSON in streamDeviceMetrics %q - device: %s", err, device.Identifier)
