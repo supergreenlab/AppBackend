@@ -27,4 +27,5 @@ func Init(router *httprouter.Router) {
 	auth := cmiddlewares.AuthStack()
 
 	router.GET("/device/:id/stream", auth.Wrap(streamDeviceHandler))
+	router.GET("/device/:id/params", auth.Wrap(selectDeviceParams))
 }

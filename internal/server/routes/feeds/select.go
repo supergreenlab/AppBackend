@@ -20,12 +20,10 @@ package feeds
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/SuperGreenLab/AppBackend/internal/data/db"
-	"github.com/SuperGreenLab/AppBackend/internal/data/kv"
 	"github.com/SuperGreenLab/AppBackend/internal/data/storage"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
@@ -39,6 +37,8 @@ import (
 )
 
 // TODO add deleted filtering
+
+// TODO DRY with server/routes/devices/params.go
 
 func filterUserID(fn httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -184,52 +184,6 @@ var selectDevice = middlewares.SelectOneEndpoint(
 		filterUserID,
 	},
 	[]middleware.Middleware{},
-)
-
-type SelectDevicesParamsParams struct {
-	Params []string
-}
-
-type SelectDevicesParamsResponse struct {
-	Params map[string]interface{} `json:"params"`
-}
-
-func loadParams(fn httprouter.Handle) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		params := r.Context().Value(middlewares.QueryObjectContextKey{}).(*SelectDevicesParamsParams)
-		device := r.Context().Value(middlewares.SelectResultContextKey{}).(*appbackend.Device)
-		for i, k := range params.Params {
-			params.Params[i] = fmt.Sprintf("%s.KV.%s", device.Identifier, k)
-		}
-		keys, err := kv.GetKeys(params.Params) // TODO Is this dangerous?
-		if err != nil {
-			logrus.Errorf("kv.GetKeys in loadParams %q - %+v", err, params)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		m, err := kv.GetValues(keys)
-		if err != nil {
-			logrus.Errorf("kv.GetValues in loadParams %q - %+v", err, params)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		ctx := context.WithValue(r.Context(), middlewares.SelectResultContextKey{}, SelectDevicesParamsResponse{Params: m})
-		fn(w, r.WithContext(ctx), p)
-	}
-}
-
-var selectDeviceParams = middlewares.SelectOneEndpoint(
-	"devices",
-	func() interface{} { return &appbackend.Device{} },
-	func() interface{} { return &SelectDevicesParamsParams{} },
-	[]middleware.Middleware{
-		filterID,
-		filterUserID,
-	},
-	[]middleware.Middleware{
-		loadParams,
-	},
 )
 
 type SelectFeedMediasParams struct {

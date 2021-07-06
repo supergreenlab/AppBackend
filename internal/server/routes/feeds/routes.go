@@ -101,7 +101,6 @@ func Init(router *httprouter.Router) {
 	router.GET("/box/:id", auth.Wrap(selectBox))
 	router.GET("/devices", auth.Wrap(selectDevices))
 	router.GET("/device/:id", auth.Wrap(selectDevice))
-	router.GET("/device/:id/params", auth.Wrap(selectDeviceParams))
 	router.GET("/bookmarks", auth.Wrap(selectBookmarks))
 	router.GET("/bookmark/:id", auth.Wrap(selectBookmark))
 	router.GET("/timelapses", auth.Wrap(selectTimelapses))
