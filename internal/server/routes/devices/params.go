@@ -26,35 +26,10 @@ import (
 	"github.com/SuperGreenLab/AppBackend/internal/data/kv"
 	"github.com/SuperGreenLab/AppBackend/internal/server/middlewares"
 	appbackend "github.com/SuperGreenLab/AppBackend/pkg"
-	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rileyr/middleware"
 	"github.com/sirupsen/logrus"
-	"upper.io/db.v3/lib/sqlbuilder"
 )
-
-// TODO DRY with server/routes/feeds/select.go
-
-func filterUserID(fn httprouter.Handle) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
-		uid := r.Context().Value(middlewares.UserIDContextKey{}).(uuid.UUID)
-		selector = selector.Where("t.userid = ?", uid)
-		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
-		fn(w, r.WithContext(ctx), p)
-	}
-}
-
-func filterID(fn httprouter.Handle) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
-
-		id := p.ByName("id")
-		selector = selector.Where("t.id = ?", id)
-		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
-		fn(w, r.WithContext(ctx), p)
-	}
-}
 
 type SelectDevicesParamsParams struct {
 	Params []string
@@ -94,8 +69,8 @@ var selectDeviceParams = middlewares.SelectOneEndpoint(
 	func() interface{} { return &appbackend.Device{} },
 	func() interface{} { return &SelectDevicesParamsParams{} },
 	[]middleware.Middleware{
-		filterID,
-		filterUserID,
+		middlewares.FilterID,
+		middlewares.FilterUserID,
 	},
 	[]middleware.Middleware{
 		loadParams,

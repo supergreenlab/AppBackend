@@ -24,6 +24,8 @@ import (
 	"time"
 )
 
+// Alert config getters
+
 func GetAlertMinTemperatureDay(controllerID string, box int, def float64) (float64, error) {
 	key := fmt.Sprintf("%s.ALERT.BOX_%d_MIN_TEMP_DAY", controllerID, box)
 	return GetNum(key, def)
@@ -63,6 +65,50 @@ func GetAlertMaxHumidityNight(controllerID string, box int, def float64) (float6
 	key := fmt.Sprintf("%s.ALERT.BOX_%d_MAX_HUMI_NIGHT", controllerID, box)
 	return GetNum(key, def)
 }
+
+// Alert config setters
+
+func SetAlertMinTemperatureDay(controllerID string, box int, value float64) error {
+	key := fmt.Sprintf("%s.ALERT.BOX_%d_MIN_TEMP_DAY", controllerID, box)
+	return SetNum(key, value)
+}
+
+func SetAlertMaxTemperatureDay(controllerID string, box int, value float64) error {
+	key := fmt.Sprintf("%s.ALERT.BOX_%d_MAX_TEMP_DAY", controllerID, box)
+	return SetNum(key, value)
+}
+
+func SetAlertMinTemperatureNight(controllerID string, box int, value float64) error {
+	key := fmt.Sprintf("%s.ALERT.BOX_%d_MIN_TEMP_NIGHT", controllerID, box)
+	return SetNum(key, value)
+}
+
+func SetAlertMaxTemperatureNight(controllerID string, box int, value float64) error {
+	key := fmt.Sprintf("%s.ALERT.BOX_%d_MAX_TEMP_NIGHT", controllerID, box)
+	return SetNum(key, value)
+}
+
+func SetAlertMinHumidityDay(controllerID string, box int, value float64) error {
+	key := fmt.Sprintf("%s.ALERT.BOX_%d_MIN_HUMI_DAY", controllerID, box)
+	return SetNum(key, value)
+}
+
+func SetAlertMaxHumidityDay(controllerID string, box int, value float64) error {
+	key := fmt.Sprintf("%s.ALERT.BOX_%d_MAX_HUMI_DAY", controllerID, box)
+	return SetNum(key, value)
+}
+
+func SetAlertMinHumidityNight(controllerID string, box int, value float64) error {
+	key := fmt.Sprintf("%s.ALERT.BOX_%d_MIN_HUMI_NIGHT", controllerID, box)
+	return SetNum(key, value)
+}
+
+func SetAlertMaxHumidityNight(controllerID string, box int, value float64) error {
+	key := fmt.Sprintf("%s.ALERT.BOX_%d_MAX_HUMI_NIGHT", controllerID, box)
+	return SetNum(key, value)
+}
+
+//
 
 func GetTemperature(controllerID string, box int) (float64, error) {
 	key := fmt.Sprintf("%s.KV.BOX_%d_TEMP", controllerID, box)

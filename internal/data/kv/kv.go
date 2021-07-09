@@ -45,6 +45,10 @@ func GetNum(key string, def float64) (float64, error) {
 	return n, err
 }
 
+func SetNum(key string, value float64) error {
+	return r.Set(key, value, 0).Err()
+}
+
 func GetInt(key string, def int) (int, error) {
 	n, err := r.Get(key).Int()
 	if errors.Is(err, redis.Nil) {

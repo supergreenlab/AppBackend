@@ -23,6 +23,7 @@ import (
 
 	"github.com/SuperGreenLab/AppBackend/internal/server/routes/devices"
 	"github.com/SuperGreenLab/AppBackend/internal/server/routes/products"
+	"github.com/SuperGreenLab/AppBackend/internal/server/routes/services"
 	"github.com/SuperGreenLab/AppBackend/internal/services/prometheus"
 	"github.com/rs/cors"
 	"github.com/spf13/pflag"
@@ -58,6 +59,7 @@ func Start() {
 	feeds.Init(router)
 	products.Init(router)
 	devices.Init(router)
+	services.Init(router)
 
 	go func() {
 		if viper.GetString("AddCORS") == "true" {

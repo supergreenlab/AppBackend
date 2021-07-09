@@ -34,25 +34,68 @@ const (
 	maxHumiNight = 85
 )
 
+type HumidityAlertSettings struct {
+	MinNight float64 `json:"minNight"`
+	MinDay   float64 `json:"minDay"`
+
+	MaxNight float64 `json:"maxNight"`
+	MaxDay   float64 `json:"maxDay"`
+}
+
+func GetHumidityAlertSettings(controllerID string, boxID int) (*HumidityAlertSettings, error) {
+	minNight, err := kv.GetAlertMinHumidityNight(controllerID, boxID, minTempNight)
+	if err != nil {
+		return nil, err
+	}
+	minDay, err := kv.GetAlertMinHumidityDay(controllerID, boxID, minTempDay)
+	if err != nil {
+		return nil, err
+	}
+	maxNight, err := kv.GetAlertMaxHumidityNight(controllerID, boxID, maxTempNight)
+	if err != nil {
+		return nil, err
+	}
+	maxDay, err := kv.GetAlertMaxHumidityDay(controllerID, boxID, maxTempDay)
+	if err != nil {
+		return nil, err
+	}
+
+	return &HumidityAlertSettings{
+		MinNight: minNight,
+		MinDay:   minDay,
+		MaxNight: maxNight,
+		MaxDay:   maxDay,
+	}, nil
+}
+
+func SetHumidityAlertSettings(controllerID string, boxID int, as HumidityAlertSettings) error {
+	err := kv.SetAlertMinHumidityNight(controllerID, boxID, as.MinNight)
+	if err != nil {
+		return err
+	}
+	err = kv.SetAlertMinHumidityDay(controllerID, boxID, as.MinDay)
+	if err != nil {
+		return err
+	}
+	err = kv.SetAlertMaxHumidityNight(controllerID, boxID, as.MaxNight)
+	if err != nil {
+		return err
+	}
+	err = kv.SetAlertMaxHumidityDay(controllerID, boxID, as.MaxDay)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func getHumidityMinMax(controllerID string, boxID int, timerPower float64) (float64, float64, error) {
-	minNight, err := kv.GetAlertMinHumidityNight(controllerID, boxID, minHumiNight)
-	if err != nil {
-		return 0, 0, err
-	}
-	minDay, err := kv.GetAlertMinHumidityDay(controllerID, boxID, minHumiDay)
-	if err != nil {
-		return 0, 0, err
-	}
-	maxNight, err := kv.GetAlertMaxHumidityNight(controllerID, boxID, maxHumiNight)
-	if err != nil {
-		return 0, 0, err
-	}
-	maxDay, err := kv.GetAlertMaxHumidityDay(controllerID, boxID, maxHumiDay)
+	as, err := GetHumidityAlertSettings(controllerID, boxID)
 	if err != nil {
 		return 0, 0, err
 	}
 
-	return minNight + (minDay-minNight)*timerPower/100, maxNight + (maxDay-maxNight)*timerPower/100, nil
+	return as.MinNight + (as.MinDay-as.MinNight)*timerPower/100, as.MaxNight + (as.MaxDay-as.MaxNight)*timerPower/100, nil
 }
 
 func getHumidityAlertContent(plant appbackend.Plant, alertType string, timerPower, value, minValue, maxValue float64) (string, string) {

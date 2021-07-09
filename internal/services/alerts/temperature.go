@@ -34,29 +34,72 @@ const (
 	maxTempNight = 25
 )
 
+type TemperatureAlertSettings struct {
+	MinNight float64 `json:"minNight"`
+	MinDay   float64 `json:"minDay"`
+
+	MaxNight float64 `json:"maxNight"`
+	MaxDay   float64 `json:"maxDay"`
+}
+
 func toDegF(degC float64) float64 {
 	return (degC * 9 / 5) + 32
 }
 
-func getTemperatureMinMax(controllerID string, boxID int, timerPower float64) (float64, float64, error) {
+func GetTemperatureAlertSettings(controllerID string, boxID int) (*TemperatureAlertSettings, error) {
 	minNight, err := kv.GetAlertMinTemperatureNight(controllerID, boxID, minTempNight)
 	if err != nil {
-		return 0, 0, err
+		return nil, err
 	}
 	minDay, err := kv.GetAlertMinTemperatureDay(controllerID, boxID, minTempDay)
 	if err != nil {
-		return 0, 0, err
+		return nil, err
 	}
 	maxNight, err := kv.GetAlertMaxTemperatureNight(controllerID, boxID, maxTempNight)
 	if err != nil {
-		return 0, 0, err
+		return nil, err
 	}
 	maxDay, err := kv.GetAlertMaxTemperatureDay(controllerID, boxID, maxTempDay)
+	if err != nil {
+		return nil, err
+	}
+
+	return &TemperatureAlertSettings{
+		MinNight: minNight,
+		MinDay:   minDay,
+		MaxNight: maxNight,
+		MaxDay:   maxDay,
+	}, nil
+}
+
+func SetTemperatureAlertSettings(controllerID string, boxID int, as TemperatureAlertSettings) error {
+	err := kv.SetAlertMinTemperatureNight(controllerID, boxID, as.MinNight)
+	if err != nil {
+		return err
+	}
+	err = kv.SetAlertMinTemperatureDay(controllerID, boxID, as.MinDay)
+	if err != nil {
+		return err
+	}
+	err = kv.SetAlertMaxTemperatureNight(controllerID, boxID, as.MaxNight)
+	if err != nil {
+		return err
+	}
+	err = kv.SetAlertMaxTemperatureDay(controllerID, boxID, as.MaxDay)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func getTemperatureMinMax(controllerID string, boxID int, timerPower float64) (float64, float64, error) {
+	as, err := GetTemperatureAlertSettings(controllerID, boxID)
 	if err != nil {
 		return 0, 0, err
 	}
 
-	return minNight + (minDay-minNight)*timerPower/100, maxNight + (maxDay-maxNight)*timerPower/100, nil
+	return as.MinNight + (as.MinDay-as.MinNight)*timerPower/100, as.MaxNight + (as.MaxDay-as.MaxNight)*timerPower/100, nil
 }
 
 func getTemperatureAlertContent(plant appbackend.Plant, alertType string, timerPower, value, minValue, maxValue float64) (string, string) {
