@@ -116,8 +116,6 @@ func setAlertsSettings(fn httprouter.Handle) httprouter.Handle {
 		params := r.Context().Value(middlewares.ObjectContextKey{}).(*AlertsSettings)
 		plant := r.Context().Value(middlewares.SelectResultContextKey{}).(*appbackend.Plant)
 
-		logrus.Infof("params: %+v", params)
-
 		box, err := db.GetBox(plant.BoxID)
 		if err != nil {
 			logrus.Errorln("db.GetBox in services.setAlertsSettings %q %+v", err, plant)
