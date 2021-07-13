@@ -444,6 +444,28 @@ var selectBookmark = middlewares.SelectOneEndpoint(
 
 type SelectTimelapsesParams struct {
 	middlewares.SelectParamsOffsetLimit
+
+	AddNFrames bool
+}
+
+type SelectTimelapsesResult struct {
+	appbackend.Timelapse
+
+	NFrames *int `db:"nframes,omitempty" json:"nFrames,omitempty"`
+}
+
+func countFrames(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		selector := r.Context().Value(middlewares.SelectorContextKey{}).(sqlbuilder.Selector)
+		params := r.Context().Value(middlewares.QueryObjectContextKey{}).(*SelectTimelapsesParams)
+
+		if params.AddNFrames {
+			selector.Columns(udb.Raw("(select count(*) from timelapseframes tf where tf.timelapseid = t.id)"))
+		}
+
+		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
+		fn(w, r.WithContext(ctx), p)
+	}
 }
 
 var selectTimelapses = middlewares.SelectEndpoint(
@@ -452,6 +474,7 @@ var selectTimelapses = middlewares.SelectEndpoint(
 	func() interface{} { return &SelectTimelapsesParams{} },
 	[]middleware.Middleware{
 		middlewares.FilterUserID,
+		countFrames,
 	},
 	[]middleware.Middleware{},
 )
