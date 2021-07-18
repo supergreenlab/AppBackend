@@ -460,7 +460,7 @@ func countFrames(fn httprouter.Handle) httprouter.Handle {
 		params := r.Context().Value(middlewares.QueryObjectContextKey{}).(*SelectTimelapsesParams)
 
 		if params.AddNFrames {
-			selector.Columns(udb.Raw("(select count(*) from timelapseframes tf where tf.timelapseid = t.id)"))
+			selector = selector.Columns(udb.Raw("(select count(*) from timelapseframes tf where tf.timelapseid = t.id) as nframes"))
 		}
 
 		ctx := context.WithValue(r.Context(), middlewares.SelectorContextKey{}, selector)
@@ -470,7 +470,7 @@ func countFrames(fn httprouter.Handle) httprouter.Handle {
 
 var selectTimelapses = middlewares.SelectEndpoint(
 	"timelapses",
-	func() interface{} { return &[]appbackend.Timelapse{} },
+	func() interface{} { return &[]SelectTimelapsesResult{} },
 	func() interface{} { return &SelectTimelapsesParams{} },
 	[]middleware.Middleware{
 		middlewares.FilterUserID,
